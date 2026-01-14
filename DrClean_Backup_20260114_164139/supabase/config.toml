@@ -1,0 +1,10 @@
+project_id = "oauhoiuaojpijmwiwjpe"
+
+[functions.support-chat]
+verify_jwt = false
+
+[functions.fetch-ares]
+verify_jwt = false
+
+[functions.reassign-jobs]
+verify_jwt = false
