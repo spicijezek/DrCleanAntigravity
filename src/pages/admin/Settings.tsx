@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { User, Lock, Upload, Save, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { uploadToCloudinary } from '@/lib/cloudinary';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { profileUpdateSchema, passwordUpdateSchema } from '@/lib/validationSchemas';
@@ -55,19 +56,23 @@ export default function Settings({ onClose }: SettingsProps) {
           phone: data.phone || '',
           avatar_url: '',
         };
-        
-        // Load avatar with signed URL if exists
+
+        // Load avatar handles both Cloudinary URLs and old Supabase paths
         if (data.avatar_url) {
-          const filePath = data.avatar_url.split('/').slice(-2).join('/');
-          const { data: signedData } = await supabase.storage
-            .from('avatars')
-            .createSignedUrl(filePath, 3600);
-          
-          if (signedData) {
-            profileData.avatar_url = signedData.signedUrl;
+          if (data.avatar_url.startsWith('http')) {
+            profileData.avatar_url = data.avatar_url;
+          } else {
+            const filePath = data.avatar_url.split('/').slice(-2).join('/');
+            const { data: signedData } = await supabase.storage
+              .from('avatars')
+              .createSignedUrl(filePath, 3600);
+
+            if (signedData) {
+              profileData.avatar_url = signedData.signedUrl;
+            }
           }
         }
-        
+
         setProfile(profileData);
       } else {
         setProfile(prev => ({
@@ -89,7 +94,7 @@ export default function Settings({ onClose }: SettingsProps) {
 
     // Validate input
     const validationResult = profileUpdateSchema.safeParse(profile);
-    
+
     if (!validationResult.success) {
       const firstError = validationResult.error.errors[0];
       toast({
@@ -135,7 +140,7 @@ export default function Settings({ onClose }: SettingsProps) {
   const updatePassword = async () => {
     // Validate input
     const validationResult = passwordUpdateSchema.safeParse(passwords);
-    
+
     if (!validationResult.success) {
       const firstError = validationResult.error.errors[0];
       toast({
@@ -197,34 +202,8 @@ export default function Settings({ onClose }: SettingsProps) {
 
     setLoading(true);
     try {
-      const fileExt = file.name.split('.').pop();
-      const filePath = `${user.id}/avatar.${fileExt}`;
-
-      // Delete existing avatar if any
-      if (profile.avatar_url) {
-        const existingPath = profile.avatar_url.split('/').pop();
-        if (existingPath) {
-          await supabase.storage
-            .from('avatars')
-            .remove([`${user.id}/${existingPath}`]);
-        }
-      }
-
-      // Upload new avatar
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, file, { upsert: true });
-
-      if (uploadError) throw uploadError;
-
-      // Get signed URL (1 hour expiry)
-      const { data: signedData, error: signedError } = await supabase.storage
-        .from('avatars')
-        .createSignedUrl(filePath, 3600);
-
-      if (signedError) throw signedError;
-      
-      const newAvatarUrl = signedData.signedUrl;
+      // Upload directly to Cloudinary
+      const newAvatarUrl = await uploadToCloudinary(file);
 
       // Update profile with new avatar URL
       const { error: updateError } = await supabase
@@ -270,9 +249,9 @@ export default function Settings({ onClose }: SettingsProps) {
         >
           <X className="h-4 w-4" />
         </Button>
-          <CardHeader>
-            <CardTitle>Settings</CardTitle>
-          </CardHeader>
+        <CardHeader>
+          <CardTitle>Settings</CardTitle>
+        </CardHeader>
         <CardContent>
           <Tabs defaultValue="profile" className="space-y-6">
             <TabsList className="grid w-full grid-cols-2">
@@ -289,9 +268,9 @@ export default function Settings({ onClose }: SettingsProps) {
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={loading}
                   >

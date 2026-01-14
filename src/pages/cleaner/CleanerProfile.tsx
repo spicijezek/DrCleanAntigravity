@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { uploadToCloudinary } from '@/lib/cloudinary';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -79,12 +80,16 @@ export default function CleanerProfile() {
         .maybeSingle();
 
       if (profile?.avatar_url) {
-        const { data: signedUrl } = await supabase.storage
-          .from('avatars')
-          .createSignedUrl(profile.avatar_url, 3600);
+        if (profile.avatar_url.startsWith('http')) {
+          setAvatarUrl(profile.avatar_url);
+        } else {
+          const { data: signedUrl } = await supabase.storage
+            .from('avatars')
+            .createSignedUrl(profile.avatar_url, 3600);
 
-        if (signedUrl) {
-          setAvatarUrl(signedUrl.signedUrl);
+          if (signedUrl) {
+            setAvatarUrl(signedUrl.signedUrl);
+          }
         }
       }
     } catch (error) {
@@ -108,38 +113,16 @@ export default function CleanerProfile() {
     setUploading(true);
 
     try {
-      // Delete old avatar if exists
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('avatar_url')
-        .eq('user_id', user.id)
-        .maybeSingle();
+      // Upload directly to Cloudinary
+      const imageUrl = await uploadToCloudinary(file);
 
-      if (profile?.avatar_url) {
-        await supabase.storage.from('avatars').remove([profile.avatar_url]);
-      }
-
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}/avatar-${Date.now()}.${fileExt}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(fileName, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data: signedUrl } = await supabase.storage
-        .from('avatars')
-        .createSignedUrl(fileName, 3600);
-
+      // Update profile with full URL
       await supabase
         .from('profiles')
-        .update({ avatar_url: fileName })
+        .update({ avatar_url: imageUrl })
         .eq('user_id', user.id);
 
-      if (signedUrl) {
-        setAvatarUrl(signedUrl.signedUrl);
-      }
+      setAvatarUrl(imageUrl);
 
       toast({
         title: 'Úspěch',

@@ -16,6 +16,8 @@ interface RoomPhotoUploadProps {
 
 import { compressImage } from '@/lib/imageUtils';
 
+import { uploadToCloudinary } from '@/lib/cloudinary';
+
 export function RoomPhotoUpload({
     bookingId,
     roomId,
@@ -36,25 +38,14 @@ export function RoomPhotoUpload({
             // Compress image
             const compressedFile = await compressImage(file);
 
-            const fileExt = 'jpg'; // Compressed as jpeg
-            const fileName = `${bookingId}/${roomId}/${type}/${crypto.randomUUID()}.${fileExt}`;
-
-            const { error: uploadError } = await supabase.storage
-                .from('room_photos')
-                .upload(fileName, compressedFile);
-
-            if (uploadError) throw uploadError;
-
-            // Get public URL
-            const { data: { publicUrl } } = supabase.storage
-                .from('room_photos')
-                .getPublicUrl(fileName);
+            // Upload directly to Cloudinary
+            const publicUrl = await uploadToCloudinary(compressedFile);
 
             onPhotoUploaded(publicUrl);
             toast.success('Fotografie nahrána');
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error uploading photo:', error);
-            toast.error('Nepodařilo se nahrát fotografii');
+            toast.error(error.message || 'Nepodařilo se nahrát fotografii');
         } finally {
             setIsUploading(false);
             // Reset input

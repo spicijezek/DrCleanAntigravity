@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { uploadToCloudinary } from "@/lib/cloudinary";
 import { toast } from "sonner";
 import { Save, Upload, FileText, Database } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -78,56 +79,47 @@ export default function InvoiceDefaultInfo() {
       return;
     }
 
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${user.id}/logo.${fileExt}`;
+    setLoading(true);
+    try {
+      // Upload directly to Cloudinary
+      const imageUrl = await uploadToCloudinary(file);
 
-    const { data, error: uploadError } = await supabase.storage
-      .from('avatars')
-      .upload(fileName, file, { upsert: true });
-
-    if (uploadError) {
-      toast.error("Error uploading logo");
-      console.error(uploadError);
-      return;
-    }
-
-    // Get signed URL instead of public URL
-    const { data: signedUrlData } = await supabase.storage
-      .from('avatars')
-      .createSignedUrl(fileName, 60 * 60 * 24 * 365); // 1 year expiry
-
-    if (signedUrlData) {
-      setLogoUrl(signedUrlData.signedUrl);
+      setLogoUrl(imageUrl);
       toast.success("Logo uploaded successfully");
+    } catch (error: any) {
+      console.error("Error uploading logo:", error);
+      toast.error(error.message || "Error uploading logo");
+    } finally {
+      setLoading(false);
     }
   };
 
   const fetchCompanyFromAres = async (ico: string) => {
     if (!ico || ico.length < 8) return;
-    
+
     setFetchingAres(true);
     try {
       const response = await fetch(`https://ares.gov.cz/ekonomicke-subjekty-v-be/rest/ekonomicke-subjekty/${ico}`);
-      
+
       if (!response.ok) throw new Error('Company not found');
-      
+
       const data = await response.json();
-      
+
       const companyName = data.obchodniJmeno || '';
       const dic = data.dic || '';
-      
+
       const sidlo = data.sidlo;
       let fullAddress = '';
       let cityName = '';
       let postal = '';
-      
+
       if (sidlo) {
         const street = sidlo.nazevUlice || '';
         const houseNumber = sidlo.cisloDomovni || '';
         const orientationNumber = sidlo.cisloOrientacni || '';
         cityName = sidlo.nazevObce || '';
         postal = sidlo.psc?.toString() || '';
-        
+
         fullAddress = [street, houseNumber, orientationNumber].filter(Boolean).join(' ');
       }
 
@@ -210,11 +202,11 @@ export default function InvoiceDefaultInfo() {
               {/* Company Details */}
               <div className="space-y-4">
                 <h2 className="text-lg font-semibold">Company Details</h2>
-                
+
                 <div>
                   <Label>IČ (Company ID)</Label>
-                  <Input 
-                    value={ic} 
+                  <Input
+                    value={ic}
                     onChange={(e) => setIc(e.target.value)}
                     onBlur={(e) => fetchCompanyFromAres(e.target.value)}
                     placeholder="12345678"
@@ -257,7 +249,7 @@ export default function InvoiceDefaultInfo() {
               {/* Contact & Banking */}
               <div className="space-y-4">
                 <h2 className="text-lg font-semibold">Contact Information</h2>
-                
+
                 <div>
                   <Label>Email</Label>
                   <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
@@ -274,7 +266,7 @@ export default function InvoiceDefaultInfo() {
                 </div>
 
                 <h2 className="text-lg font-semibold pt-4">Banking Information</h2>
-                
+
                 <div>
                   <Label>Bank Name</Label>
                   <Input value={bankName} onChange={(e) => setBankName(e.target.value)} placeholder="e.g., Česká spořitelna" />
