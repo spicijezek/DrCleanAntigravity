@@ -12,6 +12,7 @@ import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { BookOpen, Plus, Edit, Trash, Upload, FileText, Video } from 'lucide-react';
 import { Navigate } from 'react-router-dom';
+import { uploadToCloudinary } from '@/lib/cloudinary';
 import {
   Dialog,
   DialogContent,
@@ -100,16 +101,8 @@ export default function ManageEducationalContent() {
 
       // Upload file if provided
       if (file && formData.content_type !== 'video') {
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${Date.now()}-${Math.random()}.${fileExt}`;
-        const filePath = `${fileName}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from('educational_content')
-          .upload(filePath, file);
-
-        if (uploadError) throw uploadError;
-        fileUrl = filePath;
+        // Upload directly to Cloudinary
+        fileUrl = await uploadToCloudinary(file);
       }
 
       const contentData = {
@@ -236,7 +229,7 @@ export default function ManageEducationalContent() {
               Spravujte vzdělávací materiály pro klienty
             </p>
           </div>
-          
+
           <Dialog open={isDialogOpen} onOpenChange={(open) => {
             setIsDialogOpen(open);
             if (!open) resetForm();
@@ -256,7 +249,7 @@ export default function ManageEducationalContent() {
                   Vyplňte informace o vzdělávacím obsahu
                 </DialogDescription>
               </DialogHeader>
-              
+
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="title">Název *</Label>
@@ -403,11 +396,10 @@ export default function ManageEducationalContent() {
                         <span className="text-xs bg-secondary px-2 py-1 rounded">
                           {categories.find(c => c.value === item.category)?.label}
                         </span>
-                        <span className={`text-xs px-2 py-1 rounded ${
-                          item.is_published 
-                            ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100' 
+                        <span className={`text-xs px-2 py-1 rounded ${item.is_published
+                            ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100'
                             : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100'
-                        }`}>
+                          }`}>
                           {item.is_published ? 'Publikováno' : 'Koncept'}
                         </span>
                       </div>

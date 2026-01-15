@@ -14,8 +14,9 @@ export const uploadToCloudinary = async (file: File | Blob): Promise<string> => 
     formData.append('file', file);
     formData.append('upload_preset', UPLOAD_PRESET);
 
+    // Use /auto/upload to automatically detect resource type (image, raw, video)
     const response = await fetch(
-        `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
+        `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`,
         {
             method: 'POST',
             body: formData,
@@ -24,7 +25,7 @@ export const uploadToCloudinary = async (file: File | Blob): Promise<string> => 
 
     if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error?.message || 'Failed to upload image to Cloudinary');
+        throw new Error(errorData.error?.message || 'Failed to upload file to Cloudinary');
     }
 
     const data = await response.json();

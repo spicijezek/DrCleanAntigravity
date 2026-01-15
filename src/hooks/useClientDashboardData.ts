@@ -183,6 +183,19 @@ export const useClientDashboardData = () => {
     });
 
     // Mutations
+    const markAsViewed = useMutation({
+        mutationFn: async (bookingId: string) => {
+            const { error } = await supabase
+                .from('bookings')
+                .update({ client_viewed_at: new Date().toISOString() })
+                .eq('id', bookingId);
+            if (error) throw error;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['clientBookings'] });
+        }
+    });
+
     const submitRating = useMutation({
         mutationFn: async ({ bookingId, rating, comment }: { bookingId: string, rating: number, comment: string }) => {
             if (!clientData) throw new Error("No client data");
@@ -247,5 +260,6 @@ export const useClientDashboardData = () => {
         notifications,
         isLoading: isClientLoading || isBookingsLoading,
         submitRating,
+        markAsViewed,
     };
 };

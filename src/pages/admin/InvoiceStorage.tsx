@@ -42,7 +42,7 @@ export default function InvoiceStorage() {
       .select("*")
       .eq("user_id", user.id)
       .single();
-    
+
     if (data) setCompanyInfo(data);
   };
 
@@ -70,31 +70,48 @@ export default function InvoiceStorage() {
       return;
     }
 
-    const { data, error } = await supabase.storage
-      .from("invoices")
-      .download(invoice.pdf_path);
+    try {
+      let downloadUrl = "";
 
-    if (error) {
+      if (invoice.pdf_path.startsWith('http')) {
+        // It's a Cloudinary URL (or other direct URL)
+        downloadUrl = invoice.pdf_path;
+
+        // If it's Cloudinary, we can force download by adding fl_attachment
+        if (downloadUrl.includes('cloudinary.com')) {
+          downloadUrl = downloadUrl.replace('/upload/', '/upload/fl_attachment/');
+        }
+      } else {
+        // It's an old Supabase path
+        const { data, error } = await supabase.storage
+          .from("invoices")
+          .download(invoice.pdf_path);
+
+        if (error) throw error;
+        downloadUrl = URL.createObjectURL(data);
+      }
+
+      const a = document.createElement("a");
+      a.href = downloadUrl;
+      a.download = `faktura-${invoice.invoice_number}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      if (!invoice.pdf_path.startsWith('http')) {
+        URL.revokeObjectURL(downloadUrl);
+      }
+    } catch (error) {
       toast.error("Error downloading invoice");
       console.error(error);
-      return;
     }
-
-    const url = URL.createObjectURL(data);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `faktura-${invoice.invoice_number}.pdf`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
   };
 
   const updateInvoiceStatus = async (id: string, newStatus: string) => {
     // Get the invoice details first for loyalty points calculation
     const invoice = invoices.find(inv => inv.id === id);
     const wasNotPaid = invoice?.status !== 'paid';
-    
+
     const { error } = await supabase
       .from("invoices")
       .update({ status: newStatus })
@@ -116,7 +133,7 @@ export default function InvoiceStorage() {
   const addLoyaltyPoints = async (clientId: string, invoiceTotal: number, invoiceId: string) => {
     const POINTS_PER_CZK = 0.27;
     const pointsToAdd = Math.round(invoiceTotal * POINTS_PER_CZK);
-    
+
     if (pointsToAdd <= 0) return;
 
     try {
@@ -185,7 +202,7 @@ export default function InvoiceStorage() {
       .select("*")
       .eq("invoice_id", invoice.id)
       .order("sort_order");
-    
+
     setInvoiceItems(items || []);
     setPreviewInvoice(invoice);
   };
@@ -193,10 +210,12 @@ export default function InvoiceStorage() {
   const deleteInvoice = async (id: string, pdfPath: string) => {
     if (!confirm("Are you sure you want to delete this invoice?")) return;
 
-    // Delete PDF from storage
-    if (pdfPath) {
+    // Delete PDF from storage if it's a Supabase path
+    if (pdfPath && !pdfPath.startsWith('http')) {
       await supabase.storage.from("invoices").remove([pdfPath]);
     }
+    // Note: Deleting from Cloudinary would require an API secret, 
+    // which we shouldn't have in the frontend. We just leave it there or handle manually.
 
     // Delete invoice from database
     const { error } = await supabase.from("invoices").delete().eq("id", id);
@@ -211,12 +230,12 @@ export default function InvoiceStorage() {
   };
 
   const filteredInvoices = invoices.filter(invoice => {
-    const matchesSearch = 
+    const matchesSearch =
       invoice.invoice_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
       invoice.client_name.toLowerCase().includes(searchTerm.toLowerCase());
-    
+
     const matchesStatus = statusFilter === "all" || invoice.status === statusFilter;
-    
+
     const matchesDate = !dateFilter || invoice.date_created.startsWith(dateFilter);
 
     return matchesSearch && matchesStatus && matchesDate;
@@ -227,8 +246,8 @@ export default function InvoiceStorage() {
   };
 
   const toggleInvoiceSelection = (invoiceId: string) => {
-    setSelectedInvoices(prev => 
-      prev.includes(invoiceId) 
+    setSelectedInvoices(prev =>
+      prev.includes(invoiceId)
         ? prev.filter(id => id !== invoiceId)
         : [...prev, invoiceId]
     );
@@ -253,20 +272,27 @@ export default function InvoiceStorage() {
 
     try {
       const selectedInvoiceData = invoices.filter(inv => selectedInvoices.includes(inv.id));
-      
+
       for (const invoice of selectedInvoiceData) {
         if (!invoice.pdf_path) continue;
 
-        const { data, error } = await supabase.storage
-          .from("invoices")
-          .download(invoice.pdf_path);
+        let fileData: any;
+        if (invoice.pdf_path.startsWith('http')) {
+          const response = await fetch(invoice.pdf_path);
+          fileData = await response.blob();
+        } else {
+          const { data, error } = await supabase.storage
+            .from("invoices")
+            .download(invoice.pdf_path);
 
-        if (error) {
-          console.error(`Error downloading ${invoice.invoice_number}:`, error);
-          continue;
+          if (error) {
+            console.error(`Error downloading ${invoice.invoice_number}:`, error);
+            continue;
+          }
+          fileData = data;
         }
 
-        zip.file(`faktura-${invoice.invoice_number}.pdf`, data);
+        zip.file(`faktura-${invoice.invoice_number}.pdf`, fileData);
       }
 
       const zipBlob = await zip.generateAsync({ type: "blob" });
@@ -321,7 +347,7 @@ export default function InvoiceStorage() {
                 />
               </div>
             </div>
-            
+
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-[180px]">
                 <Filter className="h-4 w-4 mr-2" />
@@ -349,7 +375,7 @@ export default function InvoiceStorage() {
             <div className="flex items-center justify-between pt-2 border-t">
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
-                  <Checkbox 
+                  <Checkbox
                     checked={selectedInvoices.length === filteredInvoices.length && filteredInvoices.length > 0}
                     onCheckedChange={toggleSelectAll}
                   />
@@ -358,9 +384,9 @@ export default function InvoiceStorage() {
                   </span>
                 </div>
               </div>
-              
+
               {selectedInvoices.length > 0 && (
-                <Button 
+                <Button
                   onClick={downloadSelectedAsZip}
                   variant="default"
                   size="sm"
@@ -388,7 +414,7 @@ export default function InvoiceStorage() {
               <Card key={invoice.id} className="p-4">
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex items-center gap-4 flex-1 min-w-0">
-                    <Checkbox 
+                    <Checkbox
                       checked={selectedInvoices.includes(invoice.id)}
                       onCheckedChange={() => toggleInvoiceSelection(invoice.id)}
                     />
@@ -398,12 +424,12 @@ export default function InvoiceStorage() {
                         {new Date(invoice.date_created).toLocaleDateString('cs-CZ')}
                       </p>
                     </div>
-                    
+
                     <div className="flex-1 min-w-0">
                       <p className="font-medium truncate">{invoice.client_name}</p>
                       {invoice.client_vat && <p className="text-xs text-muted-foreground">{invoice.client_vat}</p>}
                     </div>
-                    
+
                     <div className="flex-shrink-0 text-right">
                       <p className="font-bold text-lg">{formatCurrency(invoice.total)}</p>
                       {invoice.date_due && (

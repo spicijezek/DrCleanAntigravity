@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button"
+import drCleanIcon from '@/assets/dr-clean-icon.png'
 import {
   Settings,
   User,
@@ -88,14 +89,13 @@ export function Header() {
   return (
 
     <>
-      <header className="sticky top-0 z-[10100] w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex h-16 items-center justify-between">
+      <header className="sticky top-0 z-[10100] w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-sm transition-all duration-300">
+        <div className="w-full mx-auto px-4 md:px-6 flex h-16 items-center justify-between">
           {/* Left Side: Hamburger & Logo */}
           <div className="flex items-center gap-4">
             <Sheet>
-              {/* Mobile/Desktop Hamburger Trigger - Always visible now for consistency if desktop links are removed/hidden, or just md:hidden if we keep desktop links (but I didn't see any). Let's make it always visible if that's the "client style" (Client has hamburger). */}
-              {/* Client uses: Button variant="ghost" size="icon"... */}
-              <SheetTrigger asChild>
+              {/* Mobile Hamburger Trigger - Hidden on PC */}
+              <SheetTrigger asChild className="md:hidden">
                 <Button variant="ghost" size="icon" aria-label="Open menu" className="text-muted-foreground hover:text-foreground">
                   <Menu className="h-6 w-6" />
                 </Button>
@@ -233,13 +233,17 @@ export function Header() {
             </Sheet>
 
             {/* Company logo */}
-            <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
-              <div className="h-10 w-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-md transform rotate-3 hover:rotate-0 transition-transform duration-300">
-                Dr
+            <div className="flex items-center gap-3 cursor-pointer group" onClick={() => navigate('/')}>
+              <div className="relative">
+                <img
+                  src={drCleanIcon}
+                  alt="DrClean"
+                  className="h-10 w-10 object-contain transition-transform duration-300 group-hover:scale-110"
+                />
               </div>
-              <div className="hidden sm:block">
-                <h1 className="text-xl font-bold text-foreground leading-none tracking-tight">Dr.Clean</h1>
-                <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest">Admin Portal</p>
+              <div className="flex flex-col">
+                <h1 className="text-xl font-bold text-foreground leading-none tracking-tight">DrClean</h1>
+                <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-[0.2em] mt-0.5">Admin Portal</p>
               </div>
             </div>
           </div>

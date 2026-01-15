@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -14,6 +15,7 @@ import { Plus, Trash2, Download, Save, FileText, Settings, Lock } from "lucide-r
 import { InvoicePreview } from "@/components/invoices/InvoicePreview";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
+import { uploadToCloudinary } from "@/lib/cloudinary";
 
 interface InvoiceItem {
   id: string;
@@ -56,7 +58,8 @@ export default function InvoiceGenerator() {
   });
   const [variableSymbol, setVariableSymbol] = useState("");
   const [notes, setNotes] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<'bank_transfer' | 'cash'>('bank_transfer');
+  const [paymentMethod, setPaymentMethod] = useState<'bank_transfer' | 'cash'>('cash');
+  const [datePaid, setDatePaid] = useState<string>("");
   const [items, setItems] = useState<InvoiceItem[]>([
     { id: crypto.randomUUID(), description: "", quantity: 0, unit_price: 0, vat_rate: 0 }
   ]);
@@ -85,6 +88,12 @@ export default function InvoiceGenerator() {
   useEffect(() => {
     setVariableSymbol(invoiceNumber);
   }, [invoiceNumber]);
+
+  useEffect(() => {
+    if (paymentMethod === 'cash' && !datePaid) {
+      setDatePaid(new Date().toISOString().split('T')[0]);
+    }
+  }, [paymentMethod]);
 
   const fetchCompanyInfo = async () => {
     if (!user) return;
@@ -395,9 +404,10 @@ export default function InvoiceGenerator() {
     if (!user) return;
     setLoading(true);
 
-    try {
-      const totals = calculateTotals();
+    const totals = calculateTotals();
+    const saveToastId = toast.loading("Ukládání faktury...");
 
+    try {
       let resolvedClientId: string | null =
         selectedClientId ||
         (clients.find(
@@ -406,8 +416,6 @@ export default function InvoiceGenerator() {
             (clientName || "").trim().toLowerCase()
         )?.id ?? null);
 
-      // If admin assigned the invoice to a booking, always resolve the client from that booking
-      // so the client can see it in Dashboard (green box) and in Faktury.
       if (!resolvedClientId && selectedBookingId && selectedBookingId !== "none") {
         const { data: bookingClient, error: bookingClientError } = await supabase
           .from("bookings")
@@ -418,6 +426,8 @@ export default function InvoiceGenerator() {
         if (bookingClientError) throw bookingClientError;
         resolvedClientId = bookingClient?.client_id ?? null;
       }
+
+      toast.loading("Vytváření záznamu v databázi...", { id: saveToastId });
 
       // Save invoice
       const { data: invoice, error: invoiceError } = await supabase
@@ -465,25 +475,6 @@ export default function InvoiceGenerator() {
 
       if (itemsError) throw itemsError;
 
-      // Generate and upload PDF
-      const pdf = await generateInvoicePDF();
-      if (pdf) {
-        const pdfBlob = pdf.output('blob');
-        const fileName = `${user.id}/${invoiceNumber}.pdf`;
-
-        const { error: uploadError } = await supabase.storage
-          .from('invoices')
-          .upload(fileName, pdfBlob, { upsert: true });
-
-        if (uploadError) throw uploadError;
-
-        // Update invoice with PDF path
-        await supabase
-          .from("invoices")
-          .update({ pdf_path: fileName })
-          .eq("id", invoice.id);
-      }
-
       // Link invoice to booking if one is selected
       if (selectedBookingId && selectedBookingId !== "none") {
         await supabase
@@ -492,7 +483,28 @@ export default function InvoiceGenerator() {
           .eq("id", selectedBookingId);
       }
 
-      toast.success("Faktura byla úspěšně uložena");
+      // Generate and upload PDF
+      toast.loading("Generování PDF dokumentu...", { id: saveToastId });
+
+      try {
+        const pdf = await generateInvoicePDF();
+        if (pdf) {
+          toast.loading("Nahrávání PDF do cloudu...", { id: saveToastId });
+          const pdfBlob = pdf.output('blob');
+          const cloudinaryUrl = await uploadToCloudinary(pdfBlob);
+
+          await supabase
+            .from("invoices")
+            .update({ pdf_path: cloudinaryUrl })
+            .eq("id", invoice.id);
+        }
+      } catch (pdfError) {
+        console.error("PDF/Upload Error:", pdfError);
+        toast.error("Faktura uložena, ale PDF se nepodařilo vygenerovat.", { id: saveToastId });
+        // We don't throw here because the record is already saved
+      }
+
+      toast.success("Faktura byla úspěšně uložena", { id: saveToastId });
 
       // Reset form
       generateInvoiceNumber();
@@ -508,17 +520,17 @@ export default function InvoiceGenerator() {
       setDateDue(newDueDate.toISOString().split('T')[0]);
       setVariableSymbol("");
       setNotes("");
-      setPaymentMethod('bank_transfer');
+      setPaymentMethod('cash');
+      setDatePaid("");
       setSelectedClientId("");
       setSelectedJobId("");
       setSelectedBookingId("");
       setItems([{ id: crypto.randomUUID(), description: "", quantity: 0, unit_price: 0, vat_rate: 0 }]);
 
-      // Refresh completed bookings list
       fetchCompletedBookings();
     } catch (error) {
       console.error("Error saving invoice:", error);
-      toast.error("Chyba při ukládání faktury");
+      toast.error("Chyba při ukládání faktury", { id: saveToastId });
     } finally {
       setLoading(false);
     }
@@ -526,16 +538,364 @@ export default function InvoiceGenerator() {
 
   const totals = calculateTotals();
 
+  const renderFormContent = () => (
+    <div className="space-y-6">
+      <div className="flex items-center gap-2 pb-2 border-b">
+        <FileText className="h-5 w-5 text-primary" />
+        <h2 className="text-xl font-semibold">Základní údaje</h2>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="space-y-2">
+          <Label className="text-sm font-medium">Číslo faktury</Label>
+          <Input
+            value={invoiceNumber}
+            onChange={(e) => setInvoiceNumber(e.target.value)}
+            className="bg-white"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label className="text-sm font-medium">Datum vystavení</Label>
+          <Input type="date" value={dateCreated} onChange={(e) => {
+            setDateCreated(e.target.value);
+            setPerformanceDates([{ id: crypto.randomUUID(), startDate: e.target.value }]);
+            const dueDate = new Date(e.target.value);
+            dueDate.setDate(dueDate.getDate() + 14);
+            setDateDue(dueDate.toISOString().split('T')[0]);
+          }} className="bg-white" />
+        </div>
+        <div className="space-y-2">
+          <Label className="text-sm font-medium">Datum splatnosti</Label>
+          <Input type="date" value={dateDue} onChange={(e) => setDateDue(e.target.value)} className="bg-white" />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label className="text-sm font-medium font-bold text-primary">Přiřadit k rezervaci (volitelné)</Label>
+        <Select value={selectedBookingId} onValueChange={setSelectedBookingId}>
+          <SelectTrigger className="bg-white">
+            <SelectValue placeholder="Vyberte dokončenou rezervaci" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">-- Bez přiřazení --</SelectItem>
+            {completedBookings.map((booking) => {
+              const serviceLabels: Record<string, string> = {
+                home_cleaning: 'Úklid domácnosti',
+                commercial_cleaning: 'Komerční úklid',
+                window_cleaning: 'Mytí oken',
+                post_construction_cleaning: 'Úklid po stavbě',
+                upholstery_cleaning: 'Čištění čalounění'
+              };
+              return (
+                <SelectItem key={booking.id} value={booking.id}>
+                  {booking.client_name} - {serviceLabels[booking.service_type] || booking.service_type} ({new Date(booking.scheduled_date).toLocaleDateString('cs-CZ')})
+                </SelectItem>
+              );
+            })}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          {paymentMethod === 'bank_transfer' ? (
+            <>
+              <Label className="text-sm font-medium">Variabilní symbol</Label>
+              <Input value={variableSymbol} onChange={(e) => setVariableSymbol(e.target.value)} placeholder="Auto-filled" disabled className="bg-slate-50" />
+            </>
+          ) : (
+            <>
+              <Label className="text-sm font-medium">Datum úhrady</Label>
+              <Input type="date" value={datePaid} onChange={(e) => setDatePaid(e.target.value)} className="bg-white" />
+            </>
+          )}
+        </div>
+        <div className="space-y-2">
+          <Label className="text-sm font-medium">Způsob platby</Label>
+          <Select value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as 'bank_transfer' | 'cash')}>
+            <SelectTrigger className="bg-white">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="bank_transfer">Převodem</SelectItem>
+              <SelectItem value="cash">Hotově</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        <div className="flex items-center justify-between border-b pb-2">
+          <div className="flex items-center gap-2">
+            <Plus className="h-4 w-4 text-primary" />
+            <Label className="text-base font-semibold">Datumy plnění</Label>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setPerformanceDates([...performanceDates, { id: crypto.randomUUID(), startDate: new Date().toISOString().split('T')[0] }])}
+            className="h-8"
+          >
+            Přidat datum
+          </Button>
+        </div>
+        <div className="space-y-3">
+          {performanceDates.map((dateItem, index) => (
+            <div key={dateItem.id} className="flex gap-2 items-end bg-slate-50 p-3 rounded-lg border border-slate-100">
+              <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <span className="text-[10px] uppercase text-muted-foreground font-bold">Od</span>
+                  <Input
+                    type="date"
+                    value={dateItem.startDate}
+                    onChange={(e) => {
+                      const updated = [...performanceDates];
+                      updated[index].startDate = e.target.value;
+                      setPerformanceDates(updated);
+                    }}
+                    className="bg-white h-9"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <span className="text-[10px] uppercase text-muted-foreground font-bold">Do (volitelné)</span>
+                  <Input
+                    type="date"
+                    value={dateItem.endDate || ''}
+                    onChange={(e) => {
+                      const updated = [...performanceDates];
+                      updated[index].endDate = e.target.value || undefined;
+                      setPerformanceDates(updated);
+                    }}
+                    className="bg-white h-9"
+                  />
+                </div>
+              </div>
+              {performanceDates.length > 1 && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setPerformanceDates(performanceDates.filter(d => d.id !== dateItem.id))}
+                  className="text-destructive hover:bg-destructive/10 h-9 w-9"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2 pt-4 pb-2 border-b">
+        <Lock className="h-5 w-5 text-primary" />
+        <h2 className="text-xl font-semibold">Odběratel</h2>
+      </div>
+
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <Label className="text-sm font-medium">Vybrat ze seznamu klientů</Label>
+          <Select value={selectedClientId} onValueChange={handleClientSelect}>
+            <SelectTrigger className="bg-white">
+              <SelectValue placeholder="Vyberte klienta..." />
+            </SelectTrigger>
+            <SelectContent>
+              {clients.map(client => (
+                <SelectItem key={client.id} value={client.id}>{client.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {selectedClientId && jobs.length > 0 && (
+          <div className="space-y-2">
+            <Label className="text-sm font-medium text-primary font-bold">Načíst z práce (Autofill)</Label>
+            <Select value={selectedJobId} onValueChange={handleJobSelect}>
+              <SelectTrigger className="bg-white">
+                <SelectValue placeholder="Vyberte práci..." />
+              </SelectTrigger>
+              <SelectContent>
+                {jobs.map(job => (
+                  <SelectItem key={job.id} value={job.id}>
+                    {job.job_number} - {job.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">IČO *</Label>
+            <Input
+              value={clientIco}
+              onChange={(e) => setClientIco(e.target.value)}
+              placeholder="Identifikační číslo"
+              onBlur={(e) => fetchCompanyFromAres(e.target.value)}
+              className="bg-white"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">DIČ</Label>
+            <Input value={clientDic} onChange={(e) => setClientDic(e.target.value)} placeholder="Daňové číslo" className="bg-white" />
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-sm font-medium">Název klienta *</Label>
+          <Input value={clientName} onChange={(e) => setClientName(e.target.value)} placeholder="Jméno nebo firma" className="bg-white" />
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-sm font-medium">Adresa</Label>
+          <Textarea
+            value={clientAddress}
+            onChange={(e) => setClientAddress(e.target.value)}
+            placeholder="Ulice, Město, PSČ"
+            rows={2}
+            className="bg-white min-h-[80px]"
+          />
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Email</Label>
+            <Input type="email" value={clientEmail} onChange={(e) => setClientEmail(e.target.value)} className="bg-white" />
+          </div>
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Telefon</Label>
+            <Input value={clientPhone} onChange={(e) => setClientPhone(e.target.value)} className="bg-white" />
+          </div>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2 pt-4 pb-2 border-b">
+        <Plus className="h-5 w-5 text-primary" />
+        <h2 className="text-xl font-semibold">Položky faktury</h2>
+      </div>
+
+      <div className="space-y-4">
+        {items.map((item, index) => (
+          <Card key={item.id} className="p-4 space-y-4 shadow-sm border bg-slate-50/50">
+            <div className="flex justify-between items-center bg-white p-2 rounded-t-lg -m-4 mb-2 border-b">
+              <span className="font-bold text-xs uppercase tracking-wider text-muted-foreground ml-2">Položka {index + 1}</span>
+              {items.length > 1 && (
+                <Button variant="ghost" size="sm" onClick={() => removeItem(item.id)} className="text-destructive h-7 px-2">
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  Smazat
+                </Button>
+              )}
+            </div>
+
+            <div className="space-y-2 pt-2">
+              <Label className="text-xs font-bold">Popis služby *</Label>
+              <Input
+                value={item.description}
+                onChange={(e) => updateItem(item.id, 'description', e.target.value)}
+                placeholder="Např. Úklid domácnosti"
+                className="bg-white"
+              />
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-1">
+                <Label className="text-[10px] font-bold uppercase">Množství</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={item.quantity}
+                  onChange={(e) => updateItem(item.id, 'quantity', parseFloat(e.target.value) || 0)}
+                  className="bg-white h-9"
+                />
+              </div>
+              <div className="space-y-1 col-span-1">
+                <Label className="text-[10px] font-bold uppercase">{item.quantity > 0 ? 'Cena/j.' : 'Cena'}</Label>
+                <Input type="number" min="0" step="1" value={item.unit_price} onChange={(e) => updateItem(item.id, 'unit_price', parseFloat(e.target.value) || 0)} className="bg-white h-9" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[10px] font-bold uppercase">DPH %</Label>
+                <Input type="number" min="0" step="1" value={item.vat_rate} onChange={(e) => updateItem(item.id, 'vat_rate', parseFloat(e.target.value) || 0)} className="bg-white h-9" />
+              </div>
+            </div>
+
+            <div className="text-[10px] font-mono text-muted-foreground flex justify-between bg-white/50 p-2 rounded border border-dashed">
+              <span>Základ: {(item.quantity > 0 ? item.quantity * item.unit_price : item.unit_price).toLocaleString('cs-CZ', { minimumFractionDigits: 2 })} Kč</span>
+              <span>DPH: {((item.quantity > 0 ? item.quantity * item.unit_price : item.unit_price) * item.vat_rate / 100).toLocaleString('cs-CZ', { minimumFractionDigits: 2 })} Kč</span>
+            </div>
+          </Card>
+        ))}
+
+        <Button onClick={addItem} variant="outline" className="w-full border-dashed border-2 hover:bg-primary/5 hover:text-primary hover:border-primary/50 py-6" size="sm">
+          <Plus className="h-5 w-5 mr-2" />
+          Přidat další položku
+        </Button>
+      </div>
+
+      <div className="space-y-2 pt-4">
+        <Label className="text-sm font-medium">Poznámka</Label>
+        <Textarea
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          placeholder="Doplňující informace..."
+          rows={3}
+          className="bg-white"
+        />
+      </div>
+
+      <div className="pt-6 space-y-3 border-t-2 border-primary/10">
+        <div className="flex justify-between items-center">
+          <span className="text-sm text-muted-foreground">Mezisoučet:</span>
+          <span className="font-medium">{totals.subtotal.toLocaleString('cs-CZ', { minimumFractionDigits: 2 })} Kč</span>
+        </div>
+        <div className="flex justify-between items-center">
+          <span className="text-sm text-muted-foreground">Celkem DPH:</span>
+          <span>{totals.vatAmount.toLocaleString('cs-CZ', { minimumFractionDigits: 2 })} Kč</span>
+        </div>
+        <div className="flex justify-between items-center pt-2 border-t border-dashed">
+          <span className="text-lg font-bold">Celkem k úhradě:</span>
+          <span className="text-2xl font-black text-primary">{totals.total.toLocaleString('cs-CZ', { minimumFractionDigits: 2 })} Kč</span>
+        </div>
+      </div>
+    </div>
+  );
+  const renderPreview = () => (
+    <Card id="invoice-preview-container" className="p-0 border-none shadow-xl bg-white overflow-hidden w-full">
+      <InvoicePreview
+        companyInfo={companyInfo}
+        invoiceNumber={invoiceNumber}
+        clientName={clientName}
+        clientVat={clientIco}
+        clientDic={clientDic}
+        clientAddress={clientAddress}
+        clientEmail={clientEmail}
+        clientPhone={clientPhone}
+        dateCreated={dateCreated}
+        performanceDates={performanceDates}
+        dateDue={dateDue}
+        datePaid={datePaid}
+        variableSymbol={variableSymbol}
+        paymentMethod={paymentMethod}
+        items={items}
+        notes={notes}
+        subtotal={totals.subtotal}
+        vatAmount={totals.vatAmount}
+        total={totals.total}
+      />
+    </Card>
+  );
+
   return (
     <Layout>
-      <div className="p-6">
-        <div className="mb-6 flex items-start justify-between">
+      <div className="p-4 md:p-6 pb-24 lg:pb-6">
+        <div className="mb-6 flex flex-col md:flex-row md:items-start justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold">Invoice Generator</h1>
+            <h1 className="text-2xl md:text-3xl font-bold">Invoice Generator</h1>
             <p className="text-muted-foreground">Create & Preview Invoices</p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button onClick={downloadPDF} variant="outline">
+            <Button onClick={downloadPDF} variant="outline" size="sm" className="hidden sm:flex">
               <Download className="h-4 w-4 mr-2" />
               Download PDF
             </Button>
@@ -543,6 +903,7 @@ export default function InvoiceGenerator() {
               onClick={saveInvoice}
               disabled={loading || !clientName || items.some(i => !i.description) || isInvoiceUser}
               className={isInvoiceUser ? "opacity-50 cursor-not-allowed" : ""}
+              size="sm"
             >
               {isInvoiceUser ? <Lock className="h-4 w-4 mr-2" /> : <Save className="h-4 w-4 mr-2" />}
               {loading ? "Saving..." : "Save Invoice"}
@@ -552,312 +913,76 @@ export default function InvoiceGenerator() {
               variant="outline"
               disabled={isInvoiceUser}
               className={isInvoiceUser ? "opacity-50 cursor-not-allowed" : ""}
+              size="sm"
             >
               {isInvoiceUser ? <Lock className="h-4 w-4 mr-2" /> : <FileText className="h-4 w-4 mr-2" />}
               Storage
             </Button>
-            <Button onClick={() => navigate('/invoices/default-info')} variant="outline">
+            <Button onClick={() => navigate('/invoices/default-info')} variant="outline" size="sm">
               <Settings className="h-4 w-4 mr-2" />
-              Default Info
+              Default
             </Button>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Desktop Layout: Grid side-by-side */}
+        <div className="hidden lg:grid grid-cols-2 gap-6 h-[calc(100vh-200px)] overflow-hidden">
           {/* Form Section */}
-          <Card className="p-4 md:p-6 space-y-6 overflow-y-auto h-auto lg:h-[calc(100vh-200px)]">
-            <div className="space-y-4">
-              <h2 className="text-xl font-semibold">Invoice Details</h2>
-
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <Label>Invoice Number</Label>
-                  <Input value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.target.value)} />
-                </div>
-                <div>
-                  <Label>Date of Issue</Label>
-                  <Input type="date" value={dateCreated} onChange={(e) => {
-                    setDateCreated(e.target.value);
-                    setPerformanceDates([{ id: crypto.randomUUID(), startDate: e.target.value }]);
-                    const dueDate = new Date(e.target.value);
-                    dueDate.setDate(dueDate.getDate() + 14);
-                    setDateDue(dueDate.toISOString().split('T')[0]);
-                  }} />
-                </div>
-                <div>
-                  <Label>Due Date</Label>
-                  <Input type="date" value={dateDue} onChange={(e) => setDateDue(e.target.value)} />
-                </div>
-              </div>
-
-              {/* Booking Assignment */}
-              <div>
-                <Label>Přiřadit k rezervaci (volitelné)</Label>
-                <Select value={selectedBookingId} onValueChange={setSelectedBookingId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Vyberte dokončenou rezervaci" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">-- Bez přiřazení --</SelectItem>
-                    {completedBookings.map((booking) => {
-                      const serviceLabels: Record<string, string> = {
-                        home_cleaning: 'Úklid domácnosti',
-                        commercial_cleaning: 'Komerční úklid',
-                        window_cleaning: 'Mytí oken',
-                        post_construction_cleaning: 'Úklid po stavbě',
-                        upholstery_cleaning: 'Čištění čalounění'
-                      };
-                      return (
-                        <SelectItem key={booking.id} value={booking.id}>
-                          {booking.client_name} - {serviceLabels[booking.service_type] || booking.service_type} ({new Date(booking.scheduled_date).toLocaleDateString('cs-CZ')})
-                        </SelectItem>
-                      );
-                    })}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <Label>Variable Symbol</Label>
-                  <Input value={variableSymbol} onChange={(e) => setVariableSymbol(e.target.value)} placeholder="Auto-filled" disabled />
-                </div>
-                <div>
-                  <Label>Payment Method</Label>
-                  <Select value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as 'bank_transfer' | 'cash')}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="bank_transfer">Převodem</SelectItem>
-                      <SelectItem value="cash">Hotově</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <Label>Date(s) of Performance</Label>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setPerformanceDates([...performanceDates, { id: crypto.randomUUID(), startDate: new Date().toISOString().split('T')[0] }])}
-                  >
-                    <Plus className="h-4 w-4 mr-1" />
-                    Add Date
-                  </Button>
-                </div>
-                {performanceDates.map((dateItem, index) => (
-                  <div key={dateItem.id} className="flex gap-2 items-start">
-                    <div className="flex-1 grid grid-cols-2 gap-2">
-                      <div>
-                        <Input
-                          type="date"
-                          value={dateItem.startDate}
-                          onChange={(e) => {
-                            const updated = [...performanceDates];
-                            updated[index].startDate = e.target.value;
-                            setPerformanceDates(updated);
-                          }}
-                        />
-                      </div>
-                      <div>
-                        <Input
-                          type="date"
-                          value={dateItem.endDate || ''}
-                          onChange={(e) => {
-                            const updated = [...performanceDates];
-                            updated[index].endDate = e.target.value || undefined;
-                            setPerformanceDates(updated);
-                          }}
-                          placeholder="End date (optional)"
-                        />
-                      </div>
-                    </div>
-                    {performanceDates.length > 1 && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setPerformanceDates(performanceDates.filter(d => d.id !== dateItem.id))}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                ))}
-              </div>
-
-              <h3 className="text-lg font-semibold pt-4">Select Existing Client</h3>
-
-              <Select value={selectedClientId} onValueChange={handleClientSelect}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select client..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {clients.map(client => (
-                    <SelectItem key={client.id} value={client.id}>{client.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              {selectedClientId && jobs.length > 0 && (
-                <div>
-                  <Label>Select Job (Optional)</Label>
-                  <Select value={selectedJobId} onValueChange={handleJobSelect}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select job to autofill..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {jobs.map(job => (
-                        <SelectItem key={job.id} value={job.id}>
-                          {job.job_number} - {job.title}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-              <h3 className="text-lg font-semibold pt-4">Client Information</h3>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <Label>IČO *</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      value={clientIco}
-                      onChange={(e) => setClientIco(e.target.value)}
-                      placeholder="Company ID"
-                      onBlur={(e) => fetchCompanyFromAres(e.target.value)}
-                    />
-                  </div>
-                </div>
-                <div>
-                  <Label>DIČ</Label>
-                  <Input value={clientDic} onChange={(e) => setClientDic(e.target.value)} placeholder="Tax ID" />
-                </div>
-              </div>
-
-              <div>
-                <Label>Client Name *</Label>
-                <Input value={clientName} onChange={(e) => setClientName(e.target.value)} placeholder="Name or company" />
-              </div>
-
-              <div>
-                <Label>Address</Label>
-                <Textarea value={clientAddress} onChange={(e) => setClientAddress(e.target.value)} placeholder="Street, City, Postal Code" rows={2} />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <Label>Email</Label>
-                  <Input type="email" value={clientEmail} onChange={(e) => setClientEmail(e.target.value)} />
-                </div>
-                <div>
-                  <Label>Phone</Label>
-                  <Input value={clientPhone} onChange={(e) => setClientPhone(e.target.value)} />
-                </div>
-              </div>
-
-              <h3 className="text-lg font-semibold pt-4">Invoice Items</h3>
-
-              {items.map((item, index) => (
-                <Card key={item.id} className="p-4 space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="font-medium">Item {index + 1}</span>
-                    {items.length > 1 && (
-                      <Button variant="ghost" size="sm" onClick={() => removeItem(item.id)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-
-                  <div>
-                    <Label>Description *</Label>
-                    <Input value={item.description} onChange={(e) => updateItem(item.id, 'description', e.target.value)} placeholder="Service or product description" />
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div>
-                      <Label>Quantity</Label>
-                      <Input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={item.quantity}
-                        onChange={(e) => updateItem(item.id, 'quantity', parseFloat(e.target.value) || 0)}
-                        placeholder="0 = no qty"
-                      />
-                    </div>
-                    <div>
-                      <Label>{item.quantity > 0 ? 'Price/Unit' : 'Price'}</Label>
-                      <Input type="number" min="0" step="0.01" value={item.unit_price} onChange={(e) => updateItem(item.id, 'unit_price', parseFloat(e.target.value) || 0)} />
-                    </div>
-                    <div>
-                      <Label>VAT %</Label>
-                      <Input type="number" min="0" step="1" value={item.vat_rate} onChange={(e) => updateItem(item.id, 'vat_rate', parseFloat(e.target.value) || 0)} />
-                    </div>
-                  </div>
-
-                  <div className="text-sm text-muted-foreground">
-                    Total: {(item.quantity > 0 ? item.quantity * item.unit_price : item.unit_price).toFixed(2)} CZK (+ VAT: {((item.quantity > 0 ? item.quantity * item.unit_price : item.unit_price) * item.vat_rate / 100).toFixed(2)} CZK)
-                  </div>
-                </Card>
-              ))}
-
-              <Button onClick={addItem} variant="outline" className="w-full">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Item
-              </Button>
-
-              <div>
-                <Label>Notes</Label>
-                <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Additional information" rows={3} />
-              </div>
-
-              <div className="pt-4 space-y-2 border-t">
-                <div className="flex justify-between text-lg">
-                  <span>Subtotal:</span>
-                  <span>{totals.subtotal.toFixed(2)} CZK</span>
-                </div>
-                <div className="flex justify-between text-lg">
-                  <span>VAT:</span>
-                  <span>{totals.vatAmount.toFixed(2)} CZK</span>
-                </div>
-                <div className="flex justify-between text-xl font-bold">
-                  <span>Total:</span>
-                  <span>{totals.total.toFixed(2)} CZK</span>
-                </div>
-              </div>
-            </div>
-          </Card>
+          <div className="overflow-y-auto pr-2">
+            <Card className="p-6 space-y-6">
+              {renderFormContent()}
+            </Card>
+          </div>
 
           {/* Preview Section */}
-          <div className="h-[calc(100vh-200px)] overflow-y-auto">
-            <InvoicePreview
-              companyInfo={companyInfo}
-              invoiceNumber={invoiceNumber}
-              clientName={clientName}
-              clientVat={clientIco}
-              clientDic={clientDic}
-              clientAddress={clientAddress}
-              clientEmail={clientEmail}
-              clientPhone={clientPhone}
-              dateCreated={dateCreated}
-              performanceDates={performanceDates}
-              dateDue={dateDue}
-              variableSymbol={variableSymbol}
-              paymentMethod={paymentMethod}
-              items={items}
-              notes={notes}
-              subtotal={totals.subtotal}
-              vatAmount={totals.vatAmount}
-              total={totals.total}
-            />
+          <div className="overflow-y-auto bg-slate-200/50 rounded-xl p-4 flex justify-center border border-dashed border-slate-300">
+            <div className="w-full max-w-[800px] h-fit">
+              {renderPreview()}
+            </div>
           </div>
+        </div>
+
+        {/* Mobile/Tablet Layout: Tabs */}
+        <div className="lg:hidden">
+          <Tabs defaultValue="form" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 mb-4 bg-white shadow-sm sticky top-0 z-20">
+              <TabsTrigger value="form" className="data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none">Úprava</TabsTrigger>
+              <TabsTrigger value="preview" className="data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none">Náhled</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="form">
+              <Card className="p-4 space-y-6 border-none shadow-none bg-transparent">
+                {renderFormContent()}
+              </Card>
+
+              <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t z-50 lg:hidden shadow-[0_-4px_10px_rgba(0,0,0,0.05)]">
+                <Button
+                  onClick={saveInvoice}
+                  className="w-full h-12 text-lg font-bold"
+                  disabled={loading || !clientName || items.some(i => !i.description) || isInvoiceUser}
+                >
+                  <Save className="h-5 w-5 mr-2" />
+                  {loading ? "Ukládání..." : "Uložit fakturu"}
+                </Button>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="preview">
+              <div className="bg-slate-200/50 rounded-xl p-0.5 flex justify-center border border-dashed border-slate-300 min-h-[500px] overflow-hidden">
+                <div className="w-full overflow-x-auto scrollbar-hide py-4">
+                  <div className="w-[800px] mx-auto origin-top scale-[0.4] sm:scale-[0.55] md:scale-[0.75] transform-gpu transition-all">
+                    {renderPreview()}
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-8 mb-24 px-4 text-center">
+                <p className="text-xs text-muted-foreground italic">
+                  Toto je pouze náhled dokumentu. Pro uložení se vraťte na kartu "Úprava".
+                </p>
+              </div>
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </Layout>

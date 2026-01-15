@@ -29,6 +29,7 @@ export default function ClientBilling() {
   const [companyInfo, setCompanyInfo] = useState<any>(null);
   const [clientId, setClientId] = useState<string | null>(null);
   const [teamMembers, setTeamMembers] = useState<Record<string, string>>({});
+  const [loyaltyCredits, setLoyaltyCredits] = useState<number>(0);
 
   // Rating state
   const [ratingBookingId, setRatingBookingId] = useState<string | null>(null);
@@ -169,6 +170,17 @@ export default function ClientBilling() {
         }
         setCompanyInfo(companyData);
 
+        // Fetch loyalty credits
+        const { data: loyaltyData } = await supabase
+          .from('loyalty_credits')
+          .select('current_credits')
+          .eq('client_id', client.id)
+          .maybeSingle();
+
+        if (loyaltyData) {
+          setLoyaltyCredits(loyaltyData.current_credits);
+        }
+
         // Fetch existing feedback for bookings
         const {
           data: feedbackData
@@ -268,19 +280,37 @@ export default function ClientBilling() {
   };
   const handleDownload = async (pdfPath: string) => {
     try {
-      const {
-        data,
-        error
-      } = await supabase.storage.from('invoices').download(pdfPath);
-      if (error) throw error;
-      const url = URL.createObjectURL(data);
+      let downloadUrl = "";
+
+      if (pdfPath.startsWith('http')) {
+        // It's a Cloudinary URL
+        downloadUrl = pdfPath;
+
+        // Force download for Cloudinary
+        if (downloadUrl.includes('cloudinary.com')) {
+          downloadUrl = downloadUrl.replace('/upload/', '/upload/fl_attachment/');
+        }
+      } else {
+        // It's an old Supabase path
+        const { data, error } = await supabase.storage
+          .from('invoices').download(pdfPath);
+        if (error) throw error;
+        downloadUrl = URL.createObjectURL(data);
+      }
+
       const a = document.createElement('a');
-      a.href = url;
+      a.href = downloadUrl;
       a.download = pdfPath.split('/').pop() || 'faktura.pdf';
+      document.body.appendChild(a);
       a.click();
-      URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      if (!pdfPath.startsWith('http')) {
+        URL.revokeObjectURL(downloadUrl);
+      }
     } catch (error) {
       console.error('Error downloading invoice:', error);
+      toast.error('Chyba při stahování faktury');
     }
   };
   const getStatusText = (status: string) => {
@@ -389,6 +419,7 @@ export default function ClientBilling() {
             booking={booking}
             onRatingSubmit={handleRatingSubmit}
             isCollapsible={true}
+            currentLoyaltyPoints={loyaltyCredits}
           />
         ))
       )}

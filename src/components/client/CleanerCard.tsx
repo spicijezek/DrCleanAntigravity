@@ -14,32 +14,36 @@ interface CleanerCardProps {
 export function CleanerCard({ name, userId, avatarPath, fullName, bio }: CleanerCardProps) {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
-  
+
   useEffect(() => {
     if (avatarPath) {
-      // Try public URL first since bucket is public
-      const publicUrl = supabase.storage
-        .from('avatars')
-        .getPublicUrl(avatarPath);
-      
-      if (publicUrl.data) {
-        setAvatarUrl(publicUrl.data.publicUrl);
+      if (avatarPath.startsWith('http')) {
+        setAvatarUrl(avatarPath);
       } else {
-        // Fallback to signed URL
-        supabase.storage
+        // Try public URL first since bucket is public
+        const publicUrl = supabase.storage
           .from('avatars')
-          .createSignedUrl(avatarPath, 3600)
-          .then(({ data }) => {
-            if (data) setAvatarUrl(data.signedUrl);
-          });
+          .getPublicUrl(avatarPath);
+
+        if (publicUrl.data) {
+          setAvatarUrl(publicUrl.data.publicUrl);
+        } else {
+          // Fallback to signed URL
+          supabase.storage
+            .from('avatars')
+            .createSignedUrl(avatarPath, 3600)
+            .then(({ data }) => {
+              if (data) setAvatarUrl(data.signedUrl);
+            });
+        }
       }
     }
   }, [avatarPath]);
-  
+
   return (
     <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
       <div className="flex-shrink-0">
-      {avatarUrl ? (
+        {avatarUrl ? (
           <img
             src={avatarUrl}
             alt={name}

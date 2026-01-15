@@ -17,16 +17,16 @@ export default function CleanerAuth() {
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [rememberMe, setRememberMe] = useState(true);
 
   useEffect(() => {
-    if (user) {
+    if (user && profile?.roles?.includes('cleaner')) {
       navigate('/cleaner/dashboard', { replace: true });
     }
-  }, [user, navigate]);
+  }, [user, profile, navigate]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();

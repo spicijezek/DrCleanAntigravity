@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { ModalOverlay } from '@/components/ui/modal-overlay';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { uploadToCloudinary } from '@/lib/cloudinary';
 
 interface AddProtocolFormProps {
   onClose: () => void;
@@ -27,32 +28,24 @@ export function AddProtocolForm({ onClose, onProtocolAdded }: AddProtocolFormPro
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  if (!user) return;
-  if (!file) {
-    toast({ title: 'Select a file', description: 'Please choose a PDF or Word document', variant: 'destructive' });
-    return;
-  }
+    e.preventDefault();
+    if (!user) return;
+    if (!file) {
+      toast({ title: 'Select a file', description: 'Please choose a PDF or Word document', variant: 'destructive' });
+      return;
+    }
 
-  setLoading(true);
+    setLoading(true);
     try {
-      // Upload file to storage
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-      const filePath = `${user.id}/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('protocols')
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
+      // Upload file to Cloudinary instead of Supabase
+      const cloudinaryUrl = await uploadToCloudinary(file);
 
       // Save protocol metadata to database
       const protocolData = {
         title: formData.title,
         description: formData.description || null,
         file_name: file.name,
-        file_path: filePath,
+        file_path: cloudinaryUrl,
         file_size: file.size,
         mime_type: file.type,
         tags: formData.tags ? formData.tags.split(',').map(tag => tag.trim()).filter(Boolean) : null,
@@ -69,7 +62,7 @@ export function AddProtocolForm({ onClose, onProtocolAdded }: AddProtocolFormPro
         title: 'Success',
         description: 'Protocol uploaded successfully',
       });
-      
+
       onProtocolAdded();
     } catch (error: any) {
       toast({
@@ -102,7 +95,7 @@ export function AddProtocolForm({ onClose, onProtocolAdded }: AddProtocolFormPro
         });
         return;
       }
-      
+
       // Check file size (max 10MB)
       if (selectedFile.size > 10 * 1024 * 1024) {
         toast({
@@ -112,7 +105,7 @@ export function AddProtocolForm({ onClose, onProtocolAdded }: AddProtocolFormPro
         });
         return;
       }
-      
+
       setFile(selectedFile);
     }
   };

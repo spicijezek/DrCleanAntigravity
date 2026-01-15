@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { ClientLoading } from '@/components/client/ClientLoading';
 import { ClientEmptyState } from '@/components/client/dashboard/ClientEmptyState';
@@ -15,20 +15,44 @@ export default function ClientDashboard() {
     bookings,
     loyaltyCredits,
     isLoading,
-    submitRating
+    submitRating,
+    markAsViewed
   } = useClientDashboardData();
+
+  // Mark terminal bookings as viewed when they appear on dashboard
+  useEffect(() => {
+    const bookingsToMarkAsViewed = bookings?.filter(b =>
+      b.status === 'completed' &&
+      (b.invoice?.status === 'paid' || b.skip_invoice) &&
+      !b.client_viewed_at
+    );
+
+    if (bookingsToMarkAsViewed && bookingsToMarkAsViewed.length > 0) {
+      // Mark them as viewed after a short delay to ensure client sees them
+      const timer = setTimeout(() => {
+        bookingsToMarkAsViewed.forEach(b => markAsViewed.mutate(b.id));
+      }, 2000); // 2 second delay
+      return () => clearTimeout(timer);
+    }
+  }, [bookings, markAsViewed]);
 
   // Filter active bookings
   const activeBookings = useMemo(() => {
     if (!bookings) return [];
     return bookings.filter(b => {
-      // If invoice is paid, hide it from dashboard (moved to history/billing)
-      if (b.invoice?.status === 'paid') return false;
+      // 1. Pending, Approved, In Progress are always active
+      if (b.status !== 'completed') return true;
 
-      // If skip_invoice is true and client has viewed it (has feedback or was explicitly viewed), hide it
-      if (b.status === 'completed' && b.skip_invoice && b.client_viewed_at) return false;
+      // 2. Completed: If overdue, always show
+      if (b.invoice?.status === 'overdue') return true;
 
-      return true;
+      // 3. Completed: If paid OR skipped, show only if NOT yet viewed
+      if ((b.invoice?.status === 'paid' || b.skip_invoice) && !b.client_viewed_at) return true;
+
+      // 4. Completed: If no invoice assigned yet (and not skipped), show until feedback is given
+      if (!b.invoice && !b.skip_invoice && !b.feedback) return true;
+
+      return false;
     });
   }, [bookings]);
 

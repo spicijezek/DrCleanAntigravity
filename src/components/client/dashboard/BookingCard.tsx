@@ -19,6 +19,7 @@ import { BookingFeedback } from './BookingFeedback';
 import { BookingRoomTracker } from './BookingRoomTracker';
 
 import { AnimatedPoints } from './AnimatedPoints';
+import { LoyaltyTracker } from './LoyaltyTracker';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 
@@ -117,6 +118,62 @@ export function BookingCard({ booking, onRatingSubmit, currentLoyaltyPoints, isC
                             </div>
                         </div>
 
+                        {/* PROMOTED ACTIONS (Rating / Payment / Skip Status) - Right under address */}
+                        {isCompleted && (
+                            <div className="space-y-4">
+                                {booking.invoice ? (
+                                    <div className="p-5 rounded-2xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/50 space-y-4 shadow-sm animate-in fade-in slide-in-from-top-2 duration-700">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <Banknote className={`h-5 w-5 ${booking.invoice.status === 'overdue' ? 'text-red-600' : 'text-amber-600'}`} />
+                                                <span className="text-sm font-bold uppercase tracking-wider">Platební údaje</span>
+                                            </div>
+                                            <Badge variant="secondary" className={cn(
+                                                "px-3 py-1 text-[11px] font-bold rounded-full border shadow-sm",
+                                                booking.invoice.status === 'paid' ? 'bg-green-100 text-green-800 border-green-200' :
+                                                    booking.invoice.status === 'overdue' ? 'bg-red-100 text-red-800 border-red-200 shadow-sm animate-pulse' :
+                                                        'bg-amber-100 text-amber-800 border-amber-200 shadow-sm'
+                                            )}>
+                                                {booking.invoice.status === 'paid' ? 'Zaplaceno' : booking.invoice.status === 'overdue' ? 'Po splatnosti' : 'K úhradě'}
+                                            </Badge>
+                                        </div>
+                                        <div className="space-y-2.5 text-sm">
+                                            {booking.company_info?.bank_account && (
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-muted-foreground">Číslo účtu:</span>
+                                                    <span className="font-bold tabular-nums">{booking.company_info.bank_account}/{booking.company_info.bank_code}</span>
+                                                </div>
+                                            )}
+                                            {booking.invoice.variable_symbol && (
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-muted-foreground">Variabilní symbol:</span>
+                                                    <span className="font-bold tabular-nums">{booking.invoice.variable_symbol}</span>
+                                                </div>
+                                            )}
+                                            <div className="flex justify-between items-center border-t border-amber-200/30 pt-3 mt-3">
+                                                <span className="text-muted-foreground font-medium">Celkem k úhradě:</span>
+                                                <span className="font-black text-2xl text-amber-900 dark:text-amber-100">{booking.invoice.total.toLocaleString('cs-CZ')} Kč</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ) : booking.skip_invoice ? (
+                                    <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200/50 dark:border-slate-800 flex items-center gap-4 animate-in fade-in slide-in-from-top-2 duration-700">
+                                        <div className="h-10 w-10 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center shadow-sm text-slate-400">
+                                            <CheckCircle2 className="h-5 w-5" />
+                                        </div>
+                                        <div>
+                                            <p className="font-bold text-slate-900 dark:text-slate-100">Hotovo</p>
+                                            <p className="text-sm text-muted-foreground">Fakturace k tomuto úklidu byla přeskočena.</p>
+                                        </div>
+                                    </div>
+                                ) : !booking.feedback ? (
+                                    <div className="animate-in fade-in slide-in-from-top-2 duration-700">
+                                        <BookingFeedback bookingId={booking.id} onSubmit={onRatingSubmit} />
+                                    </div>
+                                ) : null}
+                            </div>
+                        )}
+
                         {isCollapsible && (
                             <div className="flex justify-center px-4">
                                 <CollapsibleTrigger asChild>
@@ -170,19 +227,25 @@ export function BookingCard({ booking, onRatingSubmit, currentLoyaltyPoints, isC
                                     <BookingRoomTracker checklist={booking.checklist} />
                                 )}
 
-                                {/* 3. Loyalty Points container */}
+                                {/* 3. Loyalty Points container - Renamed and Added Tracker */}
                                 {singlePoints > 0 && (
-                                    <div className="p-4 rounded-2xl bg-amber-50/50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-900/50 flex items-center gap-3">
-                                        <div className="h-10 w-10 rounded-xl bg-white dark:bg-slate-800 flex items-center justify-center shadow-sm text-amber-600 border border-amber-100">
-                                            <Sparkles className="h-5 w-5" />
-                                        </div>
-                                        <div>
-                                            <p className="text-[10px] font-bold text-amber-800 dark:text-amber-300 uppercase tracking-widest">Loajalitní body</p>
-                                            <div className="text-lg font-bold text-amber-900 dark:text-amber-100 flex items-baseline gap-1">
-                                                <span><AnimatedPoints end={singlePoints} /></span>
-                                                <span className="text-xs font-medium">bodů</span>
+                                    <div className="p-4 rounded-2xl bg-amber-50/50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-900/50 flex flex-col gap-3">
+                                        <div className="flex items-center gap-3">
+                                            <div className="h-10 w-10 rounded-xl bg-white dark:bg-slate-800 flex items-center justify-center shadow-sm text-amber-600 border border-amber-100">
+                                                <Sparkles className="h-5 w-5" />
+                                            </div>
+                                            <div>
+                                                <p className="text-[10px] font-bold text-amber-800 dark:text-amber-300 uppercase tracking-widest">ZA TENTO ÚKLID ZÍSKÁTE</p>
+                                                <div className="text-lg font-bold text-amber-900 dark:text-amber-100 flex items-baseline gap-1">
+                                                    <span><AnimatedPoints end={singlePoints} /></span>
+                                                    <span className="text-xs font-medium">bodů</span>
+                                                </div>
                                             </div>
                                         </div>
+
+                                        {currentLoyaltyPoints !== undefined && (
+                                            <LoyaltyTracker currentCredits={currentLoyaltyPoints} />
+                                        )}
                                     </div>
                                 )}
                             </div>
@@ -254,50 +317,6 @@ export function BookingCard({ booking, onRatingSubmit, currentLoyaltyPoints, isC
                         {!isDeclined && (
                             <div className="pt-2">
                                 <StaffAssignment booking={booking} />
-                            </div>
-                        )}
-
-                        {/* Invoices */}
-                        {isCompleted && booking.invoice && booking.invoice.status !== 'paid' && (
-                            <div className="p-4 rounded-2xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/50 space-y-4 shadow-sm">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                        <Banknote className={`h-4 w-4 ${booking.invoice.status === 'overdue' ? 'text-red-600' : 'text-amber-600'}`} />
-                                        <span className="text-sm font-bold">Platební údaje</span>
-                                    </div>
-                                    <Badge variant="secondary" className={
-                                        booking.invoice.status === 'paid' ? 'bg-green-100 text-green-800 border-green-200' :
-                                            booking.invoice.status === 'overdue' ? 'bg-red-100 text-red-800 border-red-200 shadow-sm animate-pulse' :
-                                                'bg-amber-100 text-amber-800 border-amber-200 shadow-sm'
-                                    }>
-                                        {booking.invoice.status === 'paid' ? 'Zaplaceno' : booking.invoice.status === 'overdue' ? 'Po splatnosti' : 'K úhradě'}
-                                    </Badge>
-                                </div>
-                                <div className="space-y-2 text-sm">
-                                    {booking.company_info?.bank_account && (
-                                        <div className="flex justify-between">
-                                            <span className="text-muted-foreground">Číslo účtu:</span>
-                                            <span className="font-bold">{booking.company_info.bank_account}/{booking.company_info.bank_code}</span>
-                                        </div>
-                                    )}
-                                    {booking.invoice.variable_symbol && (
-                                        <div className="flex justify-between">
-                                            <span className="text-muted-foreground">Variabilní symbol:</span>
-                                            <span className="font-bold">{booking.invoice.variable_symbol}</span>
-                                        </div>
-                                    )}
-                                    <div className="flex justify-between border-t border-amber-200/30 pt-2 mt-2">
-                                        <span className="text-muted-foreground">Celkem k úhradě:</span>
-                                        <span className="font-black text-xl text-amber-900 dark:text-amber-100">{booking.invoice.total.toLocaleString('cs-CZ')} Kč</span>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Feedback */}
-                        {isCompleted && !booking.feedback && (
-                            <div className="pt-2">
-                                <BookingFeedback bookingId={booking.id} onSubmit={onRatingSubmit} />
                             </div>
                         )}
 

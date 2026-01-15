@@ -47,7 +47,7 @@ export default function Protocols() {
         .from('protocols')
         .select('*')
         .order('created_at', { ascending: false });
-      
+
       if (error) throw error;
       setProtocols(data || []);
     } catch (error: any) {
@@ -77,20 +77,36 @@ export default function Protocols() {
 
   const downloadProtocol = async (protocol: Protocol) => {
     try {
-      const { data, error } = await supabase.storage
-        .from('protocols')
-        .download(protocol.file_path);
+      let downloadUrl = "";
 
-      if (error) throw error;
+      if (protocol.file_path.startsWith('http')) {
+        // It's a Cloudinary URL
+        downloadUrl = protocol.file_path;
 
-      const url = URL.createObjectURL(data);
+        // Force download for Cloudinary
+        if (downloadUrl.includes('cloudinary.com')) {
+          downloadUrl = downloadUrl.replace('/upload/', '/upload/fl_attachment/');
+        }
+      } else {
+        // It's an old Supabase path
+        const { data, error } = await supabase.storage
+          .from('protocols')
+          .download(protocol.file_path);
+
+        if (error) throw error;
+        downloadUrl = URL.createObjectURL(data);
+      }
+
       const a = document.createElement('a');
-      a.href = url;
+      a.href = downloadUrl;
       a.download = protocol.file_name;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+
+      if (!protocol.file_path.startsWith('http')) {
+        URL.revokeObjectURL(downloadUrl);
+      }
     } catch (error: any) {
       toast({
         title: 'Error',
@@ -102,14 +118,16 @@ export default function Protocols() {
 
   const deleteProtocol = async (protocol: Protocol) => {
     if (!confirm('Are you sure you want to delete this protocol?')) return;
-    
-    try {
-      // Delete file from storage
-      const { error: storageError } = await supabase.storage
-        .from('protocols')
-        .remove([protocol.file_path]);
 
-      if (storageError) throw storageError;
+    try {
+      // Delete file from storage if it's a Supabase path
+      if (protocol.file_path && !protocol.file_path.startsWith('http')) {
+        const { error: storageError } = await supabase.storage
+          .from('protocols')
+          .remove([protocol.file_path]);
+
+        if (storageError) throw storageError;
+      }
 
       // Delete from database
       const { error: dbError } = await supabase
@@ -146,148 +164,148 @@ export default function Protocols() {
     <Layout>
       <div className="p-6 transition-all duration-300">
         <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Protocols</h1>
-          <p className="text-muted-foreground mt-2">Manage your cleaning protocols and documentation</p>
-        </div>
-        <Button onClick={() => setShowAddForm(true)} className="bg-primary hover:bg-primary/90">
-          <Plus className="h-4 w-4 mr-2" />
-          Add Protocol
-        </Button>
-      </div>
-
-      {/* Search */}
-      <div className="relative max-w-md">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-        <Input
-          placeholder="Search protocols..."
-          className="pl-10"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-      </div>
-
-      {/* Protocols Grid */}
-      {filteredProtocols.length === 0 ? (
-        <Card className="p-12">
-          <div className="text-center">
-            <div className="mx-auto h-24 w-24 text-muted-foreground mb-4">
-              <FileText className="h-full w-full" />
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground">Protocols</h1>
+              <p className="text-muted-foreground mt-2">Manage your cleaning protocols and documentation</p>
             </div>
-            <h3 className="text-lg font-medium text-foreground mb-2">No protocols found</h3>
-            <p className="text-muted-foreground mb-6">Start by uploading your first protocol document.</p>
             <Button onClick={() => setShowAddForm(true)} className="bg-primary hover:bg-primary/90">
               <Plus className="h-4 w-4 mr-2" />
               Add Protocol
             </Button>
           </div>
-        </Card>
-      ) : (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {filteredProtocols.map((protocol) => (
-            <Card key={protocol.id} className="hover:shadow-lg transition-shadow">
-              <CardHeader className="pb-4">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <CardTitle className="text-lg mb-2">{protocol.title}</CardTitle>
-                    {protocol.description && (
-                      <p className="text-sm text-muted-foreground line-clamp-2">{protocol.description}</p>
-                    )}
-                  </div>
-                  <FileText className="h-8 w-8 text-muted-foreground ml-2" />
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2 text-sm">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-muted-foreground">
-                      {new Date(protocol.created_at).toLocaleDateString()}
-                    </span>
-                  </div>
-                  
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">File Size:</span>
-                    <span className="font-medium">{formatFileSize(protocol.file_size)}</span>
-                  </div>
-                  
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Type:</span>
-                    <span className="font-medium">{protocol.mime_type}</span>
-                  </div>
-                </div>
 
-                {protocol.tags && protocol.tags.length > 0 && (
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-sm">
-                      <Tag className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-muted-foreground">Tags:</span>
-                    </div>
-                    <div className="flex flex-wrap gap-1">
-                      {protocol.tags.map((tag, index) => (
-                        <Badge key={index} variant="secondary" className="text-xs">
-                          {tag}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                
-                <div className="flex gap-2">
-                  <Button 
-                    onClick={() => downloadProtocol(protocol)}
-                    className="flex-1"
-                    variant="outline"
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    Download
-                  </Button>
-                  <Button 
-                    onClick={() => setEditingProtocol(protocol)}
-                    variant="outline"
-                    size="icon"
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button 
-                    onClick={() => deleteProtocol(protocol)}
-                    variant="destructive"
-                    size="icon"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+          {/* Search */}
+          <div className="relative max-w-md">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Input
+              placeholder="Search protocols..."
+              className="pl-10"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+
+          {/* Protocols Grid */}
+          {filteredProtocols.length === 0 ? (
+            <Card className="p-12">
+              <div className="text-center">
+                <div className="mx-auto h-24 w-24 text-muted-foreground mb-4">
+                  <FileText className="h-full w-full" />
                 </div>
-              </CardContent>
+                <h3 className="text-lg font-medium text-foreground mb-2">No protocols found</h3>
+                <p className="text-muted-foreground mb-6">Start by uploading your first protocol document.</p>
+                <Button onClick={() => setShowAddForm(true)} className="bg-primary hover:bg-primary/90">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Protocol
+                </Button>
+              </div>
             </Card>
-          ))}
+          ) : (
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {filteredProtocols.map((protocol) => (
+                <Card key={protocol.id} className="hover:shadow-lg transition-shadow">
+                  <CardHeader className="pb-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <CardTitle className="text-lg mb-2">{protocol.title}</CardTitle>
+                        {protocol.description && (
+                          <p className="text-sm text-muted-foreground line-clamp-2">{protocol.description}</p>
+                        )}
+                      </div>
+                      <FileText className="h-8 w-8 text-muted-foreground ml-2" />
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2 text-sm">
+                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-muted-foreground">
+                          {new Date(protocol.created_at).toLocaleDateString()}
+                        </span>
+                      </div>
+
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">File Size:</span>
+                        <span className="font-medium">{formatFileSize(protocol.file_size)}</span>
+                      </div>
+
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Type:</span>
+                        <span className="font-medium">{protocol.mime_type}</span>
+                      </div>
+                    </div>
+
+                    {protocol.tags && protocol.tags.length > 0 && (
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 text-sm">
+                          <Tag className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-muted-foreground">Tags:</span>
+                        </div>
+                        <div className="flex flex-wrap gap-1">
+                          {protocol.tags.map((tag, index) => (
+                            <Badge key={index} variant="secondary" className="text-xs">
+                              {tag}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() => downloadProtocol(protocol)}
+                        className="flex-1"
+                        variant="outline"
+                      >
+                        <Download className="h-4 w-4 mr-2" />
+                        Download
+                      </Button>
+                      <Button
+                        onClick={() => setEditingProtocol(protocol)}
+                        variant="outline"
+                        size="icon"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        onClick={() => deleteProtocol(protocol)}
+                        variant="destructive"
+                        size="icon"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+
+          {/* Add Protocol Form */}
+          {showAddForm && (
+            <AddProtocolForm
+              onClose={() => setShowAddForm(false)}
+              onProtocolAdded={() => {
+                fetchProtocols();
+                setShowAddForm(false);
+              }}
+            />
+          )}
+
+          {/* Edit Protocol Form */}
+          {editingProtocol && (
+            <EditProtocolForm
+              protocol={editingProtocol}
+              onClose={() => setEditingProtocol(null)}
+              onProtocolUpdated={() => {
+                fetchProtocols();
+                setEditingProtocol(null);
+              }}
+            />
+          )}
         </div>
-      )}
-
-      {/* Add Protocol Form */}
-      {showAddForm && (
-        <AddProtocolForm
-          onClose={() => setShowAddForm(false)}
-          onProtocolAdded={() => {
-            fetchProtocols();
-            setShowAddForm(false);
-          }}
-        />
-      )}
-
-      {/* Edit Protocol Form */}
-      {editingProtocol && (
-        <EditProtocolForm
-          protocol={editingProtocol}
-          onClose={() => setEditingProtocol(null)}
-          onProtocolUpdated={() => {
-            fetchProtocols();
-            setEditingProtocol(null);
-          }}
-        />
-      )}
-      </div>
       </div>
     </Layout>
   );

@@ -23,10 +23,13 @@ export default function Auth() {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (user) {
+    const isMainAdmin = user?.email === 'stepan.tomov5@seznam.cz';
+    const isAdmin = profile?.roles?.includes('admin') || isMainAdmin;
+
+    if (user && isAdmin) {
       navigate('/');
     }
-  }, [user, navigate]);
+  }, [user, profile, navigate]);
 
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);

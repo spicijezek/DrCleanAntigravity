@@ -40,9 +40,8 @@ interface Booking {
     };
 }
 
-const calculateTimeEstimate = (booking: Booking) => {
-    // Show real time if completed and both timestamps exist
-    if (booking.status === 'completed' && booking.started_at && booking.completed_at) {
+const calculateActualTime = (booking: Booking) => {
+    if (booking.started_at && booking.completed_at) {
         const start = new Date(booking.started_at).getTime();
         const end = new Date(booking.completed_at).getTime();
         const diffMs = end - start;
@@ -53,7 +52,10 @@ const calculateTimeEstimate = (booking: Booking) => {
         const minsStr = diffMins > 0 || diffHrs === 0 ? `${diffMins} min` : '';
         return `Skutečný čas: ${hrsStr}${minsStr}`.trim();
     }
+    return null;
+};
 
+const calculateTimeEstimate = (booking: Booking) => {
     const price = booking.booking_details?.priceEstimate?.price || booking.booking_details?.priceEstimate?.priceMin || 0;
     if (!price) return null;
 
@@ -234,24 +236,37 @@ export default function CleanerHistory() {
                                             </div>
                                         </div>
                                     </div>
-                                    <Badge variant="secondary" className={cn(
-                                        "px-2 py-0.5 text-[10px] font-bold rounded-full border shadow-sm",
-                                        booking.status === 'completed' ? "bg-green-50 text-green-700 border-green-100" :
-                                            booking.status === 'approved' ? "bg-indigo-50 text-indigo-700 border-indigo-100" :
-                                                booking.status === 'in_progress' ? "bg-emerald-100 text-emerald-800 border-emerald-200 animate-pulse" :
-                                                    booking.status === 'pending' ? "bg-amber-50 text-amber-700 border-amber-100" : "bg-red-50 text-red-700 border-red-100"
-                                    )}>
-                                        {booking.status === 'completed' ? 'Dokončeno' :
-                                            booking.status === 'approved' ? 'Schváleno' :
-                                                booking.status === 'in_progress' ? 'Probíhá' :
-                                                    booking.status === 'pending' ? 'Čeká' : 'Zrušeno'}
-                                    </Badge>
+                                    {booking.status === 'in_progress' || (booking.started_at && !booking.completed_at) ? (
+                                        <Badge variant="default" className="w-fit bg-emerald-500 hover:bg-emerald-600 border-0 px-3 py-1 text-sm shadow-md flex items-center gap-1.5 transition-all">
+                                            <span className="relative flex h-2 w-2">
+                                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                                                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-white"></span>
+                                            </span>
+                                            Probíhá
+                                        </Badge>
+                                    ) : booking.status === 'completed' ? (
+                                        <Badge variant="secondary" className="w-fit px-3 py-1 text-sm bg-green-50 text-green-700 border-green-100 dark:bg-green-900/30 dark:text-green-300 dark:border-green-900 font-bold">
+                                            Dokončeno
+                                        </Badge>
+                                    ) : booking.status === 'approved' ? (
+                                        <Badge variant="secondary" className="w-fit px-3 py-1 text-sm bg-blue-50 text-blue-700 border-blue-100 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-900 font-bold">
+                                            Schváleno
+                                        </Badge>
+                                    ) : booking.status === 'pending' ? (
+                                        <Badge variant="secondary" className="w-fit px-3 py-1 text-sm bg-amber-50 text-amber-700 border-amber-100 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-900 font-bold">
+                                            Čeká
+                                        </Badge>
+                                    ) : (
+                                        <Badge variant="secondary" className="w-fit px-3 py-1 text-sm bg-red-50 text-red-700 border-red-100 dark:bg-red-900/30 dark:text-red-300 dark:border-red-900 font-bold">
+                                            Zrušeno
+                                        </Badge>
+                                    )}
                                 </div>
 
                                 <div className="flex flex-wrap gap-2 mt-4">
                                     {booking.booking_details?.cleaner_earnings !== undefined && (
                                         <div className="bg-green-600/10 text-green-700 border border-green-200/50 dark:bg-green-500/10 dark:text-green-400 dark:border-green-500/20 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5">
-                                            <Clock className="h-3.5 w-3.5" />
+                                            <Trophy className="h-3.5 w-3.5" />
                                             Odměna: {booking.booking_details.cleaner_earnings} Kč
                                         </div>
                                     )}
@@ -261,17 +276,20 @@ export default function CleanerHistory() {
                                             {booking.feedback.rating}/10
                                         </div>
                                     )}
-                                    {calculateTimeEstimate(booking) && (
-                                        <div className={cn(
-                                            "border px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5",
-                                            booking.status === 'completed' && booking.started_at && booking.completed_at
-                                                ? "bg-green-50 text-green-700 border-green-200"
-                                                : "bg-amber-50 text-amber-700 border-amber-100 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-900/50"
-                                        )}>
-                                            <Clock className="h-3.5 w-3.5" />
-                                            {calculateTimeEstimate(booking)}
-                                        </div>
-                                    )}
+                                    <div className="flex flex-col gap-2">
+                                        {calculateActualTime(booking) && (
+                                            <div className="bg-green-50 text-green-700 border border-green-200 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 w-fit">
+                                                <Clock className="h-3.5 w-3.5" />
+                                                {calculateActualTime(booking)}
+                                            </div>
+                                        )}
+                                        {calculateTimeEstimate(booking) && (booking.status !== 'completed' || (booking.team_member_ids && booking.team_member_ids.length > 1)) && (
+                                            <div className="bg-amber-50 text-amber-700 border border-amber-100 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-900/50 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 w-fit">
+                                                <Clock className="h-3.5 w-3.5" />
+                                                {calculateTimeEstimate(booking)}
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </CardHeader>
 

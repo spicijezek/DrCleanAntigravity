@@ -55,39 +55,39 @@ export function ClientDetailsPopup({ client, isOpen, onClose, onClientUpdated }:
   const fetchCompanyInfo = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    
+
     const { data } = await supabase
       .from("company_info")
       .select("*")
       .eq("user_id", user.id)
       .single();
-    
+
     if (data) setCompanyInfo(data);
   };
 
-const fetchClientInvoices = async () => {
-  // Try by client_id first
-  const { data: byId } = await supabase
-    .from("invoices")
-    .select("*")
-    .eq("client_id", client.id)
-    .order("date_created", { ascending: false });
+  const fetchClientInvoices = async () => {
+    // Try by client_id first
+    const { data: byId } = await supabase
+      .from("invoices")
+      .select("*")
+      .eq("client_id", client.id)
+      .order("date_created", { ascending: false });
 
-  if (byId && byId.length > 0) {
-    setInvoices(byId);
-    return;
-  }
+    if (byId && byId.length > 0) {
+      setInvoices(byId);
+      return;
+    }
 
-  // Fallback for older invoices without client_id: match by client_name
-  const { data: byName } = await supabase
-    .from("invoices")
-    .select("*")
-    .is("client_id", null)
-    .eq("client_name", client.name)
-    .order("date_created", { ascending: false });
+    // Fallback for older invoices without client_id: match by client_name
+    const { data: byName } = await supabase
+      .from("invoices")
+      .select("*")
+      .is("client_id", null)
+      .eq("client_name", client.name)
+      .order("date_created", { ascending: false });
 
-  setInvoices(byName || []);
-};
+    setInvoices(byName || []);
+  };
 
   const previewInvoiceDetails = async (invoice: any) => {
     const { data: items } = await supabase
@@ -95,7 +95,7 @@ const fetchClientInvoices = async () => {
       .select("*")
       .eq("invoice_id", invoice.id)
       .order("sort_order");
-    
+
     setInvoiceItems(items || []);
     setPreviewInvoice(invoice);
   };
@@ -103,23 +103,41 @@ const fetchClientInvoices = async () => {
   const downloadInvoice = async (invoice: any) => {
     if (!invoice.pdf_path) return;
 
-    const { data, error } = await supabase.storage
-      .from("invoices")
-      .download(invoice.pdf_path);
+    try {
+      let downloadUrl = "";
 
-    if (error) {
+      if (invoice.pdf_path.startsWith('http')) {
+        // It's a Cloudinary URL
+        downloadUrl = invoice.pdf_path;
+
+        // Force download for Cloudinary
+        if (downloadUrl.includes('cloudinary.com')) {
+          downloadUrl = downloadUrl.replace('/upload/', '/upload/fl_attachment/');
+        }
+      } else {
+        // It's an old Supabase path
+        const { data, error } = await supabase.storage
+          .from("invoices")
+          .download(invoice.pdf_path);
+
+        if (error) throw error;
+        downloadUrl = URL.createObjectURL(data);
+      }
+
+      const a = document.createElement("a");
+      a.href = downloadUrl;
+      a.download = `faktura-${invoice.invoice_number}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      if (!invoice.pdf_path.startsWith('http')) {
+        URL.revokeObjectURL(downloadUrl);
+      }
+    } catch (error) {
+      console.error("Error downloading invoice:", error);
       toast({ title: "Error", description: "Error downloading invoice", variant: "destructive" });
-      return;
     }
-
-    const url = URL.createObjectURL(data);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `faktura-${invoice.invoice_number}.pdf`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
   };
 
   const handleInputChange = (field: keyof Client, value: string) => {
@@ -353,8 +371,8 @@ const fetchClientInvoices = async () => {
                         <p className="font-semibold">{invoice.invoice_number}</p>
                         <Badge variant={
                           invoice.status === 'paid' ? 'default' :
-                          invoice.status === 'issued' ? 'secondary' :
-                          'outline'
+                            invoice.status === 'issued' ? 'secondary' :
+                              'outline'
                         } className="text-xs">
                           {invoice.status}
                         </Badge>
