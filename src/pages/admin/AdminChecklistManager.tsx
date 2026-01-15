@@ -30,6 +30,8 @@ import {
 } from "@/components/ui/select"
 import { Card, CardContent } from "@/components/ui/card";
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
+import { Layout } from '@/components/layout/Layout';
+import { LoadingOverlay } from '@/components/LoadingOverlay';
 
 // --- Constants (Same as Client Side) ---
 const ROOM_TYPES = [
@@ -251,210 +253,214 @@ export default function AdminChecklistManager() {
 
     const activeChecklist = checklists.find(c => c.id === activeChecklistId);
 
+    if (loading) return <LoadingOverlay message="Načítám..." />;
+
     return (
-        <div className="container mx-auto p-4 pb-24 space-y-6 max-w-5xl animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <AdminPageHeader
-                title="Správa Checklistů"
-                description="Vytvářejte a upravujte čistící plány pro klienty"
-                action={
-                    <Button variant="outline" size="sm" className="gap-2">
-                        <Building2 className="h-4 w-4" />
-                        Přehled nemovitostí
-                    </Button>
-                }
-            />
+        <Layout>
+            <div className="container mx-auto p-4 sm:p-6 pb-24 space-y-6 max-w-7xl animate-in fade-in slide-in-from-bottom-4 duration-700">
+                <AdminPageHeader
+                    title="Správa Checklistů"
+                    description="Vytvářejte a upravujte čistící plány pro klienty"
+                    action={
+                        <Button variant="outline" size="sm" className="gap-2">
+                            <Building2 className="h-4 w-4" />
+                            Přehled nemovitostí
+                        </Button>
+                    }
+                />
 
-            <div className="flex flex-col gap-6">
+                <div className="flex flex-col gap-6">
 
 
-                {/* Client Selector */}
-                <Card>
-                    <CardContent className="pt-6">
-                        <Label>Vyberte klienta</Label>
-                        <Select value={selectedClientId} onValueChange={setSelectedClientId}>
-                            <SelectTrigger className="w-full mt-2">
-                                <SelectValue placeholder="Vybrat klienta..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {clients.map(client => (
-                                    <SelectItem key={client.id} value={client.id}>
-                                        {client.name} {client.email ? `(${client.email})` : ''}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </CardContent>
-                </Card>
+                    {/* Client Selector */}
+                    <Card>
+                        <CardContent className="pt-6">
+                            <Label>Vyberte klienta</Label>
+                            <Select value={selectedClientId} onValueChange={setSelectedClientId}>
+                                <SelectTrigger className="w-full mt-2">
+                                    <SelectValue placeholder="Vybrat klienta..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {clients.map(client => (
+                                        <SelectItem key={client.id} value={client.id}>
+                                            {client.name} {client.email ? `(${client.email})` : ''}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </CardContent>
+                    </Card>
 
-                {/* Address Switcher (Only if client selected) */}
-                {selectedClientId && (
-                    <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
-                        {checklists.map(c => (
-                            <button
-                                key={c.id}
-                                onClick={() => setActiveChecklistId(c.id)}
-                                className={cn(
-                                    "flex items-center gap-2 px-4 py-2 rounded-full border transition-all whitespace-nowrap",
-                                    activeChecklistId === c.id
-                                        ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                                        : "bg-background text-muted-foreground hover:bg-muted"
-                                )}
-                            >
-                                <MapPin className="h-4 w-4" />
-                                {c.street || 'Domov'}
-                            </button>
-                        ))}
-
-                        <Dialog open={isNewChecklistOpen} onOpenChange={setIsNewChecklistOpen}>
-                            <DialogTrigger asChild>
-                                <button className="flex items-center gap-2 px-4 py-2 rounded-full border border-dashed hover:bg-muted/50 transition-all text-muted-foreground whitespace-nowrap">
-                                    <Plus className="h-4 w-4" />
-                                    Přidat adresu
+                    {/* Address Switcher (Only if client selected) */}
+                    {selectedClientId && (
+                        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                            {checklists.map(c => (
+                                <button
+                                    key={c.id}
+                                    onClick={() => setActiveChecklistId(c.id)}
+                                    className={cn(
+                                        "flex items-center gap-2 px-4 py-2 rounded-full border transition-all whitespace-nowrap",
+                                        activeChecklistId === c.id
+                                            ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                                            : "bg-background text-muted-foreground hover:bg-muted"
+                                    )}
+                                >
+                                    <MapPin className="h-4 w-4" />
+                                    {c.street || 'Domov'}
                                 </button>
-                            </DialogTrigger>
-                            <DialogContent>
-                                <DialogHeader>
-                                    <DialogTitle>Nová adresa úklidu</DialogTitle>
-                                    <DialogDescription>Pojmenujte tento plán (např. Doma, Kancelář...)</DialogDescription>
-                                </DialogHeader>
-                                <div className="py-4">
-                                    <Label>Název místa / Adresa</Label>
-                                    <Input
-                                        value={newChecklistAddress}
-                                        onChange={e => setNewChecklistAddress(e.target.value)}
-                                        placeholder="Např. Byt v centru"
-                                    />
-                                </div>
-                                <DialogFooter>
-                                    <Button onClick={createChecklist} disabled={!newChecklistAddress.trim()}>Vytvořit</Button>
-                                </DialogFooter>
-                            </DialogContent>
-                        </Dialog>
-                    </div>
-                )}
-            </div>
+                            ))}
 
-            {selectedClientId && activeChecklist && (
-                <>
-                    {/* Quick Add Bar */}
-                    <div>
-                        <h3 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider">Přidat Místnost</h3>
-                        <ScrollArea className="w-full whitespace-nowrap pb-4">
-                            <div className="flex gap-4">
-                                {ROOM_TYPES.map((type) => (
-                                    <button
-                                        key={type.id}
-                                        onClick={() => addRoom(type.id)}
-                                        className={cn(
-                                            "flex flex-col items-center gap-2 min-w-[80px] group transition-all",
-                                            "hover:scale-105 active:scale-95"
-                                        )}
-                                    >
-                                        <div className={cn(
-                                            "h-14 w-14 rounded-2xl flex items-center justify-center shadow-sm transition-shadow group-hover:shadow-md",
-                                            type.bg, type.color
-                                        )}>
-                                            <type.icon className="h-7 w-7" />
-                                        </div>
-                                        <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground">
-                                            {type.id}
-                                        </span>
+                            <Dialog open={isNewChecklistOpen} onOpenChange={setIsNewChecklistOpen}>
+                                <DialogTrigger asChild>
+                                    <button className="flex items-center gap-2 px-4 py-2 rounded-full border border-dashed hover:bg-muted/50 transition-all text-muted-foreground whitespace-nowrap">
+                                        <Plus className="h-4 w-4" />
+                                        Přidat adresu
                                     </button>
-                                ))}
-                            </div>
-                            <ScrollBar orientation="horizontal" />
-                        </ScrollArea>
-                    </div>
+                                </DialogTrigger>
+                                <DialogContent>
+                                    <DialogHeader>
+                                        <DialogTitle>Nová adresa úklidu</DialogTitle>
+                                        <DialogDescription>Pojmenujte tento plán (např. Doma, Kancelář...)</DialogDescription>
+                                    </DialogHeader>
+                                    <div className="py-4">
+                                        <Label>Název místa / Adresa</Label>
+                                        <Input
+                                            value={newChecklistAddress}
+                                            onChange={e => setNewChecklistAddress(e.target.value)}
+                                            placeholder="Např. Byt v centru"
+                                        />
+                                    </div>
+                                    <DialogFooter>
+                                        <Button onClick={createChecklist} disabled={!newChecklistAddress.trim()}>Vytvořit</Button>
+                                    </DialogFooter>
+                                </DialogContent>
+                            </Dialog>
+                        </div>
+                    )}
+                </div>
 
-                    {/* Active Rooms Grid */}
-                    <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-                                <MapPin className="h-4 w-4" />
-                                {activeChecklist?.street || 'Domov'}
-                            </h3>
+                {selectedClientId && activeChecklist && (
+                    <>
+                        {/* Quick Add Bar */}
+                        <div>
+                            <h3 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider">Přidat Místnost</h3>
+                            <ScrollArea className="w-full whitespace-nowrap pb-4">
+                                <div className="flex gap-4">
+                                    {ROOM_TYPES.map((type) => (
+                                        <button
+                                            key={type.id}
+                                            onClick={() => addRoom(type.id)}
+                                            className={cn(
+                                                "flex flex-col items-center gap-2 min-w-[80px] group transition-all",
+                                                "hover:scale-105 active:scale-95"
+                                            )}
+                                        >
+                                            <div className={cn(
+                                                "h-14 w-14 rounded-2xl flex items-center justify-center shadow-sm transition-shadow group-hover:shadow-md",
+                                                type.bg, type.color
+                                            )}>
+                                                <type.icon className="h-7 w-7" />
+                                            </div>
+                                            <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground">
+                                                {type.id}
+                                            </span>
+                                        </button>
+                                    ))}
+                                </div>
+                                <ScrollBar orientation="horizontal" />
+                            </ScrollArea>
                         </div>
 
-                        {rooms.length === 0 ? (
-                            <div className="text-center py-12 border-2 border-dashed rounded-3xl bg-slate-50/50 dark:bg-slate-900/50 animate-in fade-in zoom-in duration-300">
-                                <p className="text-muted-foreground">Zatím žádné místnosti.</p>
-                                <p className="text-sm text-muted-foreground/80">Klikněte na ikony nahoře.</p>
+                        {/* Active Rooms Grid */}
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                                    <MapPin className="h-4 w-4" />
+                                    {activeChecklist?.street || 'Domov'}
+                                </h3>
                             </div>
-                        ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                {rooms.map((room) => {
-                                    const roomType = ROOM_TYPES.find(t => t.id === room.room_name) || ROOM_TYPES[7];
 
-                                    return (
-                                        <div key={room.id} className="group relative bg-card border rounded-2xl p-4 hover:shadow-lg transition-all shadow-sm">
-                                            <div className="flex items-start justify-between mb-4">
-                                                <div className="flex items-center gap-3">
-                                                    <div className={cn("p-2.5 rounded-xl", roomType.bg, roomType.color)}>
-                                                        <roomType.icon className="h-5 w-5" />
-                                                    </div>
-                                                    <div>
-                                                        <h4 className="font-semibold text-lg leading-none">{room.room_name}</h4>
-                                                        <p className="text-xs text-muted-foreground mt-1">
-                                                            {room.tasks?.length || 0} úkonů
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="h-8 w-8 text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
-                                                    onClick={() => removeRoom(room.id)}
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
-                                            </div>
+                            {rooms.length === 0 ? (
+                                <div className="text-center py-12 border-2 border-dashed rounded-3xl bg-slate-50/50 dark:bg-slate-900/50 animate-in fade-in zoom-in duration-300">
+                                    <p className="text-muted-foreground">Zatím žádné místnosti.</p>
+                                    <p className="text-sm text-muted-foreground/80">Klikněte na ikony nahoře.</p>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                    {rooms.map((room) => {
+                                        const roomType = ROOM_TYPES.find(t => t.id === room.room_name) || ROOM_TYPES[7];
 
-                                            <div className="space-y-2">
-                                                {(room.tasks || []).map((task: any) => (
-                                                    <div key={task.id} className="group/task flex items-center gap-2 text-sm text-muted-foreground bg-muted/30 p-2 rounded-lg hover:bg-muted/50 transition-colors">
-                                                        <CheckCircle2 className="h-3.5 w-3.5 text-primary/40 shrink-0" />
-                                                        <span className="flex-1 break-words">{task.task_text}</span>
-                                                        <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover/task:opacity-100 transition-opacity text-destructive hover:bg-destructive/10 shrink-0" onClick={() => handleDeleteTask(task.id)}>
-                                                            <Trash2 className="h-3 w-3" />
-                                                        </Button>
+                                        return (
+                                            <div key={room.id} className="group relative bg-card border rounded-2xl p-4 hover:shadow-lg transition-all shadow-sm">
+                                                <div className="flex items-start justify-between mb-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className={cn("p-2.5 rounded-xl", roomType.bg, roomType.color)}>
+                                                            <roomType.icon className="h-5 w-5" />
+                                                        </div>
+                                                        <div>
+                                                            <h4 className="font-semibold text-lg leading-none">{room.room_name}</h4>
+                                                            <p className="text-xs text-muted-foreground mt-1">
+                                                                {room.tasks?.length || 0} úkonů
+                                                            </p>
+                                                        </div>
                                                     </div>
-                                                ))}
-
-                                                {addingTaskRoomId === room.id ? (
-                                                    <div className="flex items-center gap-2 pt-2 animate-in fade-in slide-in-from-top-1">
-                                                        <Input
-                                                            value={newTaskText}
-                                                            onChange={e => setNewTaskText(e.target.value)}
-                                                            placeholder="Nový úkol..."
-                                                            className="h-8 text-sm"
-                                                            autoFocus
-                                                            onKeyDown={e => e.key === 'Enter' && handleAddTask(room.id)}
-                                                        />
-                                                        <Button size="icon" className="h-8 w-8 shrink-0" onClick={() => handleAddTask(room.id)}>
-                                                            <Plus className="h-4 w-4" />
-                                                        </Button>
-                                                        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => setAddingTaskRoomId(null)}>
-                                                            <X className="h-4 w-4" />
-                                                        </Button>
-                                                    </div>
-                                                ) : (
-                                                    <Button variant="ghost" size="sm" className="w-full text-xs text-muted-foreground hover:text-primary mt-2 border border-dashed border-border/50" onClick={() => {
-                                                        setAddingTaskRoomId(room.id);
-                                                        setNewTaskText('');
-                                                    }}>
-                                                        <Plus className="h-3 w-3 mr-1" />
-                                                        Přidat úkol
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-8 w-8 text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                                        onClick={() => removeRoom(room.id)}
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
                                                     </Button>
-                                                )}
+                                                </div>
+
+                                                <div className="space-y-2">
+                                                    {(room.tasks || []).map((task: any) => (
+                                                        <div key={task.id} className="group/task flex items-center gap-2 text-sm text-muted-foreground bg-muted/30 p-2 rounded-lg hover:bg-muted/50 transition-colors">
+                                                            <CheckCircle2 className="h-3.5 w-3.5 text-primary/40 shrink-0" />
+                                                            <span className="flex-1 break-words">{task.task_text}</span>
+                                                            <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover/task:opacity-100 transition-opacity text-destructive hover:bg-destructive/10 shrink-0" onClick={() => handleDeleteTask(task.id)}>
+                                                                <Trash2 className="h-3 w-3" />
+                                                            </Button>
+                                                        </div>
+                                                    ))}
+
+                                                    {addingTaskRoomId === room.id ? (
+                                                        <div className="flex items-center gap-2 pt-2 animate-in fade-in slide-in-from-top-1">
+                                                            <Input
+                                                                value={newTaskText}
+                                                                onChange={e => setNewTaskText(e.target.value)}
+                                                                placeholder="Nový úkol..."
+                                                                className="h-8 text-sm"
+                                                                autoFocus
+                                                                onKeyDown={e => e.key === 'Enter' && handleAddTask(room.id)}
+                                                            />
+                                                            <Button size="icon" className="h-8 w-8 shrink-0" onClick={() => handleAddTask(room.id)}>
+                                                                <Plus className="h-4 w-4" />
+                                                            </Button>
+                                                            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => setAddingTaskRoomId(null)}>
+                                                                <X className="h-4 w-4" />
+                                                            </Button>
+                                                        </div>
+                                                    ) : (
+                                                        <Button variant="ghost" size="sm" className="w-full text-xs text-muted-foreground hover:text-primary mt-2 border border-dashed border-border/50" onClick={() => {
+                                                            setAddingTaskRoomId(room.id);
+                                                            setNewTaskText('');
+                                                        }}>
+                                                            <Plus className="h-3 w-3 mr-1" />
+                                                            Přidat úkol
+                                                        </Button>
+                                                    )}
+                                                </div>
                                             </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        )}
-                    </div>
-                </>
-            )}
-        </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                    </>
+                )}
+            </div>
+        </Layout>
     );
 }

@@ -5,10 +5,10 @@ import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { supabase } from "@/integrations/supabase/client"
 import { useAuth } from "@/contexts/AuthContext"
-import { 
-  CheckCircle, 
-  Clock, 
-  AlertCircle, 
+import {
+  CheckCircle,
+  Clock,
+  AlertCircle,
   Star,
   DollarSign,
   Users,
@@ -79,7 +79,7 @@ export function RecentActivity() {
     try {
       const now = new Date();
       const threeDaysAgo = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000).toISOString();
-      
+
       // Fetch recent jobs
       const { data: jobs } = await supabase
         .from('jobs')
@@ -104,7 +104,7 @@ export function RecentActivity() {
       // Add job activities
       jobs?.forEach(job => {
         const clientName = job.clients?.name || 'Unknown client';
-        
+
         // Job created activity
         const jobAge = Math.floor((now.getTime() - new Date(job.created_at).getTime()) / (1000 * 60 * 60));
         recentActivities.push({
@@ -112,7 +112,7 @@ export function RecentActivity() {
           type: 'job_created',
           title: 'New cleaning scheduled',
           description: `${job.title} - ${clientName}`,
-          time: jobAge < 1 ? 'moments ago' : jobAge < 24 ? `${jobAge}h ago` : `${Math.floor(jobAge/24)} days ago`,
+          time: jobAge < 1 ? 'moments ago' : jobAge < 24 ? `${jobAge}h ago` : `${Math.floor(jobAge / 24)} days ago`,
           status: job.status,
           amount: job.revenue ? `${job.revenue.toLocaleString()} CZK` : undefined,
           entityId: job.id,
@@ -127,7 +127,7 @@ export function RecentActivity() {
             type: job.status === 'paid' ? 'payment' : 'job_completed',
             title: job.status === 'paid' ? 'Payment received' : 'Cleaning completed',
             description: `${job.title} - ${clientName}`,
-            time: updateAge < 1 ? 'moments ago' : updateAge < 24 ? `${updateAge}h ago` : `${Math.floor(updateAge/24)} days ago`,
+            time: updateAge < 1 ? 'moments ago' : updateAge < 24 ? `${updateAge}h ago` : `${Math.floor(updateAge / 24)} days ago`,
             status: job.status,
             amount: job.revenue ? `${job.revenue.toLocaleString()} CZK` : undefined,
             entityId: job.id,
@@ -144,7 +144,7 @@ export function RecentActivity() {
           type: 'new_client',
           title: 'New client',
           description: `${client.name} - new client added`,
-          time: clientAge < 1 ? 'moments ago' : clientAge < 24 ? `${clientAge}h ago` : `${Math.floor(clientAge/24)} days ago`,
+          time: clientAge < 1 ? 'moments ago' : clientAge < 24 ? `${clientAge}h ago` : `${Math.floor(clientAge / 24)} days ago`,
           status: 'new',
           entityId: client.id,
           entityType: 'client'
@@ -200,12 +200,12 @@ export function RecentActivity() {
   }
 
   return (
-    <Card>
+    <Card className="bg-card/50 backdrop-blur-sm border-0 shadow-lg rounded-3xl overflow-hidden">
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Recent Activity</CardTitle>
         {activities.length > 3 && (
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             size="sm"
             onClick={() => setShowAll(!showAll)}
           >
@@ -232,7 +232,7 @@ export function RecentActivity() {
                   <div className="rounded-full bg-primary/10 p-2">
                     <Icon className="h-4 w-4 text-primary" />
                   </div>
-                  
+
                   <div className="flex-1 space-y-1">
                     <div className="flex items-center justify-between">
                       <h4 className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
@@ -247,11 +247,11 @@ export function RecentActivity() {
                         <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
                       </div>
                     </div>
-                    
+
                     <p className="text-sm text-muted-foreground">
                       {activity.description}
                     </p>
-                    
+
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-muted-foreground">
                         {activity.time}

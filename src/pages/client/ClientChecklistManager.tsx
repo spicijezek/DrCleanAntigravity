@@ -11,7 +11,7 @@ import {
   Building2, MapPin, Plus, X, Pencil, HelpCircle, Phone, MessageSquare, Check, HeadphonesIcon
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { ClientLoading } from '@/components/client/ClientLoading';
+import { LoadingOverlay } from '@/components/LoadingOverlay';
 import { ClientHeroHeader } from '@/components/client/ClientHeroHeader';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import {
@@ -386,7 +386,7 @@ export default function ClientChecklistManager() {
     }
   }
 
-  if (loading) return <ClientLoading message="Načítám váš plán..." />;
+  if (loading) return <LoadingOverlay message="Načítám váš plán..." />;
 
   const activeChecklist = checklists.find(c => c.id === activeChecklistId);
 

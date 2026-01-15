@@ -10,9 +10,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { BookOpen, Plus, Edit, Trash, Upload, FileText, Video } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { BookOpen, Plus, Edit, Trash, Upload, FileText, Video, Sparkles } from 'lucide-react';
 import { Navigate } from 'react-router-dom';
 import { uploadToCloudinary } from '@/lib/cloudinary';
+import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
+import { LoadingOverlay } from '@/components/LoadingOverlay';
+import { cn } from '@/lib/utils';
 import {
   Dialog,
   DialogContent,
@@ -209,223 +213,262 @@ export default function ManageEducationalContent() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
-      </div>
-    );
+    return <LoadingOverlay message="Načítám vzdělávací obsah..." />;
   }
 
   return (
     <Layout>
-      <div className="container mx-auto p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold flex items-center gap-3">
-              <BookOpen className="h-8 w-8" />
-              Správa Vzdělávacího Obsahu
-            </h1>
-            <p className="text-muted-foreground mt-2">
-              Spravujte vzdělávací materiály pro klienty
-            </p>
-          </div>
+      <div className="container mx-auto p-4 sm:p-6 pb-24 space-y-6 max-w-7xl animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <AdminPageHeader
+          title="Správa Vzdělávání"
+          description="Spravujte vzdělávací materiály a příručky pro klienty"
+          action={
+            <Button
+              onClick={() => setIsDialogOpen(true)}
+              className="h-11 bg-primary hover:bg-primary/90 text-primary-foreground shadow-md hover:shadow-lg transition-all rounded-xl gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              Přidat Obsah
+            </Button>
+          }
+        />
 
-          <Dialog open={isDialogOpen} onOpenChange={(open) => {
-            setIsDialogOpen(open);
-            if (!open) resetForm();
-          }}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Přidat Obsah
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>
-                  {editingId ? 'Upravit Obsah' : 'Přidat Nový Obsah'}
-                </DialogTitle>
-                <DialogDescription>
-                  Vyplňte informace o vzdělávacím obsahu
-                </DialogDescription>
-              </DialogHeader>
+        <div className="grid gap-6">
+          {content.length === 0 ? (
+            <Card className="bg-card/50 backdrop-blur-sm border-0 shadow-lg rounded-3xl overflow-hidden p-12">
+              <CardContent className="flex flex-col items-center justify-center text-center space-y-4">
+                <div className="bg-primary/5 p-4 rounded-full">
+                  <BookOpen className="h-12 w-12 text-primary opacity-20" />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="text-xl font-bold">Zatím žádný obsah</h3>
+                  <p className="text-muted-foreground">Přidejte první vzdělávací materiál pro své klienty.</p>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {content.map((item) => (
+                <Card key={item.id} className="bg-card/50 backdrop-blur-sm border-0 shadow-lg rounded-3xl overflow-hidden hover:shadow-xl transition-all duration-300">
+                  <CardHeader className="pb-3">
+                    <div className="flex justify-between items-start">
+                      <div className="bg-primary/10 p-2.5 rounded-2xl">
+                        {item.content_type === 'video' ? (
+                          <Video className="h-6 w-6 text-primary" />
+                        ) : (
+                          <FileText className="h-6 w-6 text-primary" />
+                        )}
+                      </div>
+                      <div className="flex gap-1.5">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleEdit(item)}
+                          className="h-8 w-8 rounded-full hover:bg-primary/10 hover:text-primary"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDelete(item.id)}
+                          className="h-8 w-8 rounded-full hover:bg-red-50 hover:text-red-600 text-muted-foreground"
+                        >
+                          <Trash className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="pt-3 space-y-1">
+                      <CardTitle className="text-lg font-bold line-clamp-1">{item.title}</CardTitle>
+                      <div className="flex gap-1.5 flex-wrap">
+                        <Badge variant="secondary" className="bg-secondary/50 border-0 text-[10px] uppercase font-bold tracking-wider">
+                          {categories.find(c => c.value === item.category)?.label}
+                        </Badge>
+                        <Badge className={cn(
+                          "border-0 text-[10px] uppercase font-bold tracking-wider",
+                          item.is_published ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"
+                        )}>
+                          {item.is_published ? 'Publikováno' : 'Koncept'}
+                        </Badge>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    {item.description && (
+                      <p className="text-sm text-muted-foreground line-clamp-2 italic mb-4">
+                        "{item.description}"
+                      </p>
+                    )}
+                    <div className="pt-2 border-t border-primary/5 flex items-center justify-between">
+                      <span className="text-[10px] text-muted-foreground font-medium">
+                        Vytvořeno: {new Date(item.created_at).toLocaleDateString('cs-CZ')}
+                      </span>
+                      {item.file_url ? (
+                        <a href={item.file_url} target="_blank" rel="noopener noreferrer" className="text-primary text-xs font-bold hover:underline">
+                          Zobrazit PDF
+                        </a>
+                      ) : item.video_url && (
+                        <a href={item.video_url} target="_blank" rel="noopener noreferrer" className="text-primary text-xs font-bold hover:underline">
+                          Přehrát video
+                        </a>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
 
-              <form onSubmit={handleSubmit} className="space-y-4">
+        <Dialog open={isDialogOpen} onOpenChange={(open) => {
+          setIsDialogOpen(open);
+          if (!open) resetForm();
+        }}>
+          <DialogContent className="bg-card/95 backdrop-blur-xl border-white/10 shadow-2xl rounded-[2rem] max-w-2xl max-h-[90vh] overflow-y-auto p-6">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-bold">
+                {editingId ? 'Upravit Obsah' : 'Přidat Nový Obsah'}
+              </DialogTitle>
+              <DialogDescription className="text-muted-foreground">
+                Vyplňte informace o vzdělávacím obsahu
+              </DialogDescription>
+            </DialogHeader>
+
+            <form onSubmit={handleSubmit} className="space-y-6 pt-4">
+              <div className="space-y-2">
+                <Label htmlFor="title" className="text-sm font-bold ml-1">Název *</Label>
+                <Input
+                  id="title"
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  placeholder="Zadejte název materiálu..."
+                  className="h-11 bg-background/50 border-0 shadow-sm rounded-xl focus:ring-2 ring-primary/20"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="description" className="text-sm font-bold ml-1">Popis</Label>
+                <Textarea
+                  id="description"
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="Stručný popis obsahu..."
+                  className="bg-background/50 border-0 shadow-inner rounded-2xl min-h-[100px] focus-visible:ring-primary/20"
+                  rows={3}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="title">Název *</Label>
+                  <Label htmlFor="content_type" className="text-sm font-bold ml-1">Typ obsahu *</Label>
+                  <Select
+                    value={formData.content_type}
+                    onValueChange={(value: 'pdf' | 'video' | 'article') =>
+                      setFormData({ ...formData, content_type: value })
+                    }
+                  >
+                    <SelectTrigger className="h-11 bg-background/50 border-0 shadow-sm rounded-xl">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pdf">PDF dokument</SelectItem>
+                      <SelectItem value="video">Video (URL)</SelectItem>
+                      <SelectItem value="article">Článek / Text</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="category" className="text-sm font-bold ml-1">Kategorie *</Label>
+                  <Select
+                    value={formData.category}
+                    onValueChange={(value) => setFormData({ ...formData, category: value })}
+                  >
+                    <SelectTrigger className="h-11 bg-background/50 border-0 shadow-sm rounded-xl">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map((cat) => (
+                        <SelectItem key={cat.value} value={cat.value}>
+                          {cat.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {formData.content_type === 'video' ? (
+                <div className="space-y-2">
+                  <Label htmlFor="video_url" className="text-sm font-bold ml-1">URL videa (YouTube, Vimeo) *</Label>
                   <Input
-                    id="title"
-                    value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    id="video_url"
+                    type="url"
+                    value={formData.video_url}
+                    onChange={(e) => setFormData({ ...formData, video_url: e.target.value })}
+                    placeholder="https://www.youtube.com/watch?v=..."
+                    className="h-11 bg-background/50 border-0 shadow-sm rounded-xl focus:ring-2 ring-primary/20"
                     required
                   />
                 </div>
-
+              ) : (
                 <div className="space-y-2">
-                  <Label htmlFor="description">Popis</Label>
-                  <Textarea
-                    id="description"
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    rows={3}
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="content_type">Typ obsahu *</Label>
-                    <Select
-                      value={formData.content_type}
-                      onValueChange={(value: 'pdf' | 'video' | 'article') =>
-                        setFormData({ ...formData, content_type: value })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="pdf">PDF</SelectItem>
-                        <SelectItem value="video">Video</SelectItem>
-                        <SelectItem value="article">Článek</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="category">Kategorie *</Label>
-                    <Select
-                      value={formData.category}
-                      onValueChange={(value) => setFormData({ ...formData, category: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {categories.map((cat) => (
-                          <SelectItem key={cat.value} value={cat.value}>
-                            {cat.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                {formData.content_type === 'video' ? (
-                  <div className="space-y-2">
-                    <Label htmlFor="video_url">URL videa (YouTube, Vimeo) *</Label>
-                    <Input
-                      id="video_url"
-                      type="url"
-                      value={formData.video_url}
-                      onChange={(e) => setFormData({ ...formData, video_url: e.target.value })}
-                      placeholder="https://..."
-                      required
-                    />
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <Label htmlFor="file">Soubor (PDF) {!editingId && '*'}</Label>
+                  <Label htmlFor="file" className="text-sm font-bold ml-1">Soubor (PDF) {!editingId && '*'}</Label>
+                  <div className="relative">
                     <Input
                       id="file"
                       type="file"
                       accept=".pdf"
                       onChange={(e) => setFile(e.target.files?.[0] || null)}
+                      className="h-11 bg-background/50 border-0 shadow-sm rounded-xl focus:ring-2 ring-primary/20 file:bg-primary file:text-white file:border-0 file:rounded-lg file:mr-4 file:px-3 file:py-1 file:text-xs file:font-bold file:cursor-pointer"
                       required={!editingId}
                     />
                   </div>
-                )}
-
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="is_published"
-                    checked={formData.is_published}
-                    onCheckedChange={(checked) =>
-                      setFormData({ ...formData, is_published: checked })
-                    }
-                  />
-                  <Label htmlFor="is_published">Publikovat ihned</Label>
                 </div>
+              )}
 
-                <div className="flex justify-end gap-2 pt-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      setIsDialogOpen(false);
-                      resetForm();
-                    }}
-                  >
-                    Zrušit
-                  </Button>
-                  <Button type="submit" disabled={uploading}>
-                    {uploading ? 'Ukládám...' : editingId ? 'Aktualizovat' : 'Vytvořit'}
-                  </Button>
+              <div className="flex items-center space-x-3 p-4 bg-primary/5 rounded-2xl border border-primary/10 transition-all hover:bg-primary/10">
+                <Switch
+                  id="is_published"
+                  checked={formData.is_published}
+                  onCheckedChange={(checked) =>
+                    setFormData({ ...formData, is_published: checked })
+                  }
+                  className="data-[state=checked]:bg-emerald-500"
+                />
+                <div className="space-y-0.5">
+                  <Label htmlFor="is_published" className="text-sm font-bold cursor-pointer">Publikovat ihned</Label>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Obsah bude okamžitě viditelný pro klienty</p>
                 </div>
-              </form>
-            </DialogContent>
-          </Dialog>
-        </div>
+              </div>
 
-        <div className="grid gap-4">
-          {content.length === 0 ? (
-            <Card>
-              <CardContent className="pt-6 text-center text-muted-foreground">
-                <BookOpen className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                <p>Zatím nebyl přidán žádný obsah</p>
-              </CardContent>
-            </Card>
-          ) : (
-            content.map((item) => (
-              <Card key={item.id}>
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <CardTitle className="flex items-center gap-2">
-                        {item.content_type === 'video' ? (
-                          <Video className="h-5 w-5" />
-                        ) : (
-                          <FileText className="h-5 w-5" />
-                        )}
-                        {item.title}
-                      </CardTitle>
-                      {item.description && (
-                        <CardDescription className="mt-1">{item.description}</CardDescription>
-                      )}
-                      <div className="flex gap-2 mt-2">
-                        <span className="text-xs bg-secondary px-2 py-1 rounded">
-                          {categories.find(c => c.value === item.category)?.label}
-                        </span>
-                        <span className={`text-xs px-2 py-1 rounded ${item.is_published
-                            ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100'
-                            : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100'
-                          }`}>
-                          {item.is_published ? 'Publikováno' : 'Koncept'}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleEdit(item)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => handleDelete(item.id)}
-                      >
-                        <Trash className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </CardHeader>
-              </Card>
-            ))
-          )}
-        </div>
+              <div className="flex gap-3 pt-2">
+                <Button type="submit" disabled={uploading} className="flex-1 h-12 bg-primary hover:bg-primary/90 text-white font-bold rounded-2xl shadow-lg border-0 transition-all">
+                  {uploading ? (
+                    <>
+                      <div className="h-4 w-4 border-2 border-white/30 border-t-white animate-spin rounded-full mr-2" />
+                      Ukládám...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="h-5 w-5 mr-2" />
+                      {editingId ? 'Aktualizovat Obsah' : 'Vytvořit Obsah'}
+                    </>
+                  )}
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setIsDialogOpen(false)}
+                  className="flex-1 h-12 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                >
+                  Zrušit
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
     </Layout>
   );

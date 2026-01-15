@@ -7,7 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Gift, Share2, CheckCircle2, Phone, Flame, UtensilsCrossed, Sparkles, Trophy, Target } from 'lucide-react';
 import { format } from 'date-fns';
 import { cs } from 'date-fns/locale';
-import { ClientLoading } from '@/components/client/ClientLoading';
+import { LoadingOverlay } from '@/components/LoadingOverlay';
 import { ClientHeroHeader } from '@/components/client/ClientHeroHeader';
 
 interface LoyaltyData {
@@ -221,7 +221,7 @@ export default function ClientLoyalty() {
   };
 
   if (loading) {
-    return <ClientLoading message="Načítám věrnostní program..." />;
+    return <LoadingOverlay message="Načítám věrnostní program..." />;
   }
 
   const nextMilestone = getNextMilestone();
@@ -306,10 +306,10 @@ export default function ClientLoyalty() {
               <div
                 key={index}
                 className={`relative overflow-hidden rounded-xl p-4 border transition-all ${achieved
-                    ? 'bg-gradient-to-r from-primary/10 to-primary/5 dark:from-primary/20 dark:to-primary/10 border-primary/30 dark:border-primary/40'
-                    : isNext
-                      ? 'bg-card border-primary/30 dark:border-primary/40 shadow-md'
-                      : 'bg-card border-border opacity-70'
+                  ? 'bg-gradient-to-r from-primary/10 to-primary/5 dark:from-primary/20 dark:to-primary/10 border-primary/30 dark:border-primary/40'
+                  : isNext
+                    ? 'bg-card border-primary/30 dark:border-primary/40 shadow-md'
+                    : 'bg-card border-border opacity-70'
                   }`}
               >
                 <div className="flex items-center gap-3">

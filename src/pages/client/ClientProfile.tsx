@@ -13,7 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { LogOut, Save, Check, ChevronDown, FileText, User, Lock, MessageSquare, Info, Building2, MapPin, Mail, Phone, Calendar } from 'lucide-react';
 import { ClientHeroHeader } from '@/components/client/ClientHeroHeader';
 import { DatePicker } from '@/components/ui/date-time-picker';
-import { ClientLoading } from '@/components/client/ClientLoading';
+import { LoadingOverlay } from "@/components/LoadingOverlay";
 
 export default function ClientProfile() {
   const { user, signOut } = useAuth();
@@ -284,7 +284,7 @@ export default function ClientProfile() {
   };
 
   if (loading && !profileData.email) {
-    return <ClientLoading message="Načítám Váš profil..." />;
+    return <LoadingOverlay message="Načítám Váš profil..." />;
   }
 
   return (

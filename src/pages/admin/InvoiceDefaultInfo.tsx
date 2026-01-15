@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Layout } from "@/components/layout/Layout";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,8 +8,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { uploadToCloudinary } from "@/lib/cloudinary";
 import { toast } from "sonner";
-import { Save, Upload, FileText, Database } from "lucide-react";
+import { Save, Upload, FileText, Database, Settings } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
+import { LoadingOverlay } from "@/components/LoadingOverlay";
 
 export default function InvoiceDefaultInfo() {
   const { user, profile } = useAuth();
@@ -174,135 +176,247 @@ export default function InvoiceDefaultInfo() {
     }
   };
 
+  if (loading && !companyName) {
+    return <LoadingOverlay message="Načítám výchozí info..." />;
+  }
+
   return (
     <Layout>
-      <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">Default Invoice Information</h1>
-            <p className="text-muted-foreground">Set your company details for invoices</p>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => navigate('/invoices/generator')}>
-              <FileText className="h-4 w-4 mr-2" />
-              Generator
-            </Button>
-            {!profile?.roles?.includes('invoice_user') && (
-              <Button variant="outline" onClick={() => navigate('/invoices/storage')}>
-                <Database className="h-4 w-4 mr-2" />
-                Storage
+      <div className="container mx-auto p-4 sm:p-6 pb-24 space-y-6 max-w-7xl animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <AdminPageHeader
+          title="Fakturační údaje"
+          description="Nastavte si výchozí údaje vaší firmy pro faktury"
+          action={
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                variant="outline"
+                onClick={() => navigate('/invoices/generator')}
+                className="bg-card/50 backdrop-blur-sm border-0 shadow-sm rounded-xl px-4 h-10"
+              >
+                <FileText className="h-4 w-4 mr-2" />
+                Generator
               </Button>
-            )}
-          </div>
-        </div>
+              {!profile?.roles?.includes('invoice_user') && (
+                <Button
+                  variant="outline"
+                  onClick={() => navigate('/invoices/storage')}
+                  className="bg-card/50 backdrop-blur-sm border-0 shadow-sm rounded-xl px-4 h-10"
+                >
+                  <Database className="h-4 w-4 mr-2" />
+                  Sklad
+                </Button>
+              )}
+              <Button
+                onClick={saveCompanyInfo}
+                disabled={loading || !companyName}
+                variant="gradient"
+                className="shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all rounded-xl px-4 h-10"
+              >
+                <Save className="h-4 w-4 mr-2" />
+                {loading ? "Ukládání..." : "Uložit změny"}
+              </Button>
+            </div>
+          }
+        />
 
-        <Card className="p-6">
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card className="bg-card/50 backdrop-blur-sm border-0 shadow-lg rounded-3xl overflow-hidden p-6 md:p-8">
+          <CardContent className="p-0 space-y-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
               {/* Company Details */}
-              <div className="space-y-4">
-                <h2 className="text-lg font-semibold">Company Details</h2>
-
-                <div>
-                  <Label>IČ (Company ID)</Label>
-                  <Input
-                    value={ic}
-                    onChange={(e) => setIc(e.target.value)}
-                    onBlur={(e) => fetchCompanyFromAres(e.target.value)}
-                    placeholder="12345678"
-                  />
-                  {fetchingAres && <p className="text-xs text-muted-foreground mt-1">Načítání z ARES...</p>}
+              <div className="space-y-6">
+                <div className="flex items-center gap-2 border-b border-border/50 pb-2">
+                  <Database className="h-5 w-5 text-primary" />
+                  <h2 className="text-xl font-semibold">Firemní údaje</h2>
                 </div>
 
-                <div>
-                  <Label>Company Name *</Label>
-                  <Input value={companyName} onChange={(e) => setCompanyName(e.target.value)} required />
-                </div>
-
-                <div>
-                  <Label>DIČ (VAT ID)</Label>
-                  <Input value={dic} onChange={(e) => setDic(e.target.value)} />
-                </div>
-
-                <div>
-                  <Label>Street Address</Label>
-                  <Input value={address} onChange={(e) => setAddress(e.target.value)} />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>City</Label>
-                    <Input value={city} onChange={(e) => setCity(e.target.value)} />
+                <div className="grid grid-cols-1 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">IČ (Identifikační číslo)</Label>
+                    <div className="relative">
+                      <Input
+                        value={ic}
+                        onChange={(e) => setIc(e.target.value)}
+                        onBlur={(e) => fetchCompanyFromAres(e.target.value)}
+                        placeholder="12345678"
+                        className="bg-background/50 border-0 rounded-xl h-11"
+                      />
+                      {fetchingAres && (
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                          <div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full" />
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <div>
-                    <Label>Postal Code</Label>
-                    <Input value={postalCode} onChange={(e) => setPostalCode(e.target.value)} />
-                  </div>
-                </div>
 
-                <div>
-                  <Label>Country</Label>
-                  <Input value={country} onChange={(e) => setCountry(e.target.value)} />
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Název firmy *</Label>
+                    <Input
+                      value={companyName}
+                      onChange={(e) => setCompanyName(e.target.value)}
+                      required
+                      className="bg-background/50 border-0 rounded-xl h-11"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">DIČ (Daňové číslo)</Label>
+                    <Input
+                      value={dic}
+                      onChange={(e) => setDic(e.target.value)}
+                      className="bg-background/50 border-0 rounded-xl h-11"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Ulice a číslo popisné</Label>
+                    <Input
+                      value={address}
+                      onChange={(e) => setAddress(e.target.value)}
+                      className="bg-background/50 border-0 rounded-xl h-11"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Město</Label>
+                      <Input
+                        value={city}
+                        onChange={(e) => setCity(e.target.value)}
+                        className="bg-background/50 border-0 rounded-xl h-11"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">PSČ</Label>
+                      <Input
+                        value={postalCode}
+                        onChange={(e) => setPostalCode(e.target.value)}
+                        className="bg-background/50 border-0 rounded-xl h-11"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Země</Label>
+                    <Input
+                      value={country}
+                      onChange={(e) => setCountry(e.target.value)}
+                      className="bg-background/50 border-0 rounded-xl h-11"
+                    />
+                  </div>
                 </div>
               </div>
 
               {/* Contact & Banking */}
-              <div className="space-y-4">
-                <h2 className="text-lg font-semibold">Contact Information</h2>
-
-                <div>
-                  <Label>Email</Label>
-                  <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+              <div className="space-y-6">
+                <div className="flex items-center gap-2 border-b border-border/50 pb-2">
+                  <Settings className="h-5 w-5 text-primary" />
+                  <h2 className="text-xl font-semibold">Kontakt a Banka</h2>
                 </div>
 
-                <div>
-                  <Label>Phone</Label>
-                  <Input value={phone} onChange={(e) => setPhone(e.target.value)} />
-                </div>
-
-                <div>
-                  <Label>Website</Label>
-                  <Input value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://..." />
-                </div>
-
-                <h2 className="text-lg font-semibold pt-4">Banking Information</h2>
-
-                <div>
-                  <Label>Bank Name</Label>
-                  <Input value={bankName} onChange={(e) => setBankName(e.target.value)} placeholder="e.g., Česká spořitelna" />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>Bank Account</Label>
-                    <Input value={bankAccount} onChange={(e) => setBankAccount(e.target.value)} placeholder="123456789" />
+                <div className="grid grid-cols-1 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Email pro faktury</Label>
+                    <Input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="bg-background/50 border-0 rounded-xl h-11"
+                    />
                   </div>
-                  <div>
-                    <Label>Bank Code</Label>
-                    <Input value={bankCode} onChange={(e) => setBankCode(e.target.value)} placeholder="0100" />
+
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Telefon</Label>
+                    <Input
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      className="bg-background/50 border-0 rounded-xl h-11"
+                    />
                   </div>
-                </div>
 
-                <div>
-                  <Label>IBAN</Label>
-                  <Input value={iban} onChange={(e) => setIban(e.target.value)} placeholder="CZ65 0800 0000 1920 0014 5399" />
-                </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Webové stránky</Label>
+                    <Input
+                      value={website}
+                      onChange={(e) => setWebsite(e.target.value)}
+                      placeholder="https://..."
+                      className="bg-background/50 border-0 rounded-xl h-11"
+                    />
+                  </div>
 
-                <div>
-                  <Label>SWIFT/BIC</Label>
-                  <Input value={swift} onChange={(e) => setSwift(e.target.value)} placeholder="GIBACZPX" />
+                  <div className="grid grid-cols-1 gap-4 pt-4">
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Název banky</Label>
+                      <Input
+                        value={bankName}
+                        onChange={(e) => setBankName(e.target.value)}
+                        placeholder="Např. Česká spořitelna"
+                        className="bg-background/50 border-0 rounded-xl h-11"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium">Číslo účtu</Label>
+                        <Input
+                          value={bankAccount}
+                          onChange={(e) => setBankAccount(e.target.value)}
+                          placeholder="123456789"
+                          className="bg-background/50 border-0 rounded-xl h-11"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium">Kód banky</Label>
+                        <Input
+                          value={bankCode}
+                          onChange={(e) => setBankCode(e.target.value)}
+                          placeholder="0100"
+                          className="bg-background/50 border-0 rounded-xl h-11"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">IBAN</Label>
+                      <Input
+                        value={iban}
+                        onChange={(e) => setIban(e.target.value)}
+                        placeholder="CZ65 0800 0000 1920 0014 5399"
+                        className="bg-background/50 border-0 rounded-xl h-11"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">SWIFT/BIC</Label>
+                      <Input
+                        value={swift}
+                        onChange={(e) => setSwift(e.target.value)}
+                        placeholder="GIBACZPX"
+                        className="bg-background/50 border-0 rounded-xl h-11"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Logo Upload - Moved to bottom */}
-            <div className="border-t pt-6">
-              <h2 className="text-lg font-semibold mb-4">Company Logo</h2>
-              <div className="flex items-center gap-4">
+            {/* Logo Upload */}
+            <div className="border-t border-border/50 pt-8 mt-4">
+              <div className="flex items-center gap-2 mb-6">
+                <Upload className="h-5 w-5 text-primary" />
+                <h2 className="text-xl font-semibold">Firemní logo</h2>
+              </div>
+
+              <div className="flex items-center gap-8">
                 {logoUrl && (
-                  <img src={logoUrl} alt="Company Logo" className="h-20 w-auto object-contain border rounded" />
+                  <div className="relative group">
+                    <img
+                      src={logoUrl}
+                      alt="Company Logo"
+                      className="h-28 w-auto object-contain bg-white/50 backdrop-blur-md p-4 rounded-2xl shadow-sm border border-white/50"
+                    />
+                  </div>
                 )}
-                <div>
+                <div className="space-y-3">
                   <Input
                     type="file"
                     accept="image/*"
@@ -310,22 +424,21 @@ export default function InvoiceDefaultInfo() {
                     className="hidden"
                     id="logo-upload"
                   />
-                  <Button variant="outline" onClick={() => document.getElementById('logo-upload')?.click()}>
+                  <Button
+                    variant="outline"
+                    onClick={() => document.getElementById('logo-upload')?.click()}
+                    className="bg-card/50 backdrop-blur-sm border-0 shadow-sm rounded-xl px-6 h-11 transition-all hover:bg-card/80"
+                  >
                     <Upload className="h-4 w-4 mr-2" />
-                    Upload Logo
+                    Nahrát nové logo
                   </Button>
-                  <p className="text-xs text-muted-foreground mt-1">Max 2MB, PNG or JPG</p>
+                  <p className="text-xs text-muted-foreground ml-1">
+                    Maximální velikost 2MB (PNG nebo JPG)
+                  </p>
                 </div>
               </div>
             </div>
-
-            <div className="flex justify-end pt-4">
-              <Button onClick={saveCompanyInfo} disabled={loading || !companyName}>
-                <Save className="h-4 w-4 mr-2" />
-                {loading ? "Saving..." : "Save Information"}
-              </Button>
-            </div>
-          </div>
+          </CardContent>
         </Card>
       </div>
     </Layout>

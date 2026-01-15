@@ -1,6 +1,6 @@
 import { useMemo, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { ClientLoading } from '@/components/client/ClientLoading';
+import { LoadingOverlay } from "@/components/LoadingOverlay";
 import { ClientEmptyState } from '@/components/client/dashboard/ClientEmptyState';
 import { BookingCard } from '@/components/client/dashboard/BookingCard';
 import { useClientDashboardData } from '@/hooks/useClientDashboardData';
@@ -71,7 +71,7 @@ export default function ClientDashboard() {
   };
 
   if (isLoading) {
-    return <ClientLoading message="Načítám Váš dashboard..." />;
+    return <LoadingOverlay message="Načítám Váš dashboard..." />;
   }
 
   return (

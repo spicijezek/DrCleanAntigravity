@@ -15,7 +15,7 @@ import AdminApproval from "./pages/admin/AdminApproval";
 import Clients from "./pages/admin/Clients";
 import Jobs from "./pages/admin/Jobs";
 import Team from "./pages/admin/Team";
-import Protocols from "./pages/admin/Protocols";
+
 import Finances from "./pages/admin/Finances";
 import InvoiceGenerator from "./pages/admin/InvoiceGenerator";
 import InvoiceStorage from "./pages/admin/InvoiceStorage";
@@ -142,23 +142,17 @@ const App = () => (
             } />
             <Route path="/admin/app-bookings" element={
               <ProtectedRoute>
-                <Layout>
-                  <AppBookings />
-                </Layout>
+                <AppBookings />
               </ProtectedRoute>
             } />
             <Route path="/admin/checklists" element={
               <ProtectedRoute>
-                <Layout>
-                  <AdminChecklistManager />
-                </Layout>
+                <AdminChecklistManager />
               </ProtectedRoute>
             } />
             <Route path="/admin/app-registers" element={
               <ProtectedRoute>
-                <Layout>
-                  <AppRegisters />
-                </Layout>
+                <AppRegisters />
               </ProtectedRoute>
             } />
             <Route path="/" element={
@@ -181,11 +175,7 @@ const App = () => (
                 <Team />
               </ProtectedRoute>
             } />
-            <Route path="/protocols" element={
-              <ProtectedRoute>
-                <Protocols />
-              </ProtectedRoute>
-            } />
+
             <Route path="/finances" element={
               <ProtectedRoute>
                 <Finances />

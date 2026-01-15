@@ -12,7 +12,7 @@ import { cs } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { BookingDetailsDisplay } from "@/components/bookings/BookingDetailsDisplay";
-import { ClientLoading } from "@/components/client/ClientLoading";
+import { LoadingOverlay } from "@/components/LoadingOverlay";
 
 interface Booking {
     id: string;
@@ -183,7 +183,7 @@ export default function CleanerHistory() {
     }, [history]);
 
     if (loading) {
-        return <ClientLoading message="Načítám Vaši historii..." />;
+        return <LoadingOverlay message="Načítám Vaši historii..." />;
     }
 
     return (

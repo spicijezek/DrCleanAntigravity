@@ -3,10 +3,10 @@ import { useState, useEffect } from "react"
 import { supabase } from "@/integrations/supabase/client"
 import { useAuth } from "@/contexts/AuthContext"
 import { useNavigate } from "react-router-dom"
-import { 
-  DollarSign, 
-  Users, 
-  Calendar, 
+import {
+  DollarSign,
+  Users,
+  Calendar,
   TrendingUp,
   CheckCircle,
   Clock,
@@ -60,9 +60,9 @@ export function DashboardStats({ blurNumbers = false }: DashboardStatsProps) {
       const totalRevenue = allJobs?.reduce((sum, job) => sum + (job.revenue || 0), 0) || 0;
 
       // Calculate past 30 days revenue (jobs with payment_received_date in past 30 days)
-      const past30DaysPaidJobs = allJobs?.filter(job => 
-        job.payment_received_date && 
-        new Date(job.payment_received_date) >= thirtyDaysAgo && 
+      const past30DaysPaidJobs = allJobs?.filter(job =>
+        job.payment_received_date &&
+        new Date(job.payment_received_date) >= thirtyDaysAgo &&
         new Date(job.payment_received_date) <= now
       ) || [];
       const past30DaysRevenue = past30DaysPaidJobs.reduce((sum, job) => sum + (job.revenue || 0), 0);
@@ -76,9 +76,9 @@ export function DashboardStats({ blurNumbers = false }: DashboardStatsProps) {
 
       const totalClients = allClients?.length || 0;
       // New clients in past 30 days (based on date_added only)
-      const newClientsPast30Days = allClients?.filter(client => 
-        client.date_added && 
-        new Date(client.date_added) >= thirtyDaysAgo && 
+      const newClientsPast30Days = allClients?.filter(client =>
+        client.date_added &&
+        new Date(client.date_added) >= thirtyDaysAgo &&
         new Date(client.date_added) <= now
       ).length || 0;
 
@@ -142,41 +142,45 @@ export function DashboardStats({ blurNumbers = false }: DashboardStatsProps) {
   };
 
   return (
-    <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
       <StatsCard
         title="Total Revenue"
         value={<span className={blurNumbers ? "filter blur-md" : ""}>{formatCurrency(stats.totalRevenue)}</span>}
         change={`${formatCurrency(stats.monthlyRevenue)} past 30 days`}
         changeType="positive"
         icon={DollarSign}
+        className="bg-card/50 backdrop-blur-sm border-0 shadow-lg rounded-3xl overflow-hidden h-full"
       />
-      
-      <div className="cursor-pointer" onClick={() => navigate('/clients')}>
+
+      <div className="cursor-pointer h-full" onClick={() => navigate('/clients')}>
         <StatsCard
           title="Active Clients"
           value={<span className={blurNumbers ? "filter blur-md" : ""}>{stats.totalClients.toString()}</span>}
           change={`${stats.newClientsThisMonth} new past 30 days`}
           changeType="positive"
           icon={Users}
+          className="bg-card/50 backdrop-blur-sm border-0 shadow-lg rounded-3xl overflow-hidden h-full"
         />
       </div>
-      
-      <div className="cursor-pointer" onClick={() => navigate('/jobs')}>
+
+      <div className="cursor-pointer h-full" onClick={() => navigate('/jobs')}>
         <StatsCard
           title="Completed Jobs"
           value={<span className={blurNumbers ? "filter blur-md" : ""}>{stats.completedJobs.toString()}</span>}
           change={`${stats.jobsCompletedThisMonth} past 30 days`}
           changeType="positive"
           icon={CheckCircle}
+          className="bg-card/50 backdrop-blur-sm border-0 shadow-lg rounded-3xl overflow-hidden h-full"
         />
       </div>
-      
+
       <StatsCard
         title="Scheduled Jobs"
         value={<span className={blurNumbers ? "filter blur-md" : ""}>{stats.scheduledJobs.toString()}</span>}
         change="Waiting for completion"
         changeType="neutral"
         icon={Calendar}
+        className="bg-card/50 backdrop-blur-sm border-0 shadow-lg rounded-3xl overflow-hidden h-full"
       />
     </div>
   )

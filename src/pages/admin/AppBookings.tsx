@@ -17,6 +17,9 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { BookingDetailsDisplay } from '@/components/bookings/BookingDetailsDisplay';
 import { PhotoGallery } from '@/components/bookings/PhotoGallery';
 import { CreateBookingDialog } from '@/components/admin/CreateBookingDialog';
+import { Layout } from '@/components/layout/Layout';
+import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
+import { LoadingOverlay } from '@/components/LoadingOverlay';
 
 interface ChecklistRoom {
   id: string;
@@ -597,28 +600,28 @@ export default function AppBookings() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
-      </div>
-    );
+    return <LoadingOverlay message="Načítám rezervace..." />;
   }
 
   return (
-    <div className="p-3 sm:p-6">
-      <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold">App Bookings</h1>
-            <p className="text-sm sm:text-base text-muted-foreground mt-2">Spravujte rezervace z klientské aplikace</p>
-          </div>
-          <Button onClick={() => navigate('/klient/sluzby')}>
-            <Plus className="h-4 w-4 mr-2" />
-            Vytvořit rezervaci
-          </Button>
-        </div>
+    <Layout>
+      <div className="container mx-auto p-4 sm:p-6 pb-24 space-y-6 max-w-7xl animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <AdminPageHeader
+          title="App Bookings"
+          description="Spravujte rezervace z klientské aplikace"
+          action={
+            <Button
+              onClick={() => navigate('/klient/sluzby')}
+              variant="outline"
+              className="shadow-sm hover:shadow-md transition-all rounded-xl border-primary/20 text-primary hover:bg-primary/5"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Vytvořit rezervaci
+            </Button>
+          }
+        />
 
-        <div className="grid gap-4">
+        <div className="grid gap-6">
           {bookings.map((booking) => {
             const isPending = booking.status === 'pending';
             const isApproved = booking.status === 'approved';
@@ -626,10 +629,10 @@ export default function AppBookings() {
             const isCompleted = booking.status === 'completed';
             const details = booking.booking_details;
 
-            const statusColorClass = isPending ? 'from-amber-400 to-amber-600' : isApproved ? 'from-green-500 to-green-700' : isCompleted ? 'from-blue-500 to-blue-700' : 'from-red-500 to-red-700';
+            const statusColorClass = isPending ? 'from-amber-400 to-amber-500' : isApproved ? 'from-indigo-500 to-indigo-600' : isCompleted ? 'from-blue-500 to-blue-600' : 'from-rose-500 to-rose-600';
 
             return (
-              <Card key={booking.id} className="rounded-3xl shadow-md hover:shadow-xl transition-all duration-300 border-0 overflow-hidden bg-card/80 backdrop-blur-sm relative group">
+              <Card key={booking.id} className="bg-card/50 backdrop-blur-sm border-0 shadow-lg rounded-3xl overflow-hidden hover:shadow-xl transition-all duration-300 group">
                 <div className={`absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b ${statusColorClass}`} />
                 <CardHeader className="p-4 sm:p-6">
                   <div className="flex flex-col sm:flex-row items-start justify-between gap-3">
@@ -637,18 +640,18 @@ export default function AppBookings() {
                       <CardTitle className="flex flex-wrap items-center gap-2 text-lg sm:text-2xl">
                         <span className="break-words">{details?.service_title || booking.service_type}</span>
                         {isPending && (
-                          <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 text-xs whitespace-nowrap">
+                          <Badge variant="secondary" className="bg-amber-50 text-amber-700 border-amber-200 text-xs whitespace-nowrap">
                             Čeká na schválení
                           </Badge>
                         )}
                         {isApproved && (
-                          <Badge className="bg-green-600 text-xs whitespace-nowrap">Schváleno</Badge>
+                          <Badge className="bg-indigo-50 text-indigo-700 border-indigo-200 text-xs whitespace-nowrap">Schváleno</Badge>
                         )}
                         {isCompleted && (
-                          <Badge className="bg-blue-600 text-xs whitespace-nowrap">Dokončeno</Badge>
+                          <Badge className="bg-blue-50 text-blue-700 border-blue-200 text-xs whitespace-nowrap">Dokončeno</Badge>
                         )}
                         {isDeclined && (
-                          <Badge variant="destructive" className="text-xs whitespace-nowrap">Zamítnuto</Badge>
+                          <Badge variant="destructive" className="bg-rose-50 text-rose-700 border-rose-200 text-xs whitespace-nowrap">Zamítnuto</Badge>
                         )}
                       </CardTitle>
                       <p className="text-xs sm:text-sm text-muted-foreground break-words">
@@ -661,7 +664,7 @@ export default function AppBookings() {
                           variant="default"
                           size="sm"
                           onClick={() => navigate('/invoices/generator', { state: { bookingId: booking.id } })}
-                          className="flex-1 sm:flex-none"
+                          className="flex-1 sm:flex-none hover:bg-rose-50 hover:text-rose-600 transition-colors"
                         >
                           <FileText className="h-4 w-4 sm:mr-2" />
                           <span className="hidden sm:inline">Vytvořit fakturu</span>
@@ -1397,6 +1400,6 @@ export default function AppBookings() {
           )}
         </DialogContent>
       </Dialog>
-    </div>
+    </Layout>
   );
 }

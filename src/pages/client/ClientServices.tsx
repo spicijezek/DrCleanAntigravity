@@ -24,6 +24,7 @@ import { ServiceCard } from '@/components/client/services/ServiceCard';
 import { cn } from '@/lib/utils';
 import { bookingDetailsSchema, bookingAddressSchema } from '@/lib/validationSchemas';
 import { DateTimeRow } from '@/components/ui/date-time-picker';
+import { LoadingOverlay } from '@/components/LoadingOverlay';
 
 // Import media assets
 import uklidVideo from '@/assets/uklid-video.mp4';
@@ -809,53 +810,53 @@ export default function ClientServices() {
     }));
   };
   return <div className="container mx-auto p-4 pb-20 space-y-5">
-      {/* Hero Header */}
-      <ClientHeroHeader
-        icon={Sparkles}
-        title="Naše Služby"
-        subtitle="Vyberte si službu, kterou potřebujete"
-      />
+    {/* Hero Header */}
+    <ClientHeroHeader
+      icon={Sparkles}
+      title="Naše Služby"
+      subtitle="Vyberte si službu, kterou potřebujete"
+    />
 
-      {isAdminBooking && <Card className="border-primary">
-          <CardHeader>
-            <CardTitle className="text-lg">Rezervace pro klienta</CardTitle>
-            <CardDescription>Vyberte klienta, pro kterého vytváříte rezervaci</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Select value={selectedClientForBooking} onValueChange={setSelectedClientForBooking}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Vyberte klienta..." />
-              </SelectTrigger>
-              <SelectContent>
-                {availableClients.map(client => <SelectItem key={client.id} value={client.id}>
-                    {client.name} ({client.email || 'Bez emailu'})
-                  </SelectItem>)}
-              </SelectContent>
-            </Select>
-          </CardContent>
-        </Card>}
+    {isAdminBooking && <Card className="border-primary">
+      <CardHeader>
+        <CardTitle className="text-lg">Rezervace pro klienta</CardTitle>
+        <CardDescription>Vyberte klienta, pro kterého vytváříte rezervaci</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Select value={selectedClientForBooking} onValueChange={setSelectedClientForBooking}>
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Vyberte klienta..." />
+          </SelectTrigger>
+          <SelectContent>
+            {availableClients.map(client => <SelectItem key={client.id} value={client.id}>
+              {client.name} ({client.email || 'Bez emailu'})
+            </SelectItem>)}
+          </SelectContent>
+        </Select>
+      </CardContent>
+    </Card>}
 
-      {/* Intro Section */}
-      <div className="bg-muted/50 rounded-xl p-4 border border-border">
-        <div className="flex items-start gap-3">
-          <div className="p-2 rounded-lg bg-primary/10">
-            <Info className="h-5 w-5 text-primary" />
-          </div>
-          <div className="space-y-1">
-            <h3 className="font-medium text-foreground">Jak to funguje?</h3>
-            <p className="text-sm text-muted-foreground">
-              Vyberte službu, vyplňte formulář a my se vám ozveme pro finální domluvu.
-            </p>
-          </div>
+    {/* Intro Section */}
+    <div className="bg-muted/50 rounded-xl p-4 border border-border">
+      <div className="flex items-start gap-3">
+        <div className="p-2 rounded-lg bg-primary/10">
+          <Info className="h-5 w-5 text-primary" />
+        </div>
+        <div className="space-y-1">
+          <h3 className="font-medium text-foreground">Jak to funguje?</h3>
+          <p className="text-sm text-muted-foreground">
+            Vyberte službu, vyplňte formulář a my se vám ozveme pro finální domluvu.
+          </p>
         </div>
       </div>
+    </div>
 
-      {/* Services Grid */}
-      <div className="space-y-4">
-        {services.map(service => {
-          const isOpen = selectedService?.id === service.id;
-          return (
-            <div key={service.id} ref={(el) => { serviceRefs.current[service.id] = el; }}>
+    {/* Services Grid */}
+    <div className="space-y-4">
+      {services.map(service => {
+        const isOpen = selectedService?.id === service.id;
+        return (
+          <div key={service.id} ref={(el) => { serviceRefs.current[service.id] = el; }}>
             <ServiceCard
               id={service.id}
               title={service.title}
@@ -882,986 +883,987 @@ export default function ClientServices() {
                 </AlertDescription>
               </Alert>
 
-                    {/* Combined Cleaning Form */}
-                    {service.id === 'cleaning' && <>
-                        {/* Cleaning Type Selector */}
-                        <section className="space-y-3">
-                          <Label className="text-sm font-medium">Typ úklidu</Label>
-                          <div className="grid grid-cols-2 gap-3">
-                            <div 
-                              className={`p-4 rounded-lg border cursor-pointer transition-all ${bookingData.cleaning_type === 'osobni' ? 'bg-primary/10 border-primary ring-2 ring-primary/20' : 'bg-card border-border hover:border-primary/50'}`} 
-                              onClick={() => setBookingData({
-                                ...bookingData,
-                                cleaning_type: 'osobni'
-                              })}
-                            >
-                              <div className="flex items-center gap-3">
-                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${bookingData.cleaning_type === 'osobni' ? 'border-primary bg-primary' : 'border-muted-foreground/30'}`}>
-                                  {bookingData.cleaning_type === 'osobni' && <div className="w-2.5 h-2.5 rounded-full bg-background" />}
-                                </div>
-                                <span className="font-medium text-sm">Domácnost</span>
-                              </div>
-                            </div>
-                            
-                            <div 
-                              className={`p-4 rounded-lg border cursor-pointer transition-all ${bookingData.cleaning_type === 'firemni' ? 'bg-primary/10 border-primary ring-2 ring-primary/20' : 'bg-card border-border hover:border-primary/50'}`} 
-                              onClick={() => setBookingData({
-                                ...bookingData,
-                                cleaning_type: 'firemni'
-                              })}
-                            >
-                              <div className="flex items-center gap-3">
-                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${bookingData.cleaning_type === 'firemni' ? 'border-primary bg-primary' : 'border-muted-foreground/30'}`}>
-                                  {bookingData.cleaning_type === 'firemni' && <div className="w-2.5 h-2.5 rounded-full bg-background" />}
-                                </div>
-                                <span className="font-medium text-sm">Firma</span>
-                              </div>
-                            </div>
-                          </div>
-                        </section>
-
-                        {/* Home Cleaning Fields */}
-                        {bookingData.cleaning_type === 'osobni' && <>
-                          <section className="space-y-4">
-                            <div className="grid grid-cols-2 gap-3">
-                              <div className="space-y-2">
-                                <Label className="text-sm">Plocha (m²)</Label>
-                                <Input type="number" inputMode="numeric" min="20" max="500" placeholder="Zadejte plochu" className="h-11 rounded-lg bg-background" value={bookingData.plocha_m2 || ''} onChange={e => setBookingData({
-                            ...bookingData,
-                            plocha_m2: Number(e.target.value) || 0
-                          })} />
-                              </div>
-                              <div className="space-y-2">
-                                <Label className="text-sm">Počet koupelen</Label>
-                                <Input type="number" inputMode="numeric" min="0" max="10" placeholder="Zadejte počet" className="h-11 rounded-lg bg-background" value={bookingData.pocet_koupelen || ''} onChange={e => setBookingData({
-                            ...bookingData,
-                            pocet_koupelen: Number(e.target.value) || 0
-                          })} />
-                              </div>
-                            </div>
-                            <div className="space-y-2">
-                              <Label className="text-sm">Počet kuchyní</Label>
-                              <Input type="number" inputMode="numeric" min="0" max="5" placeholder="Zadejte počet" className="h-11 rounded-lg bg-background" value={bookingData.pocet_kuchyni || ''} onChange={e => setBookingData({
-                          ...bookingData,
-                          pocet_kuchyni: Number(e.target.value) || 0
-                        })} />
-                            </div>
-                          </section>
-
-                          <section className="space-y-4">
-                            <div className="space-y-2">
-                              {isMobile ? <StyledSelect value={bookingData.typ_domacnosti || ''} onChange={e => setBookingData({
-                          ...bookingData,
-                          typ_domacnosti: e.target.value as 'byt' | 'rodinny_dum'
-                        })}>
-                                <option value="" disabled>Zvolte typ domácnosti</option>
-                                <option value="byt">Byt</option>
-                                <option value="rodinny_dum">Rodinný dům</option>
-                              </StyledSelect> : <Select value={bookingData.typ_domacnosti || undefined} onValueChange={(value: 'byt' | 'rodinny_dum') => setBookingData({
-                          ...bookingData,
-                          typ_domacnosti: value
-                        })}>
-                                <SelectTrigger className="bg-background h-11 rounded-lg shadow-sm relative z-[200]">
-                                  <SelectValue placeholder="Zvolte typ domácnosti" />
-                                </SelectTrigger>
-                                <SelectContent className="bg-popover z-[10050]">
-                                  <SelectItem value="byt">Byt</SelectItem>
-                                  <SelectItem value="rodinny_dum">Rodinný dům</SelectItem>
-                                </SelectContent>
-                              </Select>}
-                            </div>
-                          </section>
-
-                          <section className="space-y-4">
-                            <div className="space-y-2">
-                              {isMobile ? <StyledSelect value={bookingData.znecisteni || ''} onChange={e => setBookingData({
-                          ...bookingData,
-                          znecisteni: e.target.value as DirtinessLevel
-                        })}>
-                                <option value="" disabled>Zvolte úroveň znečištění</option>
-                                <option value="nizka">Nízké</option>
-                                <option value="stredni">Střední</option>
-                                <option value="vysoka">Vysoké</option>
-                              </StyledSelect> : <Select value={bookingData.znecisteni || undefined} onValueChange={(value: DirtinessLevel) => setBookingData({
-                          ...bookingData,
-                          znecisteni: value
-                        })}>
-                                <SelectTrigger className="bg-background h-11 rounded-lg shadow-sm relative z-[200]">
-                                  <SelectValue placeholder="Zvolte úroveň znečištění" />
-                                </SelectTrigger>
-                                <SelectContent className="bg-popover z-[10050]">
-                                  <SelectItem value="nizka">Nízké</SelectItem>
-                                  <SelectItem value="stredni">Střední</SelectItem>
-                                  <SelectItem value="vysoka">Vysoké</SelectItem>
-                                </SelectContent>
-                              </Select>}
-                            </div>
-                          </section>
-
-                          <section className="space-y-4">
-                            <div className="space-y-2">
-                              {isMobile ? <StyledSelect value={bookingData.frekvence || ''} onChange={e => setBookingData({
-                          ...bookingData,
-                          frekvence: e.target.value as FrequencyType
-                        })}>
-                                <option value="" disabled>Zvolte frekvenci</option>
-                                <option value="jednorazove">Jednorázově</option>
-                                <option value="mesicne">Měsíčně (−10 %)</option>
-                                <option value="ctyrtydne">Každé 2 týdny (−15 %)</option>
-                                <option value="tydne">Každý týden (−20 %)</option>
-                              </StyledSelect> : <Select value={bookingData.frekvence || undefined} onValueChange={(value: FrequencyType) => setBookingData({
-                          ...bookingData,
-                          frekvence: value
-                        })}>
-                                <SelectTrigger className="bg-background h-11 rounded-lg shadow-sm relative z-[200]">
-                                  <SelectValue placeholder="Zvolte frekvenci" />
-                                </SelectTrigger>
-                                <SelectContent className="bg-popover z-[10050]">
-                                  <SelectItem value="jednorazove">Jednorázově</SelectItem>
-                                  <SelectItem value="mesicne">Měsíčně (−10 %)</SelectItem>
-                                  <SelectItem value="ctyrtydne">Každé 2 týdny (−15 %)</SelectItem>
-                                  <SelectItem value="tydne">Každý týden (−20 %)</SelectItem>
-                                </SelectContent>
-                              </Select>}
-                            </div>
-                          </section>
-
-                          <section className="space-y-3">
-                            <Label className="text-sm font-medium">Úklidové vybavení</Label>
-                            <div className="space-y-2">
-                              <div className={`p-4 rounded-lg border cursor-pointer transition-all ${bookingData.equipment_option === 'with' ? 'bg-primary/10 border-primary ring-2 ring-primary/20' : 'bg-card border-border hover:border-primary/50'}`} onClick={() => setBookingData({
-                          ...bookingData,
-                          equipment_option: 'with'
-                        })}>
-                                <div className="flex items-start gap-3">
-                                  <div className={`mt-0.5 w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${bookingData.equipment_option === 'with' ? 'border-primary bg-primary' : 'border-muted-foreground/30'}`}>
-                                    {bookingData.equipment_option === 'with' && <div className="w-2.5 h-2.5 rounded-full bg-background" />}
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                    <div className="font-medium text-sm mb-1">Mám úklidové vybavení a prostředky</div>
-                                    <div className="text-xs text-muted-foreground">Hadry z mikrovlákna, Vysavač, Mop + Kbelík, Houbička, Čistící prostředky</div>
-                                  </div>
-                                </div>
-                              </div>
-                              
-                              <div className={`p-4 rounded-lg border cursor-pointer transition-all ${bookingData.equipment_option === 'without' ? 'bg-primary/10 border-primary ring-2 ring-primary/20' : 'bg-card border-border hover:border-primary/50'}`} onClick={() => setBookingData({
-                          ...bookingData,
-                          equipment_option: 'without'
-                        })}>
-                                <div className="flex items-start gap-3">
-                                  <div className={`mt-0.5 w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${bookingData.equipment_option === 'without' ? 'border-primary bg-primary' : 'border-muted-foreground/30'}`}>
-                                    {bookingData.equipment_option === 'without' && <div className="w-2.5 h-2.5 rounded-full bg-background" />}
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                    <div className="font-medium text-sm mb-1">Nemám úklidové vybavení a prostředky</div>
-                                    <div className="text-xs font-semibold text-primary">+290 Kč</div>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </section>
-                        </>}
-
-                        {/* Office Cleaning Fields */}
-                        {bookingData.cleaning_type === 'firemni' && <>
-                          <section className="space-y-4">
-                            <div className="grid grid-cols-2 gap-3">
-                              <div className="space-y-2">
-                                <Label className="text-sm">Plocha (m²)</Label>
-                                <Input type="number" inputMode="numeric" min="20" max="5000" placeholder="Zadejte plochu" className="h-11 rounded-lg bg-background" value={bookingData.plocha_m2 || ''} onChange={e => setBookingData({
-                            ...bookingData,
-                            plocha_m2: Number(e.target.value) || 0
-                          })} />
-                              </div>
-                              <div className="space-y-2">
-                                <Label className="text-sm">Počet WC</Label>
-                                <Input type="number" inputMode="numeric" min="0" max="50" placeholder="Zadejte počet" className="h-11 rounded-lg bg-background" value={bookingData.pocet_wc || ''} onChange={e => setBookingData({
-                            ...bookingData,
-                            pocet_wc: Number(e.target.value) || 0
-                          })} />
-                              </div>
-                            </div>
-                            <div className="space-y-2">
-                              <Label className="text-sm">Počet kuchyněk</Label>
-                              <Input type="number" inputMode="numeric" min="0" max="20" placeholder="Zadejte počet" className="h-11 rounded-lg bg-background" value={bookingData.pocet_kuchynek || ''} onChange={e => setBookingData({
-                          ...bookingData,
-                          pocet_kuchynek: Number(e.target.value) || 0
-                        })} />
-                            </div>
-                          </section>
-
-                          <section className="space-y-4">
-                            <div className="space-y-2">
-                              {isMobile ? <StyledSelect value={bookingData.typ_prostoru || ''} onChange={e => setBookingData({
-                          ...bookingData,
-                          typ_prostoru: e.target.value as OfficeSpaceType
-                        })}>
-                                <option value="" disabled>Zvolte typ objektu</option>
-                                <option value="kancelar">Kancelář</option>
-                                <option value="obchod">Obchod / Prodejna</option>
-                                <option value="sklad">Sklad</option>
-                                <option value="vyroba">Výroba / Průmysl</option>
-                              </StyledSelect> : <Select value={bookingData.typ_prostoru || undefined} onValueChange={(value: OfficeSpaceType) => setBookingData({
-                          ...bookingData,
-                          typ_prostoru: value
-                        })}>
-                                <SelectTrigger className="bg-background h-11 rounded-lg shadow-sm">
-                                  <SelectValue placeholder="Zvolte typ objektu" />
-                                </SelectTrigger>
-                                <SelectContent className="bg-popover">
-                                  <SelectItem value="kancelar">Kancelář</SelectItem>
-                                  <SelectItem value="obchod">Obchod / Prodejna</SelectItem>
-                                  <SelectItem value="sklad">Sklad</SelectItem>
-                                  <SelectItem value="vyroba">Výroba / Průmysl</SelectItem>
-                                </SelectContent>
-                              </Select>}
-                            </div>
-                          </section>
-
-                          <section className="space-y-4">
-                            <div className="space-y-2">
-                              {isMobile ? <StyledSelect value={bookingData.znecisteni_office || ''} onChange={e => setBookingData({
-                          ...bookingData,
-                          znecisteni_office: e.target.value as OfficeDirtinessLevel
-                        })}>
-                                <option value="" disabled>Zvolte úroveň znečištění</option>
-                                <option value="nizke">Nízké</option>
-                                <option value="stredni">Střední</option>
-                                <option value="vysoke">Vysoké</option>
-                                <option value="extremni">Extrémní</option>
-                              </StyledSelect> : <Select value={bookingData.znecisteni_office || undefined} onValueChange={(value: OfficeDirtinessLevel) => setBookingData({
-                          ...bookingData,
-                          znecisteni_office: value
-                        })}>
-                                <SelectTrigger className="bg-background h-11 rounded-lg shadow-sm">
-                                  <SelectValue placeholder="Zvolte úroveň znečištění" />
-                                </SelectTrigger>
-                                <SelectContent className="bg-popover">
-                                  <SelectItem value="nizke">Nízké</SelectItem>
-                                  <SelectItem value="stredni">Střední</SelectItem>
-                                  <SelectItem value="vysoke">Vysoké</SelectItem>
-                                  <SelectItem value="extremni">Extrémní</SelectItem>
-                                </SelectContent>
-                              </Select>}
-                            </div>
-                          </section>
-
-                          <section className="space-y-4">
-                            <div className="space-y-2">
-                              {isMobile ? <StyledSelect value={bookingData.frekvence_office || ''} onChange={e => setBookingData({
-                          ...bookingData,
-                          frekvence_office: e.target.value as OfficeFrequencyType
-                        })}>
-                                <option value="" disabled>Zvolte frekvenci</option>
-                                <option value="jednorazove">Jednorázově</option>
-                                <option value="mesicne">Měsíčně (−10 %)</option>
-                                <option value="tydne">Každý týden (−20 %)</option>
-                                <option value="denne">Denně (−30 %)</option>
-                              </StyledSelect> : <Select value={bookingData.frekvence_office || undefined} onValueChange={(value: OfficeFrequencyType) => setBookingData({
-                          ...bookingData,
-                          frekvence_office: value
-                        })}>
-                                <SelectTrigger className="bg-background h-11 rounded-lg shadow-sm">
-                                  <SelectValue placeholder="Zvolte frekvenci" />
-                                </SelectTrigger>
-                                <SelectContent className="bg-popover">
-                                  <SelectItem value="jednorazove">Jednorázově</SelectItem>
-                                  <SelectItem value="mesicne">Měsíčně (−10 %)</SelectItem>
-                                  <SelectItem value="tydne">Každý týden (−20 %)</SelectItem>
-                                  <SelectItem value="denne">Denně (−30 %)</SelectItem>
-                                </SelectContent>
-                              </Select>}
-                            </div>
-                          </section>
-
-                          <section className="space-y-3">
-                            <Label className="text-sm font-medium">Úklidové vybavení</Label>
-                            <div className="space-y-2">
-                              <div className={`p-4 rounded-lg border cursor-pointer transition-all ${bookingData.equipment_option === 'with' ? 'bg-primary/10 border-primary ring-2 ring-primary/20' : 'bg-card border-border hover:border-primary/50'}`} onClick={() => setBookingData({
-                          ...bookingData,
-                          equipment_option: 'with'
-                        })}>
-                                <div className="flex items-start gap-3">
-                                  <div className={`mt-0.5 w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${bookingData.equipment_option === 'with' ? 'border-primary bg-primary' : 'border-muted-foreground/30'}`}>
-                                    {bookingData.equipment_option === 'with' && <div className="w-2.5 h-2.5 rounded-full bg-background" />}
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                    <div className="font-medium text-sm mb-1">Mám úklidové vybavení a prostředky</div>
-                                    <div className="text-xs text-muted-foreground">Hadry z mikrovlákna, Vysavač, Mop + Kbelík, Houbička, Čistící prostředky</div>
-                                  </div>
-                                </div>
-                              </div>
-                              
-                              <div className={`p-4 rounded-lg border cursor-pointer transition-all ${bookingData.equipment_option === 'without' ? 'bg-primary/10 border-primary ring-2 ring-primary/20' : 'bg-card border-border hover:border-primary/50'}`} onClick={() => setBookingData({
-                          ...bookingData,
-                          equipment_option: 'without'
-                        })}>
-                                <div className="flex items-start gap-3">
-                                  <div className={`mt-0.5 w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${bookingData.equipment_option === 'without' ? 'border-primary bg-primary' : 'border-muted-foreground/30'}`}>
-                                    {bookingData.equipment_option === 'without' && <div className="w-2.5 h-2.5 rounded-full bg-background" />}
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                    <div className="font-medium text-sm mb-1">Nemám úklidové vybavení a prostředky</div>
-                                    <div className="text-xs font-semibold text-primary">+290 Kč</div>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </section>
-                        </>}
-                      </>}
-
-                    {/* Window Cleaning Form */}
-                    {service.id === 'window_cleaning' && <>
-                        <section className="space-y-4">
-                          <div className="space-y-2">
-                            <Input type="number" inputMode="numeric" min="1" max="100" placeholder="Např. 8 m²" className="h-11 rounded-lg bg-background" value={bookingData.pocet_oken || ''} onChange={e => setBookingData({
+              {/* Combined Cleaning Form */}
+              {service.id === 'cleaning' && <>
+                {/* Cleaning Type Selector */}
+                <section className="space-y-3">
+                  <Label className="text-sm font-medium">Typ úklidu</Label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div
+                      className={`p-4 rounded-lg border cursor-pointer transition-all ${bookingData.cleaning_type === 'osobni' ? 'bg-primary/10 border-primary ring-2 ring-primary/20' : 'bg-card border-border hover:border-primary/50'}`}
+                      onClick={() => setBookingData({
                         ...bookingData,
-                        pocet_oken: Number(e.target.value) || 0
-                      })} />
-                            <p className="text-xs text-muted-foreground">*přibližná plocha jedné strany oken (m²) </p>
-                          </div>
-                        </section>
-
-                        <section className="space-y-4">
-                          <div className="space-y-2">
-                            {isMobile ? <StyledSelect value={bookingData.znecisteni_okna || ''} onChange={e => setBookingData({
-                        ...bookingData,
-                        znecisteni_okna: e.target.value as WindowDirtinessLevel
-                      })}>
-                              <option value="" disabled>Zvolte úroveň znečištění</option>
-                              <option value="nizke">Nízké</option>
-                              <option value="stredni">Střední</option>
-                              <option value="vysoke">Vysoké</option>
-                            </StyledSelect> : <Select value={bookingData.znecisteni_okna || undefined} onValueChange={(value: WindowDirtinessLevel) => setBookingData({
-                        ...bookingData,
-                        znecisteni_okna: value
-                      })}>
-                              <SelectTrigger className="bg-background h-11 rounded-lg shadow-sm">
-                                <SelectValue placeholder="Zvolte úroveň znečištění" />
-                              </SelectTrigger>
-                              <SelectContent className="bg-popover">
-                                <SelectItem value="nizke">Nízké</SelectItem>
-                                <SelectItem value="stredni">Střední</SelectItem>
-                                <SelectItem value="vysoke">Vysoké</SelectItem>
-                              </SelectContent>
-                            </Select>}
-                          </div>
-                        </section>
-
-                        <section className="space-y-4">
-                          <div className="space-y-2">
-                            {isMobile ? <StyledSelect value={bookingData.typ_objektu_okna || ''} onChange={e => setBookingData({
-                        ...bookingData,
-                        typ_objektu_okna: e.target.value as WindowObjectType
-                      })}>
-                              <option value="" disabled>Zvolte typ objektu</option>
-                              <option value="byt">Byt / Dům</option>
-                              <option value="kancelar">Kancelář / Obchod</option>
-                            </StyledSelect> : <Select value={bookingData.typ_objektu_okna || undefined} onValueChange={(value: WindowObjectType) => setBookingData({
-                        ...bookingData,
-                        typ_objektu_okna: value
-                      })}>
-                              <SelectTrigger className="bg-background h-11 rounded-lg shadow-sm">
-                                <SelectValue placeholder="Zvolte typ objektu" />
-                              </SelectTrigger>
-                              <SelectContent className="bg-popover">
-                                <SelectItem value="byt">Byt / Dům</SelectItem>
-                                <SelectItem value="kancelar">Kancelář / Obchod</SelectItem>
-                              </SelectContent>
-                            </Select>}
-                          </div>
-                        </section>
-                      </>}
-
-                    {/* Upholstery Cleaning Form */}
-                    {service.id === 'upholstery_cleaning' && <UpholsteryServiceSelector data={bookingData} onChange={changes => setBookingData(prev => ({
-                  ...prev,
-                  ...changes
-                }))} />}
-
-                    {/* Common Fields for All Services */}
-                    <section className="space-y-4">
-                      <DateTimeRow
-                        date={bookingData.date ? new Date(bookingData.date) : undefined}
-                        time={bookingData.time}
-                        onDateChange={(date) => setBookingData({
-                          ...bookingData,
-                          date: date ? date.toISOString().split('T')[0] : ''
-                        })}
-                        onTimeChange={(time) => setBookingData({
-                          ...bookingData,
-                          time
-                        })}
-                        disabledDates={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
-                        singleRow={false}
-                      />
-                    </section>
-
-                    <section className="space-y-4">
-                      <div className="space-y-3">
-                        <div className="space-y-2">
-                          <Label htmlFor="street">Ulice a číslo popisné</Label>
-                          <Input id="street" placeholder="např. Hlavní 123" className="h-11 rounded-lg bg-background" value={bookingData.street} onChange={e => setBookingData({
-                        ...bookingData,
-                        street: e.target.value
-                      })} required />
+                        cleaning_type: 'osobni'
+                      })}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${bookingData.cleaning_type === 'osobni' ? 'border-primary bg-primary' : 'border-muted-foreground/30'}`}>
+                          {bookingData.cleaning_type === 'osobni' && <div className="w-2.5 h-2.5 rounded-full bg-background" />}
                         </div>
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="space-y-2">
-                            <Label htmlFor="city">Město</Label>
-                            <Input id="city" placeholder="např. Praha" className="h-11 rounded-lg bg-background" value={bookingData.city} onChange={e => setBookingData({
+                        <span className="font-medium text-sm">Domácnost</span>
+                      </div>
+                    </div>
+
+                    <div
+                      className={`p-4 rounded-lg border cursor-pointer transition-all ${bookingData.cleaning_type === 'firemni' ? 'bg-primary/10 border-primary ring-2 ring-primary/20' : 'bg-card border-border hover:border-primary/50'}`}
+                      onClick={() => setBookingData({
+                        ...bookingData,
+                        cleaning_type: 'firemni'
+                      })}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${bookingData.cleaning_type === 'firemni' ? 'border-primary bg-primary' : 'border-muted-foreground/30'}`}>
+                          {bookingData.cleaning_type === 'firemni' && <div className="w-2.5 h-2.5 rounded-full bg-background" />}
+                        </div>
+                        <span className="font-medium text-sm">Firma</span>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                {/* Home Cleaning Fields */}
+                {bookingData.cleaning_type === 'osobni' && <>
+                  <section className="space-y-4">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-2">
+                        <Label className="text-sm">Plocha (m²)</Label>
+                        <Input type="number" inputMode="numeric" min="20" max="500" placeholder="Zadejte plochu" className="h-11 rounded-lg bg-background" value={bookingData.plocha_m2 || ''} onChange={e => setBookingData({
                           ...bookingData,
-                          city: e.target.value
-                        })} required />
+                          plocha_m2: Number(e.target.value) || 0
+                        })} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-sm">Počet koupelen</Label>
+                        <Input type="number" inputMode="numeric" min="0" max="10" placeholder="Zadejte počet" className="h-11 rounded-lg bg-background" value={bookingData.pocet_koupelen || ''} onChange={e => setBookingData({
+                          ...bookingData,
+                          pocet_koupelen: Number(e.target.value) || 0
+                        })} />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm">Počet kuchyní</Label>
+                      <Input type="number" inputMode="numeric" min="0" max="5" placeholder="Zadejte počet" className="h-11 rounded-lg bg-background" value={bookingData.pocet_kuchyni || ''} onChange={e => setBookingData({
+                        ...bookingData,
+                        pocet_kuchyni: Number(e.target.value) || 0
+                      })} />
+                    </div>
+                  </section>
+
+                  <section className="space-y-4">
+                    <div className="space-y-2">
+                      {isMobile ? <StyledSelect value={bookingData.typ_domacnosti || ''} onChange={e => setBookingData({
+                        ...bookingData,
+                        typ_domacnosti: e.target.value as 'byt' | 'rodinny_dum'
+                      })}>
+                        <option value="" disabled>Zvolte typ domácnosti</option>
+                        <option value="byt">Byt</option>
+                        <option value="rodinny_dum">Rodinný dům</option>
+                      </StyledSelect> : <Select value={bookingData.typ_domacnosti || undefined} onValueChange={(value: 'byt' | 'rodinny_dum') => setBookingData({
+                        ...bookingData,
+                        typ_domacnosti: value
+                      })}>
+                        <SelectTrigger className="bg-background h-11 rounded-lg shadow-sm relative z-[200]">
+                          <SelectValue placeholder="Zvolte typ domácnosti" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-popover z-[10050]">
+                          <SelectItem value="byt">Byt</SelectItem>
+                          <SelectItem value="rodinny_dum">Rodinný dům</SelectItem>
+                        </SelectContent>
+                      </Select>}
+                    </div>
+                  </section>
+
+                  <section className="space-y-4">
+                    <div className="space-y-2">
+                      {isMobile ? <StyledSelect value={bookingData.znecisteni || ''} onChange={e => setBookingData({
+                        ...bookingData,
+                        znecisteni: e.target.value as DirtinessLevel
+                      })}>
+                        <option value="" disabled>Zvolte úroveň znečištění</option>
+                        <option value="nizka">Nízké</option>
+                        <option value="stredni">Střední</option>
+                        <option value="vysoka">Vysoké</option>
+                      </StyledSelect> : <Select value={bookingData.znecisteni || undefined} onValueChange={(value: DirtinessLevel) => setBookingData({
+                        ...bookingData,
+                        znecisteni: value
+                      })}>
+                        <SelectTrigger className="bg-background h-11 rounded-lg shadow-sm relative z-[200]">
+                          <SelectValue placeholder="Zvolte úroveň znečištění" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-popover z-[10050]">
+                          <SelectItem value="nizka">Nízké</SelectItem>
+                          <SelectItem value="stredni">Střední</SelectItem>
+                          <SelectItem value="vysoka">Vysoké</SelectItem>
+                        </SelectContent>
+                      </Select>}
+                    </div>
+                  </section>
+
+                  <section className="space-y-4">
+                    <div className="space-y-2">
+                      {isMobile ? <StyledSelect value={bookingData.frekvence || ''} onChange={e => setBookingData({
+                        ...bookingData,
+                        frekvence: e.target.value as FrequencyType
+                      })}>
+                        <option value="" disabled>Zvolte frekvenci</option>
+                        <option value="jednorazove">Jednorázově</option>
+                        <option value="mesicne">Měsíčně (−10 %)</option>
+                        <option value="ctyrtydne">Každé 2 týdny (−15 %)</option>
+                        <option value="tydne">Každý týden (−20 %)</option>
+                      </StyledSelect> : <Select value={bookingData.frekvence || undefined} onValueChange={(value: FrequencyType) => setBookingData({
+                        ...bookingData,
+                        frekvence: value
+                      })}>
+                        <SelectTrigger className="bg-background h-11 rounded-lg shadow-sm relative z-[200]">
+                          <SelectValue placeholder="Zvolte frekvenci" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-popover z-[10050]">
+                          <SelectItem value="jednorazove">Jednorázově</SelectItem>
+                          <SelectItem value="mesicne">Měsíčně (−10 %)</SelectItem>
+                          <SelectItem value="ctyrtydne">Každé 2 týdny (−15 %)</SelectItem>
+                          <SelectItem value="tydne">Každý týden (−20 %)</SelectItem>
+                        </SelectContent>
+                      </Select>}
+                    </div>
+                  </section>
+
+                  <section className="space-y-3">
+                    <Label className="text-sm font-medium">Úklidové vybavení</Label>
+                    <div className="space-y-2">
+                      <div className={`p-4 rounded-lg border cursor-pointer transition-all ${bookingData.equipment_option === 'with' ? 'bg-primary/10 border-primary ring-2 ring-primary/20' : 'bg-card border-border hover:border-primary/50'}`} onClick={() => setBookingData({
+                        ...bookingData,
+                        equipment_option: 'with'
+                      })}>
+                        <div className="flex items-start gap-3">
+                          <div className={`mt-0.5 w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${bookingData.equipment_option === 'with' ? 'border-primary bg-primary' : 'border-muted-foreground/30'}`}>
+                            {bookingData.equipment_option === 'with' && <div className="w-2.5 h-2.5 rounded-full bg-background" />}
                           </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="postal_code">PSČ</Label>
-                            <Input id="postal_code" placeholder="např. 110 00" className="h-11 rounded-lg bg-background" value={bookingData.postal_code} onChange={e => setBookingData({
-                          ...bookingData,
-                          postal_code: e.target.value
-                        })} required />
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-sm mb-1">Mám úklidové vybavení a prostředky</div>
+                            <div className="text-xs text-muted-foreground">Hadry z mikrovlákna, Vysavač, Mop + Kbelík, Houbička, Čistící prostředky</div>
                           </div>
                         </div>
                       </div>
-                    </section>
 
+                      <div className={`p-4 rounded-lg border cursor-pointer transition-all ${bookingData.equipment_option === 'without' ? 'bg-primary/10 border-primary ring-2 ring-primary/20' : 'bg-card border-border hover:border-primary/50'}`} onClick={() => setBookingData({
+                        ...bookingData,
+                        equipment_option: 'without'
+                      })}>
+                        <div className="flex items-start gap-3">
+                          <div className={`mt-0.5 w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${bookingData.equipment_option === 'without' ? 'border-primary bg-primary' : 'border-muted-foreground/30'}`}>
+                            {bookingData.equipment_option === 'without' && <div className="w-2.5 h-2.5 rounded-full bg-background" />}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-sm mb-1">Nemám úklidové vybavení a prostředky</div>
+                            <div className="text-xs font-semibold text-primary">+290 Kč</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </section>
+                </>}
 
-                    {/* Detail forms for selected doplňkové služby */}
-                    {service.id === 'cleaning' && bookingData.cleaning_type === 'osobni' && bookingData.doplnky_home.includes('Mytí oken') && <section className="space-y-4 p-4 bg-muted/30 rounded-lg border">
-                        <div className="space-y-2">
-                          <Label className="text-sm">Přibližná okenní plocha (m²)</Label>
-                          <Input type="number" inputMode="numeric" min="1" max="100" placeholder="Např. 8" className="h-11 rounded-lg bg-background" value={bookingData.pocet_oken || ''} onChange={e => setBookingData({
+                {/* Office Cleaning Fields */}
+                {bookingData.cleaning_type === 'firemni' && <>
+                  <section className="space-y-4">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-2">
+                        <Label className="text-sm">Plocha (m²)</Label>
+                        <Input type="number" inputMode="numeric" min="20" max="5000" placeholder="Zadejte plochu" className="h-11 rounded-lg bg-background" value={bookingData.plocha_m2 || ''} onChange={e => setBookingData({
+                          ...bookingData,
+                          plocha_m2: Number(e.target.value) || 0
+                        })} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-sm">Počet WC</Label>
+                        <Input type="number" inputMode="numeric" min="0" max="50" placeholder="Zadejte počet" className="h-11 rounded-lg bg-background" value={bookingData.pocet_wc || ''} onChange={e => setBookingData({
+                          ...bookingData,
+                          pocet_wc: Number(e.target.value) || 0
+                        })} />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm">Počet kuchyněk</Label>
+                      <Input type="number" inputMode="numeric" min="0" max="20" placeholder="Zadejte počet" className="h-11 rounded-lg bg-background" value={bookingData.pocet_kuchynek || ''} onChange={e => setBookingData({
+                        ...bookingData,
+                        pocet_kuchynek: Number(e.target.value) || 0
+                      })} />
+                    </div>
+                  </section>
+
+                  <section className="space-y-4">
+                    <div className="space-y-2">
+                      {isMobile ? <StyledSelect value={bookingData.typ_prostoru || ''} onChange={e => setBookingData({
+                        ...bookingData,
+                        typ_prostoru: e.target.value as OfficeSpaceType
+                      })}>
+                        <option value="" disabled>Zvolte typ objektu</option>
+                        <option value="kancelar">Kancelář</option>
+                        <option value="obchod">Obchod / Prodejna</option>
+                        <option value="sklad">Sklad</option>
+                        <option value="vyroba">Výroba / Průmysl</option>
+                      </StyledSelect> : <Select value={bookingData.typ_prostoru || undefined} onValueChange={(value: OfficeSpaceType) => setBookingData({
+                        ...bookingData,
+                        typ_prostoru: value
+                      })}>
+                        <SelectTrigger className="bg-background h-11 rounded-lg shadow-sm">
+                          <SelectValue placeholder="Zvolte typ objektu" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-popover">
+                          <SelectItem value="kancelar">Kancelář</SelectItem>
+                          <SelectItem value="obchod">Obchod / Prodejna</SelectItem>
+                          <SelectItem value="sklad">Sklad</SelectItem>
+                          <SelectItem value="vyroba">Výroba / Průmysl</SelectItem>
+                        </SelectContent>
+                      </Select>}
+                    </div>
+                  </section>
+
+                  <section className="space-y-4">
+                    <div className="space-y-2">
+                      {isMobile ? <StyledSelect value={bookingData.znecisteni_office || ''} onChange={e => setBookingData({
+                        ...bookingData,
+                        znecisteni_office: e.target.value as OfficeDirtinessLevel
+                      })}>
+                        <option value="" disabled>Zvolte úroveň znečištění</option>
+                        <option value="nizke">Nízké</option>
+                        <option value="stredni">Střední</option>
+                        <option value="vysoke">Vysoké</option>
+                        <option value="extremni">Extrémní</option>
+                      </StyledSelect> : <Select value={bookingData.znecisteni_office || undefined} onValueChange={(value: OfficeDirtinessLevel) => setBookingData({
+                        ...bookingData,
+                        znecisteni_office: value
+                      })}>
+                        <SelectTrigger className="bg-background h-11 rounded-lg shadow-sm">
+                          <SelectValue placeholder="Zvolte úroveň znečištění" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-popover">
+                          <SelectItem value="nizke">Nízké</SelectItem>
+                          <SelectItem value="stredni">Střední</SelectItem>
+                          <SelectItem value="vysoke">Vysoké</SelectItem>
+                          <SelectItem value="extremni">Extrémní</SelectItem>
+                        </SelectContent>
+                      </Select>}
+                    </div>
+                  </section>
+
+                  <section className="space-y-4">
+                    <div className="space-y-2">
+                      {isMobile ? <StyledSelect value={bookingData.frekvence_office || ''} onChange={e => setBookingData({
+                        ...bookingData,
+                        frekvence_office: e.target.value as OfficeFrequencyType
+                      })}>
+                        <option value="" disabled>Zvolte frekvenci</option>
+                        <option value="jednorazove">Jednorázově</option>
+                        <option value="mesicne">Měsíčně (−10 %)</option>
+                        <option value="tydne">Každý týden (−20 %)</option>
+                        <option value="denne">Denně (−30 %)</option>
+                      </StyledSelect> : <Select value={bookingData.frekvence_office || undefined} onValueChange={(value: OfficeFrequencyType) => setBookingData({
+                        ...bookingData,
+                        frekvence_office: value
+                      })}>
+                        <SelectTrigger className="bg-background h-11 rounded-lg shadow-sm">
+                          <SelectValue placeholder="Zvolte frekvenci" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-popover">
+                          <SelectItem value="jednorazove">Jednorázově</SelectItem>
+                          <SelectItem value="mesicne">Měsíčně (−10 %)</SelectItem>
+                          <SelectItem value="tydne">Každý týden (−20 %)</SelectItem>
+                          <SelectItem value="denne">Denně (−30 %)</SelectItem>
+                        </SelectContent>
+                      </Select>}
+                    </div>
+                  </section>
+
+                  <section className="space-y-3">
+                    <Label className="text-sm font-medium">Úklidové vybavení</Label>
+                    <div className="space-y-2">
+                      <div className={`p-4 rounded-lg border cursor-pointer transition-all ${bookingData.equipment_option === 'with' ? 'bg-primary/10 border-primary ring-2 ring-primary/20' : 'bg-card border-border hover:border-primary/50'}`} onClick={() => setBookingData({
+                        ...bookingData,
+                        equipment_option: 'with'
+                      })}>
+                        <div className="flex items-start gap-3">
+                          <div className={`mt-0.5 w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${bookingData.equipment_option === 'with' ? 'border-primary bg-primary' : 'border-muted-foreground/30'}`}>
+                            {bookingData.equipment_option === 'with' && <div className="w-2.5 h-2.5 rounded-full bg-background" />}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-sm mb-1">Mám úklidové vybavení a prostředky</div>
+                            <div className="text-xs text-muted-foreground">Hadry z mikrovlákna, Vysavač, Mop + Kbelík, Houbička, Čistící prostředky</div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className={`p-4 rounded-lg border cursor-pointer transition-all ${bookingData.equipment_option === 'without' ? 'bg-primary/10 border-primary ring-2 ring-primary/20' : 'bg-card border-border hover:border-primary/50'}`} onClick={() => setBookingData({
+                        ...bookingData,
+                        equipment_option: 'without'
+                      })}>
+                        <div className="flex items-start gap-3">
+                          <div className={`mt-0.5 w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${bookingData.equipment_option === 'without' ? 'border-primary bg-primary' : 'border-muted-foreground/30'}`}>
+                            {bookingData.equipment_option === 'without' && <div className="w-2.5 h-2.5 rounded-full bg-background" />}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-sm mb-1">Nemám úklidové vybavení a prostředky</div>
+                            <div className="text-xs font-semibold text-primary">+290 Kč</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </section>
+                </>}
+              </>}
+
+              {/* Window Cleaning Form */}
+              {service.id === 'window_cleaning' && <>
+                <section className="space-y-4">
+                  <div className="space-y-2">
+                    <Input type="number" inputMode="numeric" min="1" max="100" placeholder="Např. 8 m²" className="h-11 rounded-lg bg-background" value={bookingData.pocet_oken || ''} onChange={e => setBookingData({
                       ...bookingData,
                       pocet_oken: Number(e.target.value) || 0
                     })} />
-                          <p className="text-xs text-muted-foreground">*zadejte plochu pouze jedné strany oken</p>
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="text-sm">Úroveň znečištění</Label>
-                          {isMobile ? <select className="h-11 w-full rounded-lg border border-input bg-background px-3 text-base text-foreground" value={bookingData.znecisteni_okna || ''} onChange={e => setBookingData({
+                    <p className="text-xs text-muted-foreground">*přibližná plocha jedné strany oken (m²) </p>
+                  </div>
+                </section>
+
+                <section className="space-y-4">
+                  <div className="space-y-2">
+                    {isMobile ? <StyledSelect value={bookingData.znecisteni_okna || ''} onChange={e => setBookingData({
                       ...bookingData,
                       znecisteni_okna: e.target.value as WindowDirtinessLevel
                     })}>
-                              <option value="" disabled>Zvolte úroveň znečištění</option>
-                              <option value="nizke">Nízké</option>
-                              <option value="stredni">Střední</option>
-                              <option value="vysoke">Vysoké</option>
-                            </select> : <Select value={bookingData.znecisteni_okna || undefined} onValueChange={(value: WindowDirtinessLevel) => setBookingData({
+                      <option value="" disabled>Zvolte úroveň znečištění</option>
+                      <option value="nizke">Nízké</option>
+                      <option value="stredni">Střední</option>
+                      <option value="vysoke">Vysoké</option>
+                    </StyledSelect> : <Select value={bookingData.znecisteni_okna || undefined} onValueChange={(value: WindowDirtinessLevel) => setBookingData({
                       ...bookingData,
                       znecisteni_okna: value
                     })}>
-                              <SelectTrigger className="bg-background h-11 rounded-lg shadow-sm">
-                                <SelectValue placeholder="Zvolte úroveň znečištění" />
-                              </SelectTrigger>
-                              <SelectContent className="bg-popover">
-                                <SelectItem value="nizke">Nízké</SelectItem>
-                                <SelectItem value="stredni">Střední</SelectItem>
-                                <SelectItem value="vysoke">Vysoké</SelectItem>
-                              </SelectContent>
-                            </Select>}
-                        </div>
-                        
-                      </section>}
+                      <SelectTrigger className="bg-background h-11 rounded-lg shadow-sm">
+                        <SelectValue placeholder="Zvolte úroveň znečištění" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-popover">
+                        <SelectItem value="nizke">Nízké</SelectItem>
+                        <SelectItem value="stredni">Střední</SelectItem>
+                        <SelectItem value="vysoke">Vysoké</SelectItem>
+                      </SelectContent>
+                    </Select>}
+                  </div>
+                </section>
 
+                <section className="space-y-4">
+                  <div className="space-y-2">
+                    {isMobile ? <StyledSelect value={bookingData.typ_objektu_okna || ''} onChange={e => setBookingData({
+                      ...bookingData,
+                      typ_objektu_okna: e.target.value as WindowObjectType
+                    })}>
+                      <option value="" disabled>Zvolte typ objektu</option>
+                      <option value="byt">Byt / Dům</option>
+                      <option value="kancelar">Kancelář / Obchod</option>
+                    </StyledSelect> : <Select value={bookingData.typ_objektu_okna || undefined} onValueChange={(value: WindowObjectType) => setBookingData({
+                      ...bookingData,
+                      typ_objektu_okna: value
+                    })}>
+                      <SelectTrigger className="bg-background h-11 rounded-lg shadow-sm">
+                        <SelectValue placeholder="Zvolte typ objektu" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-popover">
+                        <SelectItem value="byt">Byt / Dům</SelectItem>
+                        <SelectItem value="kancelar">Kancelář / Obchod</SelectItem>
+                      </SelectContent>
+                    </Select>}
+                  </div>
+                </section>
+              </>}
 
-                    {service.id === 'cleaning' && bookingData.cleaning_type === 'osobni' && bookingData.doplnky_home.includes('Čištění čalounění') && <section className="space-y-4 p-4 bg-muted/30 rounded-lg border">
-                        <div className="space-y-3">
-                          <div className="flex gap-2">
-                            <Button type="button" variant={bookingData.koberce ? 'default' : 'outline'} className="flex-1 h-10" onClick={() => setBookingData({
-                        ...bookingData,
-                        koberce: !bookingData.koberce
-                      })}>
-                              Koberce
-                            </Button>
-                          </div>
-                          {bookingData.koberce && <div className="space-y-3 pl-4 border-l-2 border-primary/20">
-                              <div className="space-y-2">
-                                <Label className="text-sm">Typ koberce</Label>
-                                {isMobile ? <StyledSelect value={bookingData.typ_koberec} onChange={e => setBookingData({
-                          ...bookingData,
-                          typ_koberec: e.target.value
-                        })}>
-                                    <option value="Kusový">Kusový</option>
-                                    <option value="Pokládkový – krátký vlas">Pokládkový – krátký vlas</option>
-                                    <option value="Pokládkový – dlouhý vlas">Pokládkový – dlouhý vlas</option>
-                                  </StyledSelect> : <Select value={bookingData.typ_koberec} onValueChange={v => setBookingData({
-                          ...bookingData,
-                          typ_koberec: v
-                        })}>
-                                    <SelectTrigger className="bg-background h-11 rounded-lg">
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent className="bg-popover">
-                                      <SelectItem value="Kusový">Kusový</SelectItem>
-                                      <SelectItem value="Pokládkový – krátký vlas">Pokládkový – krátký vlas</SelectItem>
-                                      <SelectItem value="Pokládkový – dlouhý vlas">Pokládkový – dlouhý vlas</SelectItem>
-                                    </SelectContent>
-                                  </Select>}
-                              </div>
-                              <div className="grid grid-cols-2 gap-3">
-                                <div className="space-y-2">
-                                  <Label className="text-sm">Plocha (m²)</Label>
-                                  <Input type="number" min="0" className="h-11 rounded-lg bg-background" value={bookingData.plocha_koberec || ''} onChange={e => setBookingData({
-                            ...bookingData,
-                            plocha_koberec: Number(e.target.value) || 0
-                          })} />
-                                </div>
-                                <div className="space-y-2">
-                                  <Label className="text-sm">Znečištění</Label>
-                                  {isMobile ? <StyledSelect value={bookingData.znecisteni_koberec} onChange={e => setBookingData({
-                            ...bookingData,
-                            znecisteni_koberec: e.target.value
-                          })}>
-                                      <option value="Nízké">Nízké</option>
-                                      <option value="Střední">Střední</option>
-                                      <option value="Vysoké">Vysoké</option>
-                                    </StyledSelect> : <Select value={bookingData.znecisteni_koberec} onValueChange={v => setBookingData({
-                            ...bookingData,
-                            znecisteni_koberec: v
-                          })}>
-                                      <SelectTrigger className="bg-background h-11 rounded-lg">
-                                        <SelectValue />
-                                      </SelectTrigger>
-                                      <SelectContent className="bg-popover">
-                                        <SelectItem value="Nízké">Nízké</SelectItem>
-                                        <SelectItem value="Střední">Střední</SelectItem>
-                                        <SelectItem value="Vysoké">Vysoké</SelectItem>
-                                      </SelectContent>
-                                    </Select>}
-                                </div>
-                              </div>
-                            </div>}
-                        </div>
-                        <div className="space-y-3">
-                          <div className="flex gap-2">
-                            <Button type="button" variant={bookingData.sedacka ? 'default' : 'outline'} className="flex-1 h-10" onClick={() => setBookingData({
-                        ...bookingData,
-                        sedacka: !bookingData.sedacka
-                      })}>
-                              Sedačka
-                            </Button>
-                          </div>
-                          {bookingData.sedacka && <div className="space-y-3 pl-4 border-l-2 border-primary/20">
-                              <div className="grid grid-cols-2 gap-3">
-                                <div className="space-y-2">
-                                  <Label className="text-sm">Velikost</Label>
-                                  {isMobile ? <StyledSelect value={bookingData.velikost_sedacka} onChange={e => setBookingData({
-                            ...bookingData,
-                            velikost_sedacka: e.target.value
-                          })}>
-                                      <option value="2-místná">2-místná</option>
-                                      <option value="3-místná">3-místná</option>
-                                      <option value="4-místná">4-místná</option>
-                                      <option value="5-místná">5-místná</option>
-                                      <option value="6-místná">6-místná</option>
-                                    </StyledSelect> : <Select value={bookingData.velikost_sedacka} onValueChange={v => setBookingData({
-                            ...bookingData,
-                            velikost_sedacka: v
-                          })}>
-                                      <SelectTrigger className="bg-background h-11 rounded-lg">
-                                        <SelectValue />
-                                      </SelectTrigger>
-                                      <SelectContent className="bg-popover">
-                                        <SelectItem value="2-místná">2-místná</SelectItem>
-                                        <SelectItem value="3-místná">3-místná</SelectItem>
-                                        <SelectItem value="4-místná">4-místná</SelectItem>
-                                        <SelectItem value="5-místná">5-místná</SelectItem>
-                                        <SelectItem value="6-místná">6-místná</SelectItem>
-                                      </SelectContent>
-                                    </Select>}
-                                </div>
-                                <div className="space-y-2">
-                                  <Label className="text-sm">Znečištění</Label>
-                                  {isMobile ? <StyledSelect value={bookingData.znecisteni_sedacka} onChange={e => setBookingData({
-                            ...bookingData,
-                            znecisteni_sedacka: e.target.value
-                          })}>
-                                      <option value="Nízké">Nízké</option>
-                                      <option value="Střední">Střední</option>
-                                      <option value="Vysoké">Vysoké</option>
-                                    </StyledSelect> : <Select value={bookingData.znecisteni_sedacka} onValueChange={v => setBookingData({
-                            ...bookingData,
-                            znecisteni_sedacka: v
-                          })}>
-                                      <SelectTrigger className="bg-background h-11 rounded-lg">
-                                        <SelectValue />
-                                      </SelectTrigger>
-                                      <SelectContent className="bg-popover">
-                                        <SelectItem value="Nízké">Nízké</SelectItem>
-                                        <SelectItem value="Střední">Střední</SelectItem>
-                                        <SelectItem value="Vysoké">Vysoké</SelectItem>
-                                      </SelectContent>
-                                    </Select>}
-                                </div>
-                              </div>
-                            </div>}
-                        </div>
-                        <div className="space-y-3">
-                          <div className="flex gap-2">
-                            <Button type="button" variant={bookingData.matrace ? 'default' : 'outline'} className="flex-1 h-10" onClick={() => setBookingData({
-                        ...bookingData,
-                        matrace: !bookingData.matrace
-                      })}>
-                              Matrace
-                            </Button>
-                          </div>
-                          {bookingData.matrace && <div className="space-y-3 pl-4 border-l-2 border-primary/20">
-                              <div className="grid grid-cols-2 gap-3">
-                                <div className="space-y-2">
-                                  <Label className="text-sm">Velikost</Label>
-                                  {isMobile ? <StyledSelect value={bookingData.velikost_matrace} onChange={e => setBookingData({
-                            ...bookingData,
-                            velikost_matrace: e.target.value
-                          })}>
-                                      <option value="90">90 cm</option>
-                                      <option value="140">140 cm</option>
-                                      <option value="160">160 cm</option>
-                                      <option value="180">180 cm</option>
-                                      <option value="200">200 cm</option>
-                                    </StyledSelect> : <Select value={bookingData.velikost_matrace} onValueChange={v => setBookingData({
-                            ...bookingData,
-                            velikost_matrace: v
-                          })}>
-                                      <SelectTrigger className="bg-background h-11 rounded-lg">
-                                        <SelectValue />
-                                      </SelectTrigger>
-                                      <SelectContent className="bg-popover">
-                                        <SelectItem value="90">90 cm</SelectItem>
-                                        <SelectItem value="140">140 cm</SelectItem>
-                                        <SelectItem value="160">160 cm</SelectItem>
-                                        <SelectItem value="180">180 cm</SelectItem>
-                                        <SelectItem value="200">200 cm</SelectItem>
-                                      </SelectContent>
-                                    </Select>}
-                                </div>
-                                <div className="space-y-2">
-                                  <Label className="text-sm">Strany</Label>
-                                  {isMobile ? <StyledSelect value={bookingData.strany_matrace} onChange={e => setBookingData({
-                            ...bookingData,
-                            strany_matrace: e.target.value
-                          })}>
-                                      <option value="1 strana">1 strana</option>
-                                      <option value="obě strany">obě strany</option>
-                                    </StyledSelect> : <Select value={bookingData.strany_matrace} onValueChange={v => setBookingData({
-                            ...bookingData,
-                            strany_matrace: v
-                          })}>
-                                      <SelectTrigger className="bg-background h-11 rounded-lg">
-                                        <SelectValue />
-                                      </SelectTrigger>
-                                      <SelectContent className="bg-popover">
-                                        <SelectItem value="1 strana">1 strana</SelectItem>
-                                        <SelectItem value="obě strany">obě strany</SelectItem>
-                                      </SelectContent>
-                                    </Select>}
-                                </div>
-                              </div>
-                            </div>}
-                        </div>
-                        <div className="space-y-3">
-                          <div className="flex gap-2">
-                            <Button type="button" variant={bookingData.kresla ? 'default' : 'outline'} className="flex-1 h-10" onClick={() => setBookingData({
-                        ...bookingData,
-                        kresla: !bookingData.kresla
-                      })}>
-                              Křeslo
-                            </Button>
-                          </div>
-                          {bookingData.kresla && <div className="space-y-3 pl-4 border-l-2 border-primary/20">
-                              <div className="grid grid-cols-2 gap-3">
-                                <div className="space-y-2">
-                                  <Label className="text-sm">Počet</Label>
-                                  <Input type="number" min="0" className="h-11 rounded-lg bg-background" value={bookingData.pocet_kresla || ''} onChange={e => setBookingData({
-                            ...bookingData,
-                            pocet_kresla: Number(e.target.value) || 0
-                          })} />
-                                </div>
-                                <div className="space-y-2">
-                                  <Label className="text-sm">Znečištění</Label>
-                                  {isMobile ? <StyledSelect value={bookingData.znecisteni_kresla} onChange={e => setBookingData({
-                            ...bookingData,
-                            znecisteni_kresla: e.target.value
-                          })}>
-                                      <option value="Nízké">Nízké</option>
-                                      <option value="Střední">Střední</option>
-                                      <option value="Vysoké">Vysoké</option>
-                                    </StyledSelect> : <Select value={bookingData.znecisteni_kresla} onValueChange={v => setBookingData({
-                            ...bookingData,
-                            znecisteni_kresla: v
-                          })}>
-                                      <SelectTrigger className="bg-background h-11 rounded-lg">
-                                        <SelectValue />
-                                      </SelectTrigger>
-                                      <SelectContent className="bg-popover">
-                                        <SelectItem value="Nízké">Nízké</SelectItem>
-                                        <SelectItem value="Střední">Střední</SelectItem>
-                                        <SelectItem value="Vysoké">Vysoké</SelectItem>
-                                      </SelectContent>
-                                    </Select>}
-                                </div>
-                              </div>
-                            </div>}
-                        </div>
-                        <div className="space-y-3">
-                          <div className="flex gap-2">
-                            <Button type="button" variant={bookingData.zidle ? 'default' : 'outline'} className="flex-1 h-10" onClick={() => setBookingData({
-                        ...bookingData,
-                        zidle: !bookingData.zidle
-                      })}>
-                              Židle
-                            </Button>
-                          </div>
-                          {bookingData.zidle && <div className="space-y-3 pl-4 border-l-2 border-primary/20">
-                              <div className="grid grid-cols-2 gap-3">
-                                <div className="space-y-2">
-                                  <Label className="text-sm">Počet</Label>
-                                  <Input type="number" min="0" className="h-11 rounded-lg bg-background" value={bookingData.pocet_zidle || ''} onChange={e => setBookingData({
-                            ...bookingData,
-                            pocet_zidle: Number(e.target.value) || 0
-                          })} />
-                                </div>
-                                <div className="space-y-2">
-                                  <Label className="text-sm">Znečištění</Label>
-                                  {isMobile ? <StyledSelect value={bookingData.znecisteni_zidle} onChange={e => setBookingData({
-                            ...bookingData,
-                            znecisteni_zidle: e.target.value
-                          })}>
-                                      <option value="Nízké">Nízké</option>
-                                      <option value="Střední">Střední</option>
-                                      <option value="Vysoké">Vysoké</option>
-                                    </StyledSelect> : <Select value={bookingData.znecisteni_zidle} onValueChange={v => setBookingData({
-                            ...bookingData,
-                            znecisteni_zidle: v
-                          })}>
-                                      <SelectTrigger className="bg-background h-11 rounded-lg">
-                                        <SelectValue />
-                                      </SelectTrigger>
-                                      <SelectContent className="bg-popover">
-                                        <SelectItem value="Nízké">Nízké</SelectItem>
-                                        <SelectItem value="Střední">Střední</SelectItem>
-                                        <SelectItem value="Vysoké">Vysoké</SelectItem>
-                                      </SelectContent>
-                                    </Select>}
-                                </div>
-                              </div>
-                            </div>}
-                        </div>
-                      </section>}
+              {/* Upholstery Cleaning Form */}
+              {service.id === 'upholstery_cleaning' && <UpholsteryServiceSelector data={bookingData} onChange={changes => setBookingData(prev => ({
+                ...prev,
+                ...changes
+              }))} />}
 
-                    {(service.id === 'cleaning' || service.id === 'window_cleaning' || service.id === 'upholstery_cleaning') && (() => {
-                      // Check if all required fields are filled based on service type
-                      const isCleaningComplete = service.id === 'cleaning' && (
-                        (bookingData.cleaning_type === 'osobni' && bookingData.plocha_m2 > 0 && bookingData.typ_domacnosti && bookingData.znecisteni && bookingData.frekvence && bookingData.equipment_option) ||
-                        (bookingData.cleaning_type === 'firemni' && bookingData.plocha_m2 > 0 && bookingData.typ_prostoru && bookingData.znecisteni_office && bookingData.frekvence_office && bookingData.equipment_option)
-                      );
-                      const isWindowComplete = service.id === 'window_cleaning' && bookingData.pocet_oken > 0 && bookingData.znecisteni_okna && bookingData.typ_objektu_okna;
-                      const isUpholsteryComplete = service.id === 'upholstery_cleaning' && (bookingData.koberce || bookingData.sedacka || bookingData.matrace || bookingData.kresla || bookingData.zidle);
-                      const isFormComplete = isCleaningComplete || isWindowComplete || isUpholsteryComplete;
-                      
-                      return (
-                        <section className="space-y-3 p-4 rounded-lg bg-muted/50 border border-border">
-                          <div className="space-y-3">
-                            <div className="space-y-1">
-                              <Label className="text-xs text-muted-foreground">Orientační cena</Label>
-                              {isFormComplete ? (
-                                <div className="text-lg font-bold">
-                                  {priceEstimate.priceMin} – {priceEstimate.priceMax} Kč
-                                </div>
-                              ) : (
-                                <div className="space-y-1">
-                                  <div className="text-lg font-bold">0 Kč</div>
-                                  <p className="text-sm text-muted-foreground">Doplňte všechna políčka</p>
-                                </div>
-                              )}
-                              <p className="text-xs text-muted-foreground mt-2">Na přesné ceně se domluvíme před úklidem.</p>
-                            </div>
-                            
-                            {/* Price breakdown - only for cleaning when complete */}
-                            {isFormComplete && service.id === 'cleaning' && bookingData.cleaning_type && <div className="space-y-1 pt-2 border-t border-border/50">
-                              {/* Base service */}
-                              <div className="flex justify-between text-xs text-muted-foreground">
-                                <span>Základní služba</span>
-                                <span>{priceEstimate.baseServiceMin} – {priceEstimate.baseServiceMax} Kč</span>
-                              </div>
-                              
-                              {/* Equipment cost */}
-                              {priceEstimate.equipmentCost > 0 && <div className="flex justify-between text-xs text-muted-foreground">
-                                <span>Přivezeme vybavení</span>
-                                <span>+{priceEstimate.equipmentCost} Kč</span>
-                              </div>}
-                              
-                              {/* Window cleaning add-on */}
-                              {priceEstimate.windowMin > 0 && <div className="flex justify-between text-xs text-muted-foreground">
-                                <span>Mytí oken</span>
-                                <span>+{priceEstimate.windowMin} – {priceEstimate.windowMax} Kč</span>
-                              </div>}
-                              
-                              {/* Upholstery cleaning add-on */}
-                              {priceEstimate.upholsteryMin > 0 && <div className="flex justify-between text-xs text-muted-foreground">
-                                <span>Čištění čalounění</span>
-                                <span>+{priceEstimate.upholsteryMin} – {priceEstimate.upholsteryMax} Kč</span>
-                              </div>}
-                              
-                              {/* Discount by frequency */}
-                              {priceEstimate.discountPercent > 0 && <div className="flex justify-between text-xs text-green-600 dark:text-green-400">
-                                <span>Sleva za pravidelnost</span>
-                                <span>-{Math.round(priceEstimate.discountPercent)}%</span>
-                              </div>}
-                            </div>}
-                            
-                            {/* Price breakdown - for upholstery cleaning when multiple items selected */}
-                            {isFormComplete && service.id === 'upholstery_cleaning' && (
-                              (priceEstimate.upholsteryCarpetPrice > 0 ? 1 : 0) +
-                              (priceEstimate.upholsterySofaPrice > 0 ? 1 : 0) +
-                              (priceEstimate.upholsteryMattressPrice > 0 ? 1 : 0) +
-                              (priceEstimate.upholsteryArmchairPrice > 0 ? 1 : 0) +
-                              (priceEstimate.upholsteryChairPrice > 0 ? 1 : 0)
-                            ) > 1 && <div className="space-y-1 pt-2 border-t border-border/50">
-                              {/* Carpet */}
-                              {priceEstimate.upholsteryCarpetPrice > 0 && <div className="flex justify-between text-xs text-muted-foreground">
-                                <span>Koberec</span>
-                                <span>{Math.round(priceEstimate.upholsteryCarpetPrice * 0.9)} – {Math.round(priceEstimate.upholsteryCarpetPrice * 1.1)} Kč</span>
-                              </div>}
-                              
-                              {/* Sofa */}
-                              {priceEstimate.upholsterySofaPrice > 0 && <div className="flex justify-between text-xs text-muted-foreground">
-                                <span>Sedačka</span>
-                                <span>{Math.round(priceEstimate.upholsterySofaPrice * 0.9)} – {Math.round(priceEstimate.upholsterySofaPrice * 1.1)} Kč</span>
-                              </div>}
-                              
-                              {/* Mattress */}
-                              {priceEstimate.upholsteryMattressPrice > 0 && <div className="flex justify-between text-xs text-muted-foreground">
-                                <span>Matrace</span>
-                                <span>{Math.round(priceEstimate.upholsteryMattressPrice * 0.9)} – {Math.round(priceEstimate.upholsteryMattressPrice * 1.1)} Kč</span>
-                              </div>}
-                              
-                              {/* Armchair */}
-                              {priceEstimate.upholsteryArmchairPrice > 0 && <div className="flex justify-between text-xs text-muted-foreground">
-                                <span>Křesla</span>
-                                <span>{Math.round(priceEstimate.upholsteryArmchairPrice * 0.9)} – {Math.round(priceEstimate.upholsteryArmchairPrice * 1.1)} Kč</span>
-                              </div>}
-                              
-                              {/* Chair */}
-                              {priceEstimate.upholsteryChairPrice > 0 && <div className="flex justify-between text-xs text-muted-foreground">
-                                <span>Židle</span>
-                                <span>{Math.round(priceEstimate.upholsteryChairPrice * 0.9)} – {Math.round(priceEstimate.upholsteryChairPrice * 1.1)} Kč</span>
-                              </div>}
-                              
-                              {/* Total line */}
-                              <div className="flex justify-between text-xs font-medium text-foreground pt-1 border-t border-border/30">
-                                <span>Celkem</span>
-                                <span>{priceEstimate.priceMin} – {priceEstimate.priceMax} Kč</span>
-                              </div>
-                            </div>}
-                            
-                            {/* Minimum order warning for all services */}
-                            {isFormComplete && priceEstimate.priceMax > 0 && priceEstimate.priceMax < MINIMUM_ORDER && <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200 dark:bg-amber-950/30 dark:border-amber-800">
-                                <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
-                                <div className="text-sm">
-                                  <span className="font-medium text-amber-800 dark:text-amber-200">Minimální objednávka: {MINIMUM_ORDER} Kč</span>
-                                  <p className="text-amber-600 dark:text-amber-400 text-xs mt-1">
-                                    Fakturovaná částka bude min. {MINIMUM_ORDER} Kč.
-                                  </p>
-                                </div>
-                              </div>}
-                            
-                          </div>
-                        </section>
-                      );
-                    })()}
-
-                    {isAdminBooking && <section className="space-y-2">
-                        <Label>Upravit Orientační Cenu (Admin)</Label>
-                        <Input type="number" value={adminPriceOverride} onChange={e => setAdminPriceOverride(e.target.value)} placeholder="Ponechte prázdné pro automatickou cenu..." />
-                      </section>}
-
-                    <section className="space-y-2">
-                      <Label>Poznámky (volitelné)</Label>
-                      <Textarea value={bookingData.notes} onChange={e => setBookingData({
+              {/* Common Fields for All Services */}
+              <section className="space-y-4">
+                <DateTimeRow
+                  date={bookingData.date ? new Date(bookingData.date) : undefined}
+                  time={bookingData.time}
+                  onDateChange={(date) => setBookingData({
                     ...bookingData,
-                    notes: e.target.value
-                  })} placeholder="Speciální požadavky..." rows={3} />
-                    </section>
+                    date: date ? date.toISOString().split('T')[0] : ''
+                  })}
+                  onTimeChange={(time) => setBookingData({
+                    ...bookingData,
+                    time
+                  })}
+                  disabledDates={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                  singleRow={false}
+                />
+              </section>
 
-                    <Button 
-                      className="w-full bg-gradient-primary hover:opacity-90 text-white font-semibold py-6 text-base shadow-lg" 
-                      onClick={handleBooking} 
-                      disabled={loading || !bookingData.date || !bookingData.time || !bookingData.street || !bookingData.city || !bookingData.postal_code || service.id === 'upholstery_cleaning' && priceEstimate.upholsteryBelowMinimum}
-                    >
-                      {loading ? 'Odesílám...' : service.id === 'upholstery_cleaning' && priceEstimate.upholsteryBelowMinimum ? `Min. objednávka ${priceEstimate.upholsteryMinimumOrder} Kč` : 'Odeslat Poptávku'}
+              <section className="space-y-4">
+                <div className="space-y-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="street">Ulice a číslo popisné</Label>
+                    <Input id="street" placeholder="např. Hlavní 123" className="h-11 rounded-lg bg-background" value={bookingData.street} onChange={e => setBookingData({
+                      ...bookingData,
+                      street: e.target.value
+                    })} required />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="city">Město</Label>
+                      <Input id="city" placeholder="např. Praha" className="h-11 rounded-lg bg-background" value={bookingData.city} onChange={e => setBookingData({
+                        ...bookingData,
+                        city: e.target.value
+                      })} required />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="postal_code">PSČ</Label>
+                      <Input id="postal_code" placeholder="např. 110 00" className="h-11 rounded-lg bg-background" value={bookingData.postal_code} onChange={e => setBookingData({
+                        ...bookingData,
+                        postal_code: e.target.value
+                      })} required />
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+
+              {/* Detail forms for selected doplňkové služby */}
+              {service.id === 'cleaning' && bookingData.cleaning_type === 'osobni' && bookingData.doplnky_home.includes('Mytí oken') && <section className="space-y-4 p-4 bg-muted/30 rounded-lg border">
+                <div className="space-y-2">
+                  <Label className="text-sm">Přibližná okenní plocha (m²)</Label>
+                  <Input type="number" inputMode="numeric" min="1" max="100" placeholder="Např. 8" className="h-11 rounded-lg bg-background" value={bookingData.pocet_oken || ''} onChange={e => setBookingData({
+                    ...bookingData,
+                    pocet_oken: Number(e.target.value) || 0
+                  })} />
+                  <p className="text-xs text-muted-foreground">*zadejte plochu pouze jedné strany oken</p>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm">Úroveň znečištění</Label>
+                  {isMobile ? <select className="h-11 w-full rounded-lg border border-input bg-background px-3 text-base text-foreground" value={bookingData.znecisteni_okna || ''} onChange={e => setBookingData({
+                    ...bookingData,
+                    znecisteni_okna: e.target.value as WindowDirtinessLevel
+                  })}>
+                    <option value="" disabled>Zvolte úroveň znečištění</option>
+                    <option value="nizke">Nízké</option>
+                    <option value="stredni">Střední</option>
+                    <option value="vysoke">Vysoké</option>
+                  </select> : <Select value={bookingData.znecisteni_okna || undefined} onValueChange={(value: WindowDirtinessLevel) => setBookingData({
+                    ...bookingData,
+                    znecisteni_okna: value
+                  })}>
+                    <SelectTrigger className="bg-background h-11 rounded-lg shadow-sm">
+                      <SelectValue placeholder="Zvolte úroveň znečištění" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover">
+                      <SelectItem value="nizke">Nízké</SelectItem>
+                      <SelectItem value="stredni">Střední</SelectItem>
+                      <SelectItem value="vysoke">Vysoké</SelectItem>
+                    </SelectContent>
+                  </Select>}
+                </div>
+
+              </section>}
+
+
+              {service.id === 'cleaning' && bookingData.cleaning_type === 'osobni' && bookingData.doplnky_home.includes('Čištění čalounění') && <section className="space-y-4 p-4 bg-muted/30 rounded-lg border">
+                <div className="space-y-3">
+                  <div className="flex gap-2">
+                    <Button type="button" variant={bookingData.koberce ? 'default' : 'outline'} className="flex-1 h-10" onClick={() => setBookingData({
+                      ...bookingData,
+                      koberce: !bookingData.koberce
+                    })}>
+                      Koberce
                     </Button>
+                  </div>
+                  {bookingData.koberce && <div className="space-y-3 pl-4 border-l-2 border-primary/20">
+                    <div className="space-y-2">
+                      <Label className="text-sm">Typ koberce</Label>
+                      {isMobile ? <StyledSelect value={bookingData.typ_koberec} onChange={e => setBookingData({
+                        ...bookingData,
+                        typ_koberec: e.target.value
+                      })}>
+                        <option value="Kusový">Kusový</option>
+                        <option value="Pokládkový – krátký vlas">Pokládkový – krátký vlas</option>
+                        <option value="Pokládkový – dlouhý vlas">Pokládkový – dlouhý vlas</option>
+                      </StyledSelect> : <Select value={bookingData.typ_koberec} onValueChange={v => setBookingData({
+                        ...bookingData,
+                        typ_koberec: v
+                      })}>
+                        <SelectTrigger className="bg-background h-11 rounded-lg">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-popover">
+                          <SelectItem value="Kusový">Kusový</SelectItem>
+                          <SelectItem value="Pokládkový – krátký vlas">Pokládkový – krátký vlas</SelectItem>
+                          <SelectItem value="Pokládkový – dlouhý vlas">Pokládkový – dlouhý vlas</SelectItem>
+                        </SelectContent>
+                      </Select>}
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-2">
+                        <Label className="text-sm">Plocha (m²)</Label>
+                        <Input type="number" min="0" className="h-11 rounded-lg bg-background" value={bookingData.plocha_koberec || ''} onChange={e => setBookingData({
+                          ...bookingData,
+                          plocha_koberec: Number(e.target.value) || 0
+                        })} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-sm">Znečištění</Label>
+                        {isMobile ? <StyledSelect value={bookingData.znecisteni_koberec} onChange={e => setBookingData({
+                          ...bookingData,
+                          znecisteni_koberec: e.target.value
+                        })}>
+                          <option value="Nízké">Nízké</option>
+                          <option value="Střední">Střední</option>
+                          <option value="Vysoké">Vysoké</option>
+                        </StyledSelect> : <Select value={bookingData.znecisteni_koberec} onValueChange={v => setBookingData({
+                          ...bookingData,
+                          znecisteni_koberec: v
+                        })}>
+                          <SelectTrigger className="bg-background h-11 rounded-lg">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="bg-popover">
+                            <SelectItem value="Nízké">Nízké</SelectItem>
+                            <SelectItem value="Střední">Střední</SelectItem>
+                            <SelectItem value="Vysoké">Vysoké</SelectItem>
+                          </SelectContent>
+                        </Select>}
+                      </div>
+                    </div>
+                  </div>}
+                </div>
+                <div className="space-y-3">
+                  <div className="flex gap-2">
+                    <Button type="button" variant={bookingData.sedacka ? 'default' : 'outline'} className="flex-1 h-10" onClick={() => setBookingData({
+                      ...bookingData,
+                      sedacka: !bookingData.sedacka
+                    })}>
+                      Sedačka
+                    </Button>
+                  </div>
+                  {bookingData.sedacka && <div className="space-y-3 pl-4 border-l-2 border-primary/20">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-2">
+                        <Label className="text-sm">Velikost</Label>
+                        {isMobile ? <StyledSelect value={bookingData.velikost_sedacka} onChange={e => setBookingData({
+                          ...bookingData,
+                          velikost_sedacka: e.target.value
+                        })}>
+                          <option value="2-místná">2-místná</option>
+                          <option value="3-místná">3-místná</option>
+                          <option value="4-místná">4-místná</option>
+                          <option value="5-místná">5-místná</option>
+                          <option value="6-místná">6-místná</option>
+                        </StyledSelect> : <Select value={bookingData.velikost_sedacka} onValueChange={v => setBookingData({
+                          ...bookingData,
+                          velikost_sedacka: v
+                        })}>
+                          <SelectTrigger className="bg-background h-11 rounded-lg">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="bg-popover">
+                            <SelectItem value="2-místná">2-místná</SelectItem>
+                            <SelectItem value="3-místná">3-místná</SelectItem>
+                            <SelectItem value="4-místná">4-místná</SelectItem>
+                            <SelectItem value="5-místná">5-místná</SelectItem>
+                            <SelectItem value="6-místná">6-místná</SelectItem>
+                          </SelectContent>
+                        </Select>}
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-sm">Znečištění</Label>
+                        {isMobile ? <StyledSelect value={bookingData.znecisteni_sedacka} onChange={e => setBookingData({
+                          ...bookingData,
+                          znecisteni_sedacka: e.target.value
+                        })}>
+                          <option value="Nízké">Nízké</option>
+                          <option value="Střední">Střední</option>
+                          <option value="Vysoké">Vysoké</option>
+                        </StyledSelect> : <Select value={bookingData.znecisteni_sedacka} onValueChange={v => setBookingData({
+                          ...bookingData,
+                          znecisteni_sedacka: v
+                        })}>
+                          <SelectTrigger className="bg-background h-11 rounded-lg">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="bg-popover">
+                            <SelectItem value="Nízké">Nízké</SelectItem>
+                            <SelectItem value="Střední">Střední</SelectItem>
+                            <SelectItem value="Vysoké">Vysoké</SelectItem>
+                          </SelectContent>
+                        </Select>}
+                      </div>
+                    </div>
+                  </div>}
+                </div>
+                <div className="space-y-3">
+                  <div className="flex gap-2">
+                    <Button type="button" variant={bookingData.matrace ? 'default' : 'outline'} className="flex-1 h-10" onClick={() => setBookingData({
+                      ...bookingData,
+                      matrace: !bookingData.matrace
+                    })}>
+                      Matrace
+                    </Button>
+                  </div>
+                  {bookingData.matrace && <div className="space-y-3 pl-4 border-l-2 border-primary/20">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-2">
+                        <Label className="text-sm">Velikost</Label>
+                        {isMobile ? <StyledSelect value={bookingData.velikost_matrace} onChange={e => setBookingData({
+                          ...bookingData,
+                          velikost_matrace: e.target.value
+                        })}>
+                          <option value="90">90 cm</option>
+                          <option value="140">140 cm</option>
+                          <option value="160">160 cm</option>
+                          <option value="180">180 cm</option>
+                          <option value="200">200 cm</option>
+                        </StyledSelect> : <Select value={bookingData.velikost_matrace} onValueChange={v => setBookingData({
+                          ...bookingData,
+                          velikost_matrace: v
+                        })}>
+                          <SelectTrigger className="bg-background h-11 rounded-lg">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="bg-popover">
+                            <SelectItem value="90">90 cm</SelectItem>
+                            <SelectItem value="140">140 cm</SelectItem>
+                            <SelectItem value="160">160 cm</SelectItem>
+                            <SelectItem value="180">180 cm</SelectItem>
+                            <SelectItem value="200">200 cm</SelectItem>
+                          </SelectContent>
+                        </Select>}
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-sm">Strany</Label>
+                        {isMobile ? <StyledSelect value={bookingData.strany_matrace} onChange={e => setBookingData({
+                          ...bookingData,
+                          strany_matrace: e.target.value
+                        })}>
+                          <option value="1 strana">1 strana</option>
+                          <option value="obě strany">obě strany</option>
+                        </StyledSelect> : <Select value={bookingData.strany_matrace} onValueChange={v => setBookingData({
+                          ...bookingData,
+                          strany_matrace: v
+                        })}>
+                          <SelectTrigger className="bg-background h-11 rounded-lg">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="bg-popover">
+                            <SelectItem value="1 strana">1 strana</SelectItem>
+                            <SelectItem value="obě strany">obě strany</SelectItem>
+                          </SelectContent>
+                        </Select>}
+                      </div>
+                    </div>
+                  </div>}
+                </div>
+                <div className="space-y-3">
+                  <div className="flex gap-2">
+                    <Button type="button" variant={bookingData.kresla ? 'default' : 'outline'} className="flex-1 h-10" onClick={() => setBookingData({
+                      ...bookingData,
+                      kresla: !bookingData.kresla
+                    })}>
+                      Křeslo
+                    </Button>
+                  </div>
+                  {bookingData.kresla && <div className="space-y-3 pl-4 border-l-2 border-primary/20">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-2">
+                        <Label className="text-sm">Počet</Label>
+                        <Input type="number" min="0" className="h-11 rounded-lg bg-background" value={bookingData.pocet_kresla || ''} onChange={e => setBookingData({
+                          ...bookingData,
+                          pocet_kresla: Number(e.target.value) || 0
+                        })} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-sm">Znečištění</Label>
+                        {isMobile ? <StyledSelect value={bookingData.znecisteni_kresla} onChange={e => setBookingData({
+                          ...bookingData,
+                          znecisteni_kresla: e.target.value
+                        })}>
+                          <option value="Nízké">Nízké</option>
+                          <option value="Střední">Střední</option>
+                          <option value="Vysoké">Vysoké</option>
+                        </StyledSelect> : <Select value={bookingData.znecisteni_kresla} onValueChange={v => setBookingData({
+                          ...bookingData,
+                          znecisteni_kresla: v
+                        })}>
+                          <SelectTrigger className="bg-background h-11 rounded-lg">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="bg-popover">
+                            <SelectItem value="Nízké">Nízké</SelectItem>
+                            <SelectItem value="Střední">Střední</SelectItem>
+                            <SelectItem value="Vysoké">Vysoké</SelectItem>
+                          </SelectContent>
+                        </Select>}
+                      </div>
+                    </div>
+                  </div>}
+                </div>
+                <div className="space-y-3">
+                  <div className="flex gap-2">
+                    <Button type="button" variant={bookingData.zidle ? 'default' : 'outline'} className="flex-1 h-10" onClick={() => setBookingData({
+                      ...bookingData,
+                      zidle: !bookingData.zidle
+                    })}>
+                      Židle
+                    </Button>
+                  </div>
+                  {bookingData.zidle && <div className="space-y-3 pl-4 border-l-2 border-primary/20">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-2">
+                        <Label className="text-sm">Počet</Label>
+                        <Input type="number" min="0" className="h-11 rounded-lg bg-background" value={bookingData.pocet_zidle || ''} onChange={e => setBookingData({
+                          ...bookingData,
+                          pocet_zidle: Number(e.target.value) || 0
+                        })} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-sm">Znečištění</Label>
+                        {isMobile ? <StyledSelect value={bookingData.znecisteni_zidle} onChange={e => setBookingData({
+                          ...bookingData,
+                          znecisteni_zidle: e.target.value
+                        })}>
+                          <option value="Nízké">Nízké</option>
+                          <option value="Střední">Střední</option>
+                          <option value="Vysoké">Vysoké</option>
+                        </StyledSelect> : <Select value={bookingData.znecisteni_zidle} onValueChange={v => setBookingData({
+                          ...bookingData,
+                          znecisteni_zidle: v
+                        })}>
+                          <SelectTrigger className="bg-background h-11 rounded-lg">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="bg-popover">
+                            <SelectItem value="Nízké">Nízké</SelectItem>
+                            <SelectItem value="Střední">Střední</SelectItem>
+                            <SelectItem value="Vysoké">Vysoké</SelectItem>
+                          </SelectContent>
+                        </Select>}
+                      </div>
+                    </div>
+                  </div>}
+                </div>
+              </section>}
+
+              {(service.id === 'cleaning' || service.id === 'window_cleaning' || service.id === 'upholstery_cleaning') && (() => {
+                // Check if all required fields are filled based on service type
+                const isCleaningComplete = service.id === 'cleaning' && (
+                  (bookingData.cleaning_type === 'osobni' && bookingData.plocha_m2 > 0 && bookingData.typ_domacnosti && bookingData.znecisteni && bookingData.frekvence && bookingData.equipment_option) ||
+                  (bookingData.cleaning_type === 'firemni' && bookingData.plocha_m2 > 0 && bookingData.typ_prostoru && bookingData.znecisteni_office && bookingData.frekvence_office && bookingData.equipment_option)
+                );
+                const isWindowComplete = service.id === 'window_cleaning' && bookingData.pocet_oken > 0 && bookingData.znecisteni_okna && bookingData.typ_objektu_okna;
+                const isUpholsteryComplete = service.id === 'upholstery_cleaning' && (bookingData.koberce || bookingData.sedacka || bookingData.matrace || bookingData.kresla || bookingData.zidle);
+                const isFormComplete = isCleaningComplete || isWindowComplete || isUpholsteryComplete;
+
+                return (
+                  <section className="space-y-3 p-4 rounded-lg bg-muted/50 border border-border">
+                    <div className="space-y-3">
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">Orientační cena</Label>
+                        {isFormComplete ? (
+                          <div className="text-lg font-bold">
+                            {priceEstimate.priceMin} – {priceEstimate.priceMax} Kč
+                          </div>
+                        ) : (
+                          <div className="space-y-1">
+                            <div className="text-lg font-bold">0 Kč</div>
+                            <p className="text-sm text-muted-foreground">Doplňte všechna políčka</p>
+                          </div>
+                        )}
+                        <p className="text-xs text-muted-foreground mt-2">Na přesné ceně se domluvíme před úklidem.</p>
+                      </div>
+
+                      {/* Price breakdown - only for cleaning when complete */}
+                      {isFormComplete && service.id === 'cleaning' && bookingData.cleaning_type && <div className="space-y-1 pt-2 border-t border-border/50">
+                        {/* Base service */}
+                        <div className="flex justify-between text-xs text-muted-foreground">
+                          <span>Základní služba</span>
+                          <span>{priceEstimate.baseServiceMin} – {priceEstimate.baseServiceMax} Kč</span>
+                        </div>
+
+                        {/* Equipment cost */}
+                        {priceEstimate.equipmentCost > 0 && <div className="flex justify-between text-xs text-muted-foreground">
+                          <span>Přivezeme vybavení</span>
+                          <span>+{priceEstimate.equipmentCost} Kč</span>
+                        </div>}
+
+                        {/* Window cleaning add-on */}
+                        {priceEstimate.windowMin > 0 && <div className="flex justify-between text-xs text-muted-foreground">
+                          <span>Mytí oken</span>
+                          <span>+{priceEstimate.windowMin} – {priceEstimate.windowMax} Kč</span>
+                        </div>}
+
+                        {/* Upholstery cleaning add-on */}
+                        {priceEstimate.upholsteryMin > 0 && <div className="flex justify-between text-xs text-muted-foreground">
+                          <span>Čištění čalounění</span>
+                          <span>+{priceEstimate.upholsteryMin} – {priceEstimate.upholsteryMax} Kč</span>
+                        </div>}
+
+                        {/* Discount by frequency */}
+                        {priceEstimate.discountPercent > 0 && <div className="flex justify-between text-xs text-green-600 dark:text-green-400">
+                          <span>Sleva za pravidelnost</span>
+                          <span>-{Math.round(priceEstimate.discountPercent)}%</span>
+                        </div>}
+                      </div>}
+
+                      {/* Price breakdown - for upholstery cleaning when multiple items selected */}
+                      {isFormComplete && service.id === 'upholstery_cleaning' && (
+                        (priceEstimate.upholsteryCarpetPrice > 0 ? 1 : 0) +
+                        (priceEstimate.upholsterySofaPrice > 0 ? 1 : 0) +
+                        (priceEstimate.upholsteryMattressPrice > 0 ? 1 : 0) +
+                        (priceEstimate.upholsteryArmchairPrice > 0 ? 1 : 0) +
+                        (priceEstimate.upholsteryChairPrice > 0 ? 1 : 0)
+                      ) > 1 && <div className="space-y-1 pt-2 border-t border-border/50">
+                          {/* Carpet */}
+                          {priceEstimate.upholsteryCarpetPrice > 0 && <div className="flex justify-between text-xs text-muted-foreground">
+                            <span>Koberec</span>
+                            <span>{Math.round(priceEstimate.upholsteryCarpetPrice * 0.9)} – {Math.round(priceEstimate.upholsteryCarpetPrice * 1.1)} Kč</span>
+                          </div>}
+
+                          {/* Sofa */}
+                          {priceEstimate.upholsterySofaPrice > 0 && <div className="flex justify-between text-xs text-muted-foreground">
+                            <span>Sedačka</span>
+                            <span>{Math.round(priceEstimate.upholsterySofaPrice * 0.9)} – {Math.round(priceEstimate.upholsterySofaPrice * 1.1)} Kč</span>
+                          </div>}
+
+                          {/* Mattress */}
+                          {priceEstimate.upholsteryMattressPrice > 0 && <div className="flex justify-between text-xs text-muted-foreground">
+                            <span>Matrace</span>
+                            <span>{Math.round(priceEstimate.upholsteryMattressPrice * 0.9)} – {Math.round(priceEstimate.upholsteryMattressPrice * 1.1)} Kč</span>
+                          </div>}
+
+                          {/* Armchair */}
+                          {priceEstimate.upholsteryArmchairPrice > 0 && <div className="flex justify-between text-xs text-muted-foreground">
+                            <span>Křesla</span>
+                            <span>{Math.round(priceEstimate.upholsteryArmchairPrice * 0.9)} – {Math.round(priceEstimate.upholsteryArmchairPrice * 1.1)} Kč</span>
+                          </div>}
+
+                          {/* Chair */}
+                          {priceEstimate.upholsteryChairPrice > 0 && <div className="flex justify-between text-xs text-muted-foreground">
+                            <span>Židle</span>
+                            <span>{Math.round(priceEstimate.upholsteryChairPrice * 0.9)} – {Math.round(priceEstimate.upholsteryChairPrice * 1.1)} Kč</span>
+                          </div>}
+
+                          {/* Total line */}
+                          <div className="flex justify-between text-xs font-medium text-foreground pt-1 border-t border-border/30">
+                            <span>Celkem</span>
+                            <span>{priceEstimate.priceMin} – {priceEstimate.priceMax} Kč</span>
+                          </div>
+                        </div>}
+
+                      {/* Minimum order warning for all services */}
+                      {isFormComplete && priceEstimate.priceMax > 0 && priceEstimate.priceMax < MINIMUM_ORDER && <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200 dark:bg-amber-950/30 dark:border-amber-800">
+                        <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                        <div className="text-sm">
+                          <span className="font-medium text-amber-800 dark:text-amber-200">Minimální objednávka: {MINIMUM_ORDER} Kč</span>
+                          <p className="text-amber-600 dark:text-amber-400 text-xs mt-1">
+                            Fakturovaná částka bude min. {MINIMUM_ORDER} Kč.
+                          </p>
+                        </div>
+                      </div>}
+
+                    </div>
+                  </section>
+                );
+              })()}
+
+              {isAdminBooking && <section className="space-y-2">
+                <Label>Upravit Orientační Cenu (Admin)</Label>
+                <Input type="number" value={adminPriceOverride} onChange={e => setAdminPriceOverride(e.target.value)} placeholder="Ponechte prázdné pro automatickou cenu..." />
+              </section>}
+
+              <section className="space-y-2">
+                <Label>Poznámky (volitelné)</Label>
+                <Textarea value={bookingData.notes} onChange={e => setBookingData({
+                  ...bookingData,
+                  notes: e.target.value
+                })} placeholder="Speciální požadavky..." rows={3} />
+              </section>
+
+              <Button
+                className="w-full bg-gradient-primary hover:opacity-90 text-white font-semibold py-6 text-base shadow-lg"
+                onClick={handleBooking}
+                disabled={loading || !bookingData.date || !bookingData.time || !bookingData.street || !bookingData.city || !bookingData.postal_code || service.id === 'upholstery_cleaning' && priceEstimate.upholsteryBelowMinimum}
+              >
+                {loading ? 'Odesílám...' : service.id === 'upholstery_cleaning' && priceEstimate.upholsteryBelowMinimum ? `Min. objednávka ${priceEstimate.upholsteryMinimumOrder} Kč` : 'Odeslat Poptávku'}
+              </Button>
             </ServiceCard>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Support Section */}
-      <div className="rounded-xl bg-card border border-border p-4 space-y-3">
-        <div className="flex items-center gap-2">
-          <Phone className="h-4 w-4 text-primary" />
-          <h3 className="font-semibold text-foreground">Potřebujete pomoct?</h3>
-        </div>
-        <p className="text-sm text-muted-foreground">
-          Zavolejte nám a rádi vám pomůžeme s výběrem
-        </p>
-        <a
-          href="tel:+420777645610"
-          className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-primary text-primary-foreground font-medium text-sm hover:bg-primary/90 transition-colors w-full"
-        >
-          <Phone className="h-4 w-4" />
-          Zavolat
-        </a>
-      </div>
-
-      {/* Success Dialog */}
-      <Dialog open={showSuccess} onOpenChange={setShowSuccess}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-center text-xl">🎉 Děkujeme za poptávku!</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-5 text-center py-4">
-            <div className="mx-auto w-16 h-16 bg-success/10 rounded-full flex items-center justify-center ring-4 ring-success/20">
-              <Check className="h-8 w-8 text-success" />
-            </div>
-            <div className="space-y-2">
-              <p className="text-foreground font-medium">
-                Vaše poptávka byla úspěšně odeslána
-              </p>
-              <p className="text-sm text-muted-foreground">
-                Ozveme se vám co nejdříve a doladíme všechny detaily.
-              </p>
-            </div>
-            <div className="bg-muted/50 rounded-xl p-4 space-y-3">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                Kontaktujte nás
-              </p>
-              <div className="flex flex-col gap-2">
-                <a 
-                  href="tel:+420777645610" 
-                  className="flex items-center justify-center gap-2 p-3 rounded-lg bg-background border border-border hover:border-primary/50 transition-colors"
-                >
-                  <Phone className="h-4 w-4 text-primary" />
-                  <span className="font-medium">+420 777 645 610</span>
-                </a>
-                <a 
-                  href="mailto:uklid@drclean.cz" 
-                  className="flex items-center justify-center gap-2 p-3 rounded-lg bg-background border border-border hover:border-primary/50 transition-colors"
-                >
-                  <Mail className="h-4 w-4 text-primary" />
-                  <span className="font-medium">uklid@drclean.cz</span>
-                </a>
-              </div>
-            </div>
-            <Button 
-              onClick={() => setShowSuccess(false)}
-              className="w-full bg-gradient-primary"
-            >
-              Rozumím
-            </Button>
           </div>
-        </DialogContent>
-      </Dialog>
-    </div>;
+        );
+      })}
+    </div>
+
+    {/* Support Section */}
+    <div className="rounded-xl bg-card border border-border p-4 space-y-3">
+      <div className="flex items-center gap-2">
+        <Phone className="h-4 w-4 text-primary" />
+        <h3 className="font-semibold text-foreground">Potřebujete pomoct?</h3>
+      </div>
+      <p className="text-sm text-muted-foreground">
+        Zavolejte nám a rádi vám pomůžeme s výběrem
+      </p>
+      <a
+        href="tel:+420777645610"
+        className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-primary text-primary-foreground font-medium text-sm hover:bg-primary/90 transition-colors w-full"
+      >
+        <Phone className="h-4 w-4" />
+        Zavolat
+      </a>
+    </div>
+
+    {/* Success Dialog */}
+    <Dialog open={showSuccess} onOpenChange={setShowSuccess}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="text-center text-xl">🎉 Děkujeme za poptávku!</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-5 text-center py-4">
+          <div className="mx-auto w-16 h-16 bg-success/10 rounded-full flex items-center justify-center ring-4 ring-success/20">
+            <Check className="h-8 w-8 text-success" />
+          </div>
+          <div className="space-y-2">
+            <p className="text-foreground font-medium">
+              Vaše poptávka byla úspěšně odeslána
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Ozveme se vám co nejdříve a doladíme všechny detaily.
+            </p>
+          </div>
+          <div className="bg-muted/50 rounded-xl p-4 space-y-3">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              Kontaktujte nás
+            </p>
+            <div className="flex flex-col gap-2">
+              <a
+                href="tel:+420777645610"
+                className="flex items-center justify-center gap-2 p-3 rounded-lg bg-background border border-border hover:border-primary/50 transition-colors"
+              >
+                <Phone className="h-4 w-4 text-primary" />
+                <span className="font-medium">+420 777 645 610</span>
+              </a>
+              <a
+                href="mailto:uklid@drclean.cz"
+                className="flex items-center justify-center gap-2 p-3 rounded-lg bg-background border border-border hover:border-primary/50 transition-colors"
+              >
+                <Mail className="h-4 w-4 text-primary" />
+                <span className="font-medium">uklid@drclean.cz</span>
+              </a>
+            </div>
+          </div>
+          <Button
+            onClick={() => setShowSuccess(false)}
+            className="w-full bg-gradient-primary"
+          >
+            Rozumím
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+    {loading && <LoadingOverlay message="Vytvářím rezervaci..." />}
+  </div>;
 }

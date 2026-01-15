@@ -8,7 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { FileText, Download, ChevronDown, ChevronUp, MapPin, Calendar, Clock, Banknote, CheckCircle2, AlertTriangle, Star, X, Phone, TrendingUp, CreditCard, History, Receipt, User, HeadphonesIcon, LucideIcon, Sparkles, Baby, Dog, HeartPulse } from 'lucide-react';
 import { format } from 'date-fns';
 import { cs } from 'date-fns/locale';
-import { ClientLoading } from '@/components/client/ClientLoading';
+import { LoadingOverlay } from '@/components/LoadingOverlay';
 import { ClientHeroHeader } from '@/components/client/ClientHeroHeader';
 import { toast } from 'sonner';
 import { BookingCard } from '@/components/client/dashboard/BookingCard';
@@ -362,7 +362,7 @@ export default function ClientBilling() {
   };
 
   if (loading) {
-    return <ClientLoading message="Načítám historii úklidů..." />;
+    return <LoadingOverlay message="Načítám historii úklidů..." />;
   }
   const paidCount = bookings.filter(b => b.invoice?.status === 'paid').length;
   const pendingCount = bookings.filter(b => b.invoice?.status !== 'paid').length;

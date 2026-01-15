@@ -1,3 +1,4 @@
+import { cn } from '@/lib/utils';
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -7,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { Navigate } from 'react-router-dom';
-import { Check, X, Clock, Users, Mail, Calendar } from 'lucide-react';
+import { Check, X, Clock, Users, Mail, Calendar, Info, ShieldCheck } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Layout } from '@/components/layout/Layout';
@@ -18,6 +19,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
+import { LoadingOverlay } from '@/components/LoadingOverlay';
 
 interface PendingUser {
   id: string;
@@ -70,7 +73,7 @@ export default function AdminApproval() {
 
   const handleApproval = async (userId: string, status: 'approved' | 'rejected') => {
     setProcessingUser(userId);
-    
+
     try {
       // Update profile approval status
       const { error: profileError } = await supabase
@@ -88,7 +91,7 @@ export default function AdminApproval() {
       // If approved, assign selected roles
       if (status === 'approved') {
         const rolesToAssign = selectedRoles[userId] || ['user'];
-        
+
         // Insert roles for the user
         const roleInserts = rolesToAssign.map(role => ({
           user_id: userId,
@@ -110,14 +113,14 @@ export default function AdminApproval() {
 
       // Remove the user from the pending list
       setPendingUsers(prev => prev.filter(u => u.user_id !== userId));
-      
+
       // Clear notes and roles for this user
       setNotes(prev => {
         const newNotes = { ...prev };
         delete newNotes[userId];
         return newNotes;
       });
-      
+
       setSelectedRoles(prev => {
         const newRoles = { ...prev };
         delete newRoles[userId];
@@ -153,128 +156,134 @@ export default function AdminApproval() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
-      </div>
-    );
+    return <LoadingOverlay message="Načítám žádosti o schválení..." />;
   }
 
   return (
     <Layout>
-      <div className="container mx-auto p-6">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold flex items-center gap-3">
-          <Users className="h-8 w-8" />
-          User Approval Dashboard
-        </h1>
-        <p className="text-muted-foreground mt-2">
-          Review and approve pending user registrations
-        </p>
-      </div>
+      <div className="container mx-auto p-4 sm:p-6 pb-24 space-y-6 max-w-7xl animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <AdminPageHeader
+          title="User Approval"
+          description="Review and manage pending user registrations"
+        />
 
-      {pendingUsers.length === 0 ? (
-        <Card>
-          <CardContent className="flex items-center justify-center py-12">
-            <div className="text-center">
-              <Check className="mx-auto h-12 w-12 text-green-500 mb-4" />
-              <h3 className="text-lg font-medium mb-2">All caught up!</h3>
-              <p className="text-muted-foreground">No pending user approvals at this time.</p>
-            </div>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid gap-4">
-          {pendingUsers.map((user) => (
-            <Card key={user.id} className="border-l-4 border-l-orange-500">
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-4">
-                    <Avatar className="h-12 w-12">
-                      {user.avatar_url ? (
-                        <AvatarImage src={user.avatar_url} alt={user.full_name} />
-                      ) : (
-                        <AvatarFallback>
-                          {user.full_name?.split(' ').map(n => n[0]).join('').toUpperCase() || 'U'}
-                        </AvatarFallback>
-                      )}
-                    </Avatar>
-                    <div>
-                      <CardTitle className="text-lg">{user.full_name}</CardTitle>
-                      <CardDescription className="flex items-center gap-2">
-                        <Mail className="h-3 w-3" />
-                        {user.email}
-                      </CardDescription>
+        {pendingUsers.length === 0 ? (
+          <Card className="bg-card/50 backdrop-blur-sm border-0 shadow-lg rounded-3xl overflow-hidden p-12">
+            <CardContent className="flex flex-col items-center justify-center text-center space-y-4">
+              <div className="bg-emerald-100/50 dark:bg-emerald-950/20 p-4 rounded-full">
+                <ShieldCheck className="h-12 w-12 text-emerald-500" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-xl font-bold">All caught up!</h3>
+                <p className="text-muted-foreground text-sm">No pending user approvals for DrClean.</p>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid gap-6">
+            {pendingUsers.map((user) => (
+              <Card key={user.id} className="bg-card/50 backdrop-blur-sm border-0 shadow-lg rounded-3xl overflow-hidden hover:shadow-xl transition-all duration-300 border-l-4 border-l-orange-500">
+                <CardHeader className="pb-4">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                      <Avatar className="h-14 w-14 ring-2 ring-white/10 shadow-md">
+                        {user.avatar_url ? (
+                          <AvatarImage src={user.avatar_url} alt={user.full_name} />
+                        ) : (
+                          <AvatarFallback className="bg-primary/10 text-primary font-bold">
+                            {user.full_name?.split(' ').map(n => n[0]).join('').toUpperCase() || 'U'}
+                          </AvatarFallback>
+                        )}
+                      </Avatar>
+                      <div className="space-y-0.5">
+                        <CardTitle className="text-xl font-bold">{user.full_name}</CardTitle>
+                        <CardDescription className="flex items-center gap-2 text-primary font-medium">
+                          <Mail className="h-3.5 w-3.5" />
+                          {user.email}
+                        </CardDescription>
+                      </div>
+                    </div>
+                    <Badge className="bg-orange-100 text-orange-700 border-0 font-bold px-3 py-1 rounded-full flex items-center gap-1.5 shadow-sm">
+                      <Clock className="h-4 w-4" />
+                      Pending Approval
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-6 pt-0">
+                  <div className="flex flex-wrap gap-x-6 gap-y-2">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/30 px-3 py-1.5 rounded-full border border-white/10">
+                      <Calendar className="h-4 w-4 text-primary/70" />
+                      <span className="font-medium text-foreground">Registered:</span>
+                      {new Date(user.created_at).toLocaleDateString('cs-CZ')}
                     </div>
                   </div>
-                  <Badge variant="secondary" className="flex items-center gap-1">
-                    <Clock className="h-3 w-3" />
-                    Pending
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Calendar className="h-3 w-3" />
-                  Registered: {new Date(user.created_at).toLocaleDateString()}
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor={`roles-${user.user_id}`}>Assign Roles</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {['user', 'admin', 'invoice_user'].map((role) => (
-                      <Button
-                        key={role}
-                        type="button"
-                        variant={selectedRoles[user.user_id]?.includes(role) || (!selectedRoles[user.user_id] && role === 'user') ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => toggleRole(user.user_id, role)}
-                        className="capitalize"
-                      >
-                        {role === 'invoice_user' ? 'Invoice User' : role}
-                      </Button>
-                    ))}
+
+                  <div className="space-y-3">
+                    <Label className="text-sm font-bold flex items-center gap-2">
+                      <ShieldCheck className="h-4 w-4 text-primary" />
+                      Assign User Roles
+                    </Label>
+                    <div className="flex flex-wrap gap-2">
+                      {['user', 'admin', 'invoice_user'].map((role) => {
+                        const isSelected = selectedRoles[user.user_id]?.includes(role) || (!selectedRoles[user.user_id] && role === 'user');
+                        return (
+                          <Button
+                            key={role}
+                            type="button"
+                            variant={isSelected ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => toggleRole(user.user_id, role)}
+                            className={cn(
+                              "capitalize rounded-xl px-4 h-9 shadow-sm transition-all",
+                              isSelected ? "bg-primary border-0" : "bg-white/40 hover:bg-white/60 border-primary/20"
+                            )}
+                          >
+                            {role === 'invoice_user' ? 'Invoice User' : role}
+                          </Button>
+                        );
+                      })}
+                    </div>
+                    <p className="text-[11px] text-muted-foreground flex items-center gap-1.5 px-1 font-medium">
+                      <ShieldCheck className="h-3 w-3" />
+                      Select one or more roles. Default is 'user'.
+                    </p>
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    Select one or more roles. Default is 'user'.
-                  </p>
-                </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor={`notes-${user.user_id}`}>Approval Notes (Optional)</Label>
-                  <Textarea
-                    id={`notes-${user.user_id}`}
-                    placeholder="Add any notes about this approval decision..."
-                    value={notes[user.user_id] || ''}
-                    onChange={(e) => updateNotes(user.user_id, e.target.value)}
-                    rows={2}
-                  />
-                </div>
+                  <div className="space-y-2">
+                    <Label htmlFor={`notes-${user.user_id}`} className="text-sm font-bold ml-1">Decision Notes (Optional)</Label>
+                    <Textarea
+                      id={`notes-${user.user_id}`}
+                      placeholder="Add any internal notes about this user or approval decision..."
+                      value={notes[user.user_id] || ''}
+                      onChange={(e) => updateNotes(user.user_id, e.target.value)}
+                      className="bg-white/40 backdrop-blur-sm border-0 shadow-inner rounded-2xl min-h-[80px] focus-visible:ring-primary/20"
+                    />
+                  </div>
 
-                <div className="flex gap-2 pt-2">
-                  <Button
-                    onClick={() => handleApproval(user.user_id, 'approved')}
-                    disabled={processingUser === user.user_id}
-                    className="flex-1"
-                  >
-                    <Check className="h-4 w-4 mr-2" />
-                    Approve User
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    onClick={() => handleApproval(user.user_id, 'rejected')}
-                    disabled={processingUser === user.user_id}
-                    className="flex-1"
-                  >
-                    <X className="h-4 w-4 mr-2" />
-                    Reject User
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
+                  <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                    <Button
+                      onClick={() => handleApproval(user.user_id, 'approved')}
+                      disabled={processingUser === user.user_id}
+                      className="flex-1 h-12 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold shadow-lg border-0 transition-all"
+                    >
+                      <Check className="h-5 w-5 mr-2" />
+                      Approve Registraton
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      onClick={() => handleApproval(user.user_id, 'rejected')}
+                      disabled={processingUser === user.user_id}
+                      className="flex-1 h-12 rounded-2xl hover:bg-red-50 hover:text-red-600 text-muted-foreground font-semibold transition-all"
+                    >
+                      <X className="h-5 w-5 mr-2" />
+                      Reject User
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
       </div>
     </Layout>
   );

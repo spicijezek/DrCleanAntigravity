@@ -16,7 +16,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { ClientHeroHeader } from '@/components/client/ClientHeroHeader';
 import { CalendarIcon, Clock, Percent, HeadphonesIcon, Phone as PhoneIcon } from 'lucide-react';
-import { ClientLoading } from '@/components/client/ClientLoading';
+import { LoadingOverlay } from '@/components/LoadingOverlay';
 interface TeamMember {
   id: string;
   name: string;
@@ -437,7 +437,7 @@ export default function CleanerDashboard() {
     return checklist.rooms.every(room => room.is_completed);
   };
   if (loading) {
-    return <ClientLoading message="Načítám Váš dashboard..." />;
+    return <LoadingOverlay message="Načítám Váš dashboard..." />;
   }
   return <div className="container mx-auto p-4 pb-24 space-y-6 max-w-4xl animate-in fade-in slide-in-from-bottom-4 duration-700">
     <ClientHeroHeader

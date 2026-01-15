@@ -11,7 +11,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Layout } from '@/components/layout/Layout';
-import { useMobileResponsive } from '@/components/ui/mobile-responsive';
+import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
+import { LoadingOverlay } from '@/components/LoadingOverlay';
 
 interface FinancialData {
   periodRevenue: number;
@@ -26,7 +27,6 @@ interface FinancialData {
 }
 
 export default function Finances() {
-  useMobileResponsive();
   const [financialData, setFinancialData] = useState<FinancialData>({
     periodRevenue: 0,
     periodExpenses: 0,
@@ -66,22 +66,22 @@ export default function Finances() {
   const getDateRange = () => {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    
+
     if (periodFilter === 'custom') {
       return {
         start: customStartDate ? new Date(customStartDate) : today,
         end: customEndDate ? new Date(customEndDate + 'T23:59:59') : now
       };
     }
-    
+
     if (periodFilter === 'total') {
       return { start: new Date(2020, 0, 1), end: now };
     }
-    
+
     const days = parseInt(periodFilter);
     const start = new Date(today);
     start.setDate(start.getDate() - days);
-    
+
     return { start, end: now };
   };
 
@@ -151,13 +151,13 @@ export default function Finances() {
       if (jobsError) throw jobsError;
 
       const { start: periodStart, end: periodEnd } = getDateRange();
-      
-      const periodJobs = allJobs?.filter(job => 
-        job.payment_received_date && 
-        new Date(job.payment_received_date) >= periodStart && 
+
+      const periodJobs = allJobs?.filter(job =>
+        job.payment_received_date &&
+        new Date(job.payment_received_date) >= periodStart &&
         new Date(job.payment_received_date) <= periodEnd
       ) || [];
-      
+
       const periodRevenue = periodJobs.reduce((sum, job) => sum + (job.revenue || 0), 0);
       const periodExpenses = periodJobs.reduce((sum, job) => sum + (job.expenses || 0), 0);
       const periodSuppliesExpenses = periodJobs.reduce((sum, job) => sum + (job.supplies_expense_total || 0), 0);
@@ -232,7 +232,7 @@ export default function Finances() {
 
   const generateChartData = (jobs: any[]) => {
     let filteredJobs = jobs;
-    
+
     // Apply custom date filter if selected
     if (chartFilter === 'custom' && customStartDate && customEndDate) {
       const start = new Date(customStartDate);
@@ -242,7 +242,7 @@ export default function Finances() {
         return paymentDate >= start && paymentDate <= end;
       });
     }
-    
+
     if (chartFilter === 'days' || chartFilter === 'custom') {
       // Group by day
       const dayGroups: { [key: string]: any } = {};
@@ -327,253 +327,243 @@ export default function Finances() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div>Loading...</div>
-      </div>
-    );
+    return <LoadingOverlay message="Načítám finanční data..." />;
   }
 
   return (
     <Layout>
-      <div className="px-4 sm:px-6 pt-20 sm:pt-6 transition-all duration-300">
-        <div className="max-w-7xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-foreground">Finances</h1>
-            <p className="text-muted-foreground mt-2 text-sm md:text-base">Track your revenue, expenses, and profit</p>
-          </div>
-          <div className="flex flex-col gap-2 w-full sm:w-auto">
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-              <Select value={periodFilter} onValueChange={setPeriodFilter}>
-                <SelectTrigger className="w-full sm:w-44 h-10">
-                  <span className="text-sm text-foreground">{getPeriodLabel(periodFilter)}</span>
-                </SelectTrigger>
-                <SelectContent className="select-content">
-                  <SelectItem value="7">Last 7 days</SelectItem>
-                  <SelectItem value="30">Last 30 days</SelectItem>
-                  <SelectItem value="90">Last 3 months</SelectItem>
-                  <SelectItem value="180">Last 6 months</SelectItem>
-                  <SelectItem value="365">Past 365 days</SelectItem>
-                  <SelectItem value="total">Total</SelectItem>
-                  <SelectItem value="custom">Custom Range</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                <SelectTrigger className="w-full sm:w-48 h-10">
-                  <Filter className="h-4 w-4 mr-2" />
-                  <span className="text-sm text-foreground">
-                    {categoryFilter === 'all' ? 'All Categories' : categoryFilter.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                  </span>
-                </SelectTrigger>
-                <SelectContent className="select-content">
-                  <SelectItem value="all">All Categories</SelectItem>
-                  <SelectItem value="home_cleaning">Home Cleaning</SelectItem>
-                  <SelectItem value="commercial_cleaning">Commercial Cleaning</SelectItem>
-                  <SelectItem value="window_cleaning">Window Cleaning</SelectItem>
-                  <SelectItem value="post_construction_cleaning">Post-Construction Cleaning</SelectItem>
-                  <SelectItem value="upholstery_cleaning">Upholstery Cleaning</SelectItem>
-                </SelectContent>
-              </Select>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => setNumbersBlurred(!numbersBlurred)}
-                className="w-full sm:w-auto h-10"
-              >
-                {numbersBlurred ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-              </Button>
-            </div>
-            {periodFilter === 'custom' && (
-              <div className="flex flex-col sm:flex-row gap-2">
-                <Input
-                  id="customStartDate"
-                  type="date"
-                  value={customStartDate}
-                  onChange={(e) => setCustomStartDate(e.target.value)}
-                  className="w-full sm:w-36 h-10"
-                  placeholder="Start Date"
-                />
-                <Input
-                  id="customEndDate"
-                  type="date"
-                  value={customEndDate}
-                  onChange={(e) => setCustomEndDate(e.target.value)}
-                  className="w-full sm:w-36 h-10"
-                  placeholder="End Date"
-                />
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Financial Overview Cards */}
-      <div className="grid gap-6 md:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Revenue (Selected Period)</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className={`text-2xl font-bold text-success ${numbersBlurred ? "filter blur-md" : ""}`}>{formatCurrency(financialData.periodRevenue)}</div>
-            <p className="text-xs text-muted-foreground">Selected period</p>
-            <div className="mt-2 space-y-1">
-              <div className="flex justify-between text-sm">
-                <span>Cash:</span>
-                <span className={`font-medium ${numbersBlurred ? "filter blur-md" : ""}`}>{formatCurrency(financialData.periodCashRevenue)}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span>Bank:</span>
-                <span className={`font-medium ${numbersBlurred ? "filter blur-md" : ""}`}>{formatCurrency(financialData.periodBankRevenue)}</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Expenses (Selected Period)</CardTitle>
-            <TrendingDown className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className={`text-2xl font-bold text-destructive ${numbersBlurred ? "filter blur-md" : ""}`}>{formatCurrency(financialData.periodExpenses)}</div>
-            <p className="text-xs text-muted-foreground">Selected period</p>
-            <div className="mt-2 space-y-1">
-              <div className="flex justify-between text-sm">
-                <span>Supplies:</span>
-                <span className={`font-medium ${numbersBlurred ? "filter blur-md" : ""}`}>{formatCurrency(financialData.periodSuppliesExpenses)}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span>Transport:</span>
-                <span className={`font-medium ${numbersBlurred ? "filter blur-md" : ""}`}>{formatCurrency(financialData.periodTransportExpenses)}</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Net Profit (Selected Period)</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className={`text-2xl font-bold ${financialData.periodProfit >= 0 ? 'text-success' : 'text-destructive'} ${numbersBlurred ? "filter blur-md" : ""}`}>
-              {formatCurrency(financialData.periodProfit)}
-            </div>
-            <p className="text-xs text-muted-foreground">Selected period</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Revenue Chart and Earnings */}
-      <div className="grid gap-6 md:grid-cols-3">
-        <Card className="md:col-span-2">
-          <CardHeader>
-            <div className="flex flex-col gap-3">
-              <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5" />
-                Revenue Chart
-              </CardTitle>
-              <div className="flex flex-col gap-2 w-full">
-                <Select value={chartFilter} onValueChange={setChartFilter}>
-                  <SelectTrigger className="w-full sm:w-40 h-10">
-                    <SelectValue placeholder="Chart view..." />
+      <div className="container mx-auto p-4 sm:p-6 pb-24 space-y-6 max-w-7xl animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <AdminPageHeader
+          title="Finances"
+          description="Track your revenue, expenses, and profit"
+          action={
+            <div className="flex flex-col gap-2 w-full sm:w-auto">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                <Select value={periodFilter} onValueChange={setPeriodFilter}>
+                  <SelectTrigger className="w-full sm:w-44 h-10 bg-card/50 backdrop-blur-sm border-0 shadow-sm rounded-xl">
+                    <span className="text-sm text-foreground">{getPeriodLabel(periodFilter)}</span>
                   </SelectTrigger>
                   <SelectContent className="select-content">
-                    <SelectItem value="days">Days</SelectItem>
-                    <SelectItem value="months">Months</SelectItem>
-                    <SelectItem value="quarters">Quarters</SelectItem>
+                    <SelectItem value="7">Last 7 days</SelectItem>
+                    <SelectItem value="30">Last 30 days</SelectItem>
+                    <SelectItem value="90">Last 3 months</SelectItem>
+                    <SelectItem value="180">Last 6 months</SelectItem>
+                    <SelectItem value="365">Past 365 days</SelectItem>
+                    <SelectItem value="total">Total</SelectItem>
                     <SelectItem value="custom">Custom Range</SelectItem>
                   </SelectContent>
                 </Select>
-                {chartFilter === 'custom' && (
-                  <div className="flex flex-col sm:flex-row gap-2 w-full">
-                    <Input
-                      type="date"
-                      value={customStartDate}
-                      onChange={(e) => setCustomStartDate(e.target.value)}
-                      className="w-full sm:w-36 h-10"
-                      placeholder="Start Date"
-                    />
-                    <Input
-                      type="date"
-                      value={customEndDate}
-                      onChange={(e) => setCustomEndDate(e.target.value)}
-                      className="w-full sm:w-36 h-10"
-                      placeholder="End Date"
-                    />
-                  </div>
-                )}
+                <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                  <SelectTrigger className="w-full sm:w-48 h-10 bg-card/50 backdrop-blur-sm border-0 shadow-sm rounded-xl">
+                    <Filter className="h-4 w-4 mr-2" />
+                    <span className="text-sm text-foreground">
+                      {categoryFilter === 'all' ? 'All Categories' : categoryFilter.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                    </span>
+                  </SelectTrigger>
+                  <SelectContent className="select-content">
+                    <SelectItem value="all">All Categories</SelectItem>
+                    <SelectItem value="home_cleaning">Home Cleaning</SelectItem>
+                    <SelectItem value="commercial_cleaning">Commercial Cleaning</SelectItem>
+                    <SelectItem value="window_cleaning">Window Cleaning</SelectItem>
+                    <SelectItem value="post_construction_cleaning">Post-Construction Cleaning</SelectItem>
+                    <SelectItem value="upholstery_cleaning">Upholstery Cleaning</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setNumbersBlurred(!numbersBlurred)}
+                  className="w-full sm:w-auto h-10 bg-card/50 backdrop-blur-sm border-0 shadow-sm hover:bg-card/80 transition-all rounded-xl"
+                >
+                  {numbersBlurred ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                </Button>
               </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={financialData.chartData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="period" />
-                  <YAxis />
-                  <Tooltip 
-                    content={({ active, payload, label }) => {
-                      if (active && payload && payload.length) {
-                        const data = payload[0].payload;
-                        const total = (data.cash || 0) + (data.bank || 0);
-                        return (
-                          <div className="bg-background border border-border rounded p-3 shadow-lg">
-                            <p className="font-medium mb-2">{label}</p>
-                            <p className="text-green-600">Cash: {formatCurrency(data.cash)}</p>
-                            <p className="text-blue-600">Bank: {formatCurrency(data.bank)}</p>
-                            <p className="font-bold text-foreground mt-1 pt-1 border-t">Total: {formatCurrency(total)}</p>
-                            {data.clients && data.clients.length > 0 && (
-                              <div className="mt-2 text-sm">
-                                <p className="font-medium">Clients:</p>
-                                {data.clients.map((client: any, i: number) => (
-                                  <p key={i}>{client.name}: {formatCurrency(client.amount)}</p>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      }
-                      return null;
-                    }}
+              {periodFilter === 'custom' && (
+                <div className="flex flex-col sm:flex-row gap-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                  <Input
+                    id="customStartDate"
+                    type="date"
+                    value={customStartDate}
+                    onChange={(e) => setCustomStartDate(e.target.value)}
+                    className="w-full sm:w-36 h-10 bg-card/50 backdrop-blur-sm border-0 shadow-sm rounded-xl"
+                    placeholder="Start Date"
                   />
-                  <Bar dataKey="cash" stackId="a" fill="#22c55e" name="Cash" />
-                  <Bar dataKey="bank" stackId="a" fill="#3b82f6" name="Bank" />
-                </BarChart>
-              </ResponsiveContainer>
+                  <Input
+                    id="customEndDate"
+                    type="date"
+                    value={customEndDate}
+                    onChange={(e) => setCustomEndDate(e.target.value)}
+                    className="w-full sm:w-36 h-10 bg-card/50 backdrop-blur-sm border-0 shadow-sm rounded-xl"
+                    placeholder="End Date"
+                  />
+                </div>
+              )}
             </div>
-          </CardContent>
-        </Card>
+          }
+        />
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Earnings Distribution</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {financialData.earningsDistribution.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-muted-foreground">No earnings data for selected period</p>
+        <div className="grid gap-6 md:grid-cols-3 mt-4">
+          <Card className="bg-card/50 backdrop-blur-sm border-0 shadow-lg rounded-3xl overflow-hidden hover:shadow-xl transition-all duration-300">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Revenue (Selected Period)</CardTitle>
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className={`text-2xl font-bold text-blue-600 ${numbersBlurred ? "filter blur-md" : ""}`}>{formatCurrency(financialData.periodRevenue)}</div>
+              <p className="text-xs text-muted-foreground">Selected period</p>
+              <div className="mt-2 space-y-1">
+                <div className="flex justify-between text-sm">
+                  <span>Cash:</span>
+                  <span className={`font-medium ${numbersBlurred ? "filter blur-md" : ""}`}>{formatCurrency(financialData.periodCashRevenue)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>Bank:</span>
+                  <span className={`font-medium ${numbersBlurred ? "filter blur-md" : ""}`}>{formatCurrency(financialData.periodBankRevenue)}</span>
+                </div>
               </div>
-            ) : (
-              <div className="space-y-4">
-                {financialData.earningsDistribution.map((member, index) => (
-                  <div key={index} className={index > 0 ? "border-t pt-4" : ""}>
-                    <div className="flex justify-between items-center">
-                      <span className="font-medium text-sm">{member.name}</span>
-                      <span className={`font-bold text-success ${numbersBlurred ? "filter blur-md" : ""}`}>{formatCurrency(member.earnings)}</span>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-card/50 backdrop-blur-sm border-0 shadow-lg rounded-3xl overflow-hidden hover:shadow-xl transition-all duration-300">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Expenses (Selected Period)</CardTitle>
+              <TrendingDown className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className={`text-2xl font-bold text-rose-600 ${numbersBlurred ? "filter blur-md" : ""}`}>{formatCurrency(financialData.periodExpenses)}</div>
+              <p className="text-xs text-muted-foreground">Selected period</p>
+              <div className="mt-2 space-y-1">
+                <div className="flex justify-between text-sm">
+                  <span>Supplies:</span>
+                  <span className={`font-medium ${numbersBlurred ? "filter blur-md" : ""}`}>{formatCurrency(financialData.periodSuppliesExpenses)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>Transport:</span>
+                  <span className={`font-medium ${numbersBlurred ? "filter blur-md" : ""}`}>{formatCurrency(financialData.periodTransportExpenses)}</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-card/50 backdrop-blur-sm border-0 shadow-lg rounded-3xl overflow-hidden hover:shadow-xl transition-all duration-300">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Net Profit (Selected Period)</CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className={`text-2xl font-bold ${financialData.periodProfit >= 0 ? 'text-indigo-600' : 'text-rose-600'} ${numbersBlurred ? "filter blur-md" : ""}`}>
+                {formatCurrency(financialData.periodProfit)}
+              </div>
+              <p className="text-xs text-muted-foreground">Selected period</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Revenue Chart and Earnings */}
+        <div className="grid gap-6 md:grid-cols-3">
+          <Card className="md:col-span-2 bg-card/50 backdrop-blur-sm border-0 shadow-lg rounded-3xl overflow-hidden">
+            <CardHeader>
+              <div className="flex flex-col gap-3">
+                <CardTitle className="flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5" />
+                  Revenue Chart
+                </CardTitle>
+                <div className="flex flex-col gap-2 w-full">
+                  <Select value={chartFilter} onValueChange={setChartFilter}>
+                    <SelectTrigger className="w-full sm:w-40 h-10">
+                      <SelectValue placeholder="Chart view..." />
+                    </SelectTrigger>
+                    <SelectContent className="select-content">
+                      <SelectItem value="days">Days</SelectItem>
+                      <SelectItem value="months">Months</SelectItem>
+                      <SelectItem value="quarters">Quarters</SelectItem>
+                      <SelectItem value="custom">Custom Range</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {chartFilter === 'custom' && (
+                    <div className="flex flex-col sm:flex-row gap-2 w-full">
+                      <Input
+                        type="date"
+                        value={customStartDate}
+                        onChange={(e) => setCustomStartDate(e.target.value)}
+                        className="w-full sm:w-36 h-10"
+                        placeholder="Start Date"
+                      />
+                      <Input
+                        type="date"
+                        value={customEndDate}
+                        onChange={(e) => setCustomEndDate(e.target.value)}
+                        className="w-full sm:w-36 h-10"
+                        placeholder="End Date"
+                      />
                     </div>
-                  </div>
-                ))}
+                  )}
+                </div>
               </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+            </CardHeader>
+            <CardContent>
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={financialData.chartData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="period" />
+                    <YAxis />
+                    <Tooltip
+                      content={({ active, payload, label }) => {
+                        if (active && payload && payload.length) {
+                          const data = payload[0].payload;
+                          const total = (data.cash || 0) + (data.bank || 0);
+                          return (
+                            <div className="bg-background border border-border rounded p-3 shadow-lg">
+                              <p className="font-medium mb-2">{label}</p>
+                              <p className="text-green-600">Cash: {formatCurrency(data.cash)}</p>
+                              <p className="text-blue-600">Bank: {formatCurrency(data.bank)}</p>
+                              <p className="font-bold text-foreground mt-1 pt-1 border-t">Total: {formatCurrency(total)}</p>
+                              {data.clients && data.clients.length > 0 && (
+                                <div className="mt-2 text-sm">
+                                  <p className="font-medium">Clients:</p>
+                                  {data.clients.map((client: any, i: number) => (
+                                    <p key={i}>{client.name}: {formatCurrency(client.amount)}</p>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        }
+                        return null;
+                      }}
+                    />
+                    <Bar dataKey="cash" stackId="a" fill="#2563eb" name="Cash" />
+                    <Bar dataKey="bank" stackId="a" fill="#4f46e5" name="Bank" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-card/50 backdrop-blur-sm border-0 shadow-lg rounded-3xl overflow-hidden">
+            <CardHeader>
+              <CardTitle>Earnings Distribution</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {financialData.earningsDistribution.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">No earnings data for selected period</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {financialData.earningsDistribution.map((member, index) => (
+                    <div key={index} className={index > 0 ? "border-t pt-4" : ""}>
+                      <div className="flex justify-between items-center">
+                        <span className="font-medium text-sm">{member.name}</span>
+                        <span className={`font-bold text-blue-600 ${numbersBlurred ? "filter blur-md" : ""}`}>{formatCurrency(member.earnings)}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
     </Layout>

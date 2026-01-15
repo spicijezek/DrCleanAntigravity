@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button"
-import drCleanIcon from '@/assets/dr-clean-icon.png'
+import drcleanIcon from '@/assets/drclean-icon-blue.png'
 import {
   Settings,
   User,
@@ -42,7 +42,6 @@ export function Header() {
     { title: "Clients", icon: Users, href: "/clients" },
     { title: "Jobs", icon: Briefcase, href: "/jobs" },
     { title: "Team", icon: UserCheck, href: "/team" },
-    { title: "Protocols", icon: FileText, href: "/protocols" },
     { title: "Finances", icon: DollarSign, href: "/finances" },
   ];
 
@@ -236,7 +235,7 @@ export function Header() {
             <div className="flex items-center gap-3 cursor-pointer group" onClick={() => navigate('/')}>
               <div className="relative">
                 <img
-                  src={drCleanIcon}
+                  src={drcleanIcon}
                   alt="DrClean"
                   className="h-10 w-10 object-contain transition-transform duration-300 group-hover:scale-110"
                 />

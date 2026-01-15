@@ -11,7 +11,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { AddClientForm } from '@/components/forms/AddClientForm';
 import { Layout } from '@/components/layout/Layout';
-import { useMobileResponsive } from '@/components/ui/mobile-responsive';
+import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
+import { LoadingOverlay } from '@/components/LoadingOverlay';
 
 interface Client {
   id: string;
@@ -34,7 +35,6 @@ interface Client {
 }
 
 export default function Clients() {
-  useMobileResponsive();
   const [clients, setClients] = useState<Client[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
@@ -68,22 +68,22 @@ export default function Clients() {
       const getDateRange = () => {
         const now = new Date();
         const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        
+
         if (selectedPeriod === 'custom') {
           return {
             start: customStartDate ? new Date(customStartDate) : today,
             end: customEndDate ? new Date(customEndDate + 'T23:59:59') : now
           };
         }
-        
+
         if (selectedPeriod === 'total') {
           return { start: new Date(2020, 0, 1), end: now };
         }
-        
+
         const days = parseInt(selectedPeriod);
         const start = new Date(today);
         start.setDate(start.getDate() - days);
-        
+
         return { start, end: now };
       };
 
@@ -104,18 +104,18 @@ export default function Clients() {
 
         // Total spent = sum of PAID jobs revenue
         const totalSpent = clientJobs.reduce((sum, job) => sum + (job.revenue || 0), 0);
-        
+
         // Period spent = PAID jobs with payment_received_date in selected period
         let periodJobs = clientJobs;
         if (selectedPeriod !== 'total') {
-          periodJobs = clientJobs.filter(job => 
+          periodJobs = clientJobs.filter(job =>
             job.payment_received_date &&
-            new Date(job.payment_received_date) >= periodStart && 
+            new Date(job.payment_received_date) >= periodStart &&
             new Date(job.payment_received_date) <= periodEnd
           );
         }
         const periodSpent = periodJobs.reduce((sum, job) => sum + (job.revenue || 0), 0);
-        
+
         return {
           ...client,
           total_spent: totalSpent,
@@ -138,8 +138,8 @@ export default function Clients() {
   const filteredAndSortedClients = clients
     .filter(client =>
       (client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.phone?.toLowerCase().includes(searchTerm.toLowerCase())) &&
+        client.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        client.phone?.toLowerCase().includes(searchTerm.toLowerCase())) &&
       (sourceFilter === 'all' || client.client_source === sourceFilter)
     )
     .sort((a, b) => {
@@ -175,7 +175,7 @@ export default function Clients() {
   const handleDeleteClient = async (clientId: string) => {
     try {
       console.log('=== Starting delete for client ===', clientId);
-      
+
       // First check if client has any jobs
       const { data: jobs, error: jobsError } = await supabase
         .from('jobs')
@@ -202,26 +202,26 @@ export default function Clients() {
       if (jobs && jobs.length > 0) {
         const jobIds = jobs.map(j => j.id);
         console.log('Deleting job-related records for jobs:', jobIds);
-        
+
         // Delete job-related records first
         const { error: earningsError } = await supabase.from('job_earnings').delete().in('job_id', jobIds);
         if (earningsError) console.error('Error deleting earnings:', earningsError);
-        
+
         const { error: expensesError } = await supabase.from('job_expenses').delete().in('job_id', jobIds);
         if (expensesError) console.error('Error deleting expenses:', expensesError);
-        
+
         const { error: extrasError } = await supabase.from('job_extra_services').delete().in('job_id', jobIds);
         if (extrasError) console.error('Error deleting extras:', extrasError);
-        
+
         const { error: loyaltyTxError } = await supabase.from('loyalty_transactions').delete().in('related_job_id', jobIds);
         if (loyaltyTxError) console.error('Error deleting loyalty transactions:', loyaltyTxError);
-        
+
         const { error: notifError } = await supabase.from('client_notifications').delete().in('related_job_id', jobIds);
         if (notifError) console.error('Error deleting notifications:', notifError);
-        
+
         const { error: feedbackError } = await supabase.from('client_feedback').delete().in('job_id', jobIds);
         if (feedbackError) console.error('Error deleting feedback:', feedbackError);
-        
+
         // Delete jobs
         console.log('Deleting jobs...');
         const { error: jobsDeleteError } = await supabase.from('jobs').delete().eq('client_id', clientId);
@@ -253,19 +253,19 @@ export default function Clients() {
         console.error('Client delete error:', error);
         throw error;
       }
-      
+
       if (!deletedRows || deletedRows.length === 0) {
         console.error('No rows deleted - RLS policy issue?');
         throw new Error('Client could not be deleted. RLS policy may be blocking the deletion.');
       }
-      
+
       console.log('Client deleted successfully!');
-      
+
       toast({
         title: 'Success',
         description: 'Client deleted successfully',
       });
-      
+
       setClients(prev => prev.filter(c => c.id !== clientId));
       fetchClients();
     } catch (error: any) {
@@ -278,32 +278,29 @@ export default function Clients() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
-      </div>
-    );
+    return <LoadingOverlay message="Loading clients..." />;
   }
 
   return (
     <Layout>
-      <div className="p-6 transition-all duration-300">
-        <div className="space-y-6">
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-              <div>
-                <h1 className="text-3xl font-bold text-foreground">Clients</h1>
-                <p className="text-muted-foreground">Manage your client relationships</p>
-              </div>
-              <Button 
-                onClick={() => setShowAddForm(true)}
-                className="flex items-center gap-2"
-              >
-                <Plus className="h-4 w-4" />
-                Add Client
-              </Button>
-            </div>
+      <div className="container mx-auto p-4 sm:p-6 pb-24 space-y-6 max-w-7xl animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <AdminPageHeader
+          title="Clients"
+          description="Manage your client relationships"
+          action={
+            <Button
+              onClick={() => setShowAddForm(true)}
+              className="flex items-center gap-2 shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all rounded-xl"
+              variant="gradient"
+            >
+              <Plus className="h-4 w-4" />
+              Add Client
+            </Button>
+          }
+        />
 
+        <div className="space-y-6">
+          <div className="bg-card/50 backdrop-blur-sm p-6 rounded-3xl border-0 shadow-lg space-y-6">
             {/* Period Selector and Sort Filter */}
             <div className="filter-container flex flex-col lg:flex-row gap-4 items-start lg:items-center">
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full lg:w-auto">
@@ -324,7 +321,7 @@ export default function Clients() {
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full lg:w-auto">
                 <span className="text-sm font-medium">Source:</span>
                 <Select value={sourceFilter} onValueChange={setSourceFilter}>
@@ -359,7 +356,7 @@ export default function Clients() {
 
             {/* Custom Date Range - Only show when custom is selected */}
             {selectedPeriod === 'custom' && (
-              <div className="period-spent-container bg-muted/30 p-4 rounded-lg">
+              <div className="bg-muted/30 p-4 rounded-2xl">
                 <h3 className="text-sm font-medium mb-2">Custom Date Range</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
@@ -390,8 +387,8 @@ export default function Clients() {
             {/* Search */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-              <Input 
-                placeholder="Search clients..." 
+              <Input
+                placeholder="Search clients..."
                 className="pl-10 mobile-button w-full"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -399,111 +396,111 @@ export default function Clients() {
             </div>
 
             {/* Period Spending Summary */}
-            <div className="period-spent-container bg-muted/30 p-4 rounded-lg">
-              <h3 className="text-sm font-medium mb-2">Period Spending Summary</h3>
+            <div className="bg-primary/5 p-4 rounded-2xl border border-primary/10">
+              <h3 className="text-sm font-semibold text-primary mb-1">Period Spending Summary</h3>
               <p className="text-xs text-muted-foreground">
-                Total spent by all clients in selected period: 
-                <span className="font-semibold ml-1">
+                Total spent by all clients in selected period:
+                <span className="font-bold text-primary ml-1 text-sm">
                   {filteredAndSortedClients.reduce((sum, client) => sum + client.period_spent, 0).toLocaleString('cs-CZ')} CZK
                 </span>
               </p>
             </div>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mt-4">
             {filteredAndSortedClients.map((client) => (
-          <Card key={client.id} className="hover:shadow-medium transition-shadow">
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <User className="h-5 w-5 text-primary" />
-                  {client.name}
-                </div>
-                <Badge variant={client.client_type === 'company' ? 'default' : 'secondary'}>
-                  {client.client_type === 'company' ? 'C' : 'P'}
-                </Badge>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3 min-h-[120px]">
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Mail className="h-4 w-4" />
-                  {client.email || 'No email provided'}
-                </div>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Phone className="h-4 w-4" />
-                  {client.phone || 'No phone provided'}
-                </div>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <MapPin className="h-4 w-4" />
-                  {client.address ? `${client.address}${client.city ? `, ${client.city}` : ''}${client.postal_code ? ` ${client.postal_code}` : ''}` : 'No address provided'}
-                </div>
-              </div>
-              <div className="flex flex-col gap-2 pt-4 border-t">
-                <div className="flex items-center justify-between">
-                  <Badge variant="secondary" className="bg-green-100 text-green-800 hover:bg-green-200">
-                    Total: {client.total_spent?.toLocaleString('cs-CZ') || 0} CZK
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                    {selectedPeriod === 'total' ? 'Total' : selectedPeriod === 'custom' ? 'Custom' : `${selectedPeriod}d`}: {client.period_spent?.toLocaleString('cs-CZ') || 0} CZK
-                  </Badge>
-                </div>
-                <div className="flex gap-2 mt-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleEditClient(client)}
-                    className="flex-1"
-                  >
-                    <Edit className="h-4 w-4 mr-1" />
-                    Edit
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => handleDeleteClient(client.id)}
-                    className="flex-1"
-                  >
-                    <Trash2 className="h-4 w-4 mr-1" />
-                    Remove
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+              <Card key={client.id} className="bg-card/50 backdrop-blur-sm border-0 shadow-lg rounded-3xl overflow-hidden hover:shadow-xl transition-all duration-300 group">
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <User className="h-5 w-5 text-primary" />
+                      {client.name}
+                    </div>
+                    <Badge variant={client.client_type === 'company' ? 'default' : 'secondary'}>
+                      {client.client_type === 'company' ? 'C' : 'P'}
+                    </Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3 min-h-[120px]">
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Mail className="h-4 w-4" />
+                      {client.email || 'No email provided'}
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Phone className="h-4 w-4" />
+                      {client.phone || 'No phone provided'}
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <MapPin className="h-4 w-4" />
+                      {client.address ? `${client.address}${client.city ? `, ${client.city}` : ''}${client.postal_code ? ` ${client.postal_code}` : ''}` : 'No address provided'}
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-2 pt-4 border-t">
+                    <div className="flex items-center justify-between">
+                      <Badge variant="secondary" className="bg-green-100 text-green-800 hover:bg-green-200">
+                        Total: {client.total_spent?.toLocaleString('cs-CZ') || 0} CZK
+                      </Badge>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                        {selectedPeriod === 'total' ? 'Total' : selectedPeriod === 'custom' ? 'Custom' : `${selectedPeriod}d`}: {client.period_spent?.toLocaleString('cs-CZ') || 0} CZK
+                      </Badge>
+                    </div>
+                    <div className="flex gap-2 mt-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEditClient(client)}
+                        className="flex-1"
+                      >
+                        <Edit className="h-4 w-4 mr-1" />
+                        Edit
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => handleDeleteClient(client.id)}
+                        className="flex-1"
+                      >
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        Remove
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
 
-      {filteredAndSortedClients.length === 0 && !loading && (
-        <div className="text-center py-12">
-          <User className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-foreground mb-2">No clients found</h3>
-          <p className="text-muted-foreground mb-4">
-            {searchTerm ? 'Try adjusting your search terms.' : 'Start by adding your first client.'}
-          </p>
-          {!searchTerm && (
-            <Button onClick={() => setShowAddForm(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Client
-            </Button>
+          {filteredAndSortedClients.length === 0 && !loading && (
+            <div className="text-center py-12">
+              <User className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-foreground mb-2">No clients found</h3>
+              <p className="text-muted-foreground mb-4">
+                {searchTerm ? 'Try adjusting your search terms.' : 'Start by adding your first client.'}
+              </p>
+              {!searchTerm && (
+                <Button onClick={() => setShowAddForm(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Client
+                </Button>
+              )}
+            </div>
+          )}
+
+          {showAddForm && (
+            <AddClientForm
+              onClose={() => {
+                setShowAddForm(false);
+                setEditingClient(null);
+              }}
+              onClientAdded={handleClientAdded}
+              editingClient={editingClient}
+            />
           )}
         </div>
-      )}
-
-      {showAddForm && (
-        <AddClientForm
-          onClose={() => {
-            setShowAddForm(false);
-            setEditingClient(null);
-          }}
-          onClientAdded={handleClientAdded}
-          editingClient={editingClient}
-        />
-        )}
       </div>
-    </div>
     </Layout>
   );
 }

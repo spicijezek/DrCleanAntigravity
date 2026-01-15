@@ -14,6 +14,8 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { InvoicePreview } from "@/components/invoices/InvoicePreview";
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
+import { LoadingOverlay } from "@/components/LoadingOverlay";
 
 export default function InvoiceStorage() {
   const { user } = useAuth();
@@ -313,52 +315,73 @@ export default function InvoiceStorage() {
     }
   };
 
+  if (loading) {
+    return <LoadingOverlay message="Načítám sklad faktur..." />;
+  }
+
   return (
     <Layout>
-      <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">Invoice Storage</h1>
-            <p className="text-muted-foreground">Manage and download your invoices</p>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => navigate('/invoices/generator')}>
-              <FileText className="h-4 w-4 mr-2" />
-              Generator
-            </Button>
-            <Button variant="outline" onClick={() => navigate('/invoices/default-info')}>
-              <Settings className="h-4 w-4 mr-2" />
-              Default Info
-            </Button>
-          </div>
-        </div>
+      <div className="container mx-auto p-4 sm:p-6 pb-24 space-y-6 max-w-7xl animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <AdminPageHeader
+          title="Invoice Storage"
+          description="Spravujte a stahujte své faktury na jednom místě"
+          action={
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                variant="outline"
+                onClick={() => navigate('/invoices/generator')}
+                className="bg-card/50 backdrop-blur-sm border-0 shadow-sm rounded-xl px-4 h-10"
+              >
+                <FileText className="h-4 w-4 mr-2" />
+                Generator
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => navigate('/invoices/default-info')}
+                className="bg-card/50 backdrop-blur-sm border-0 shadow-sm rounded-xl px-4 h-10"
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                Nastavení
+              </Button>
+              {selectedInvoices.length > 0 && (
+                <Button
+                  onClick={downloadSelectedAsZip}
+                  variant="gradient"
+                  className="shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all rounded-xl px-4 h-10"
+                >
+                  <PackageOpen className="h-4 w-4 mr-2" />
+                  Stáhnout ZIP ({selectedInvoices.length})
+                </Button>
+              )}
+            </div>
+          }
+        />
 
-        {/* Filters and Bulk Actions */}
-        <Card className="p-4 space-y-4">
-          <div className="flex flex-wrap gap-4">
+        <Card className="p-4 bg-card/50 backdrop-blur-sm border-0 shadow-lg rounded-3xl overflow-hidden">
+          <div className="flex flex-wrap gap-4 items-center">
             <div className="flex-1 min-w-[200px]">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search by invoice number or client..."
+                  placeholder="Hledat podle čísla faktury nebo klienta..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 bg-background/50 border-0 rounded-xl h-11"
                 />
               </div>
             </div>
 
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-all sm:w-[180px] bg-background/50 border-0 rounded-xl h-11">
                 <Filter className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="Filter by status" />
+                <SelectValue placeholder="Filtrovat podle stavu" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="draft">Draft</SelectItem>
-                <SelectItem value="issued">Issued</SelectItem>
-                <SelectItem value="paid">Paid</SelectItem>
-                <SelectItem value="overdue">Overdue</SelectItem>
+                <SelectItem value="all">Všechny stavy</SelectItem>
+                <SelectItem value="draft">Koncept</SelectItem>
+                <SelectItem value="issued">Vystaveno</SelectItem>
+                <SelectItem value="paid">Uhrazeno</SelectItem>
+                <SelectItem value="overdue">Po splatnosti</SelectItem>
               </SelectContent>
             </Select>
 
@@ -366,75 +389,60 @@ export default function InvoiceStorage() {
               type="month"
               value={dateFilter}
               onChange={(e) => setDateFilter(e.target.value)}
-              className="w-[180px]"
+              className="w-all sm:w-[180px] bg-background/50 border-0 rounded-xl h-11"
             />
           </div>
 
-          {/* Bulk Actions */}
           {filteredInvoices.length > 0 && (
-            <div className="flex items-center justify-between pt-2 border-t">
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    checked={selectedInvoices.length === filteredInvoices.length && filteredInvoices.length > 0}
-                    onCheckedChange={toggleSelectAll}
-                  />
-                  <span className="text-sm text-muted-foreground">
-                    Select All ({selectedInvoices.length} selected)
-                  </span>
-                </div>
+            <div className="flex items-center justify-between pt-4 mt-4 border-t border-border/50">
+              <div className="flex items-center gap-2 px-2">
+                <Checkbox
+                  id="select-all"
+                  checked={selectedInvoices.length === filteredInvoices.length && filteredInvoices.length > 0}
+                  onCheckedChange={toggleSelectAll}
+                  className="rounded-md"
+                />
+                <label htmlFor="select-all" className="text-sm font-medium cursor-pointer">
+                  Vybrat vše ({selectedInvoices.length})
+                </label>
               </div>
-
-              {selectedInvoices.length > 0 && (
-                <Button
-                  onClick={downloadSelectedAsZip}
-                  variant="default"
-                  size="sm"
-                >
-                  <PackageOpen className="h-4 w-4 mr-2" />
-                  Download as ZIP
-                </Button>
-              )}
             </div>
           )}
         </Card>
 
-        {/* Invoices List */}
-        {loading ? (
-          <Card className="p-8 text-center text-muted-foreground">
-            Loading invoices...
-          </Card>
-        ) : filteredInvoices.length === 0 ? (
-          <Card className="p-8 text-center text-muted-foreground">
-            No invoices found
-          </Card>
-        ) : (
-          <div className="grid gap-3">
-            {filteredInvoices.map((invoice) => (
-              <Card key={invoice.id} className="p-4">
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-4 flex-1 min-w-0">
+        <div className="space-y-3">
+          {filteredInvoices.length === 0 ? (
+            <Card className="p-12 text-center bg-card/50 backdrop-blur-sm border-0 shadow-lg rounded-3xl">
+              <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-20" />
+              <p className="text-muted-foreground">Nebyly nalezeny žádné faktury</p>
+            </Card>
+          ) : (
+            filteredInvoices.map((invoice) => (
+              <Card key={invoice.id} className="p-4 bg-white/40 backdrop-blur-md border-0 shadow-md rounded-2xl transition-all hover:shadow-lg hover:bg-white/60">
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <div className="flex items-center gap-4 flex-1 min-w-[300px]">
                     <Checkbox
                       checked={selectedInvoices.includes(invoice.id)}
                       onCheckedChange={() => toggleInvoiceSelection(invoice.id)}
+                      className="rounded-md"
                     />
                     <div className="flex-shrink-0">
-                      <p className="font-semibold text-lg">{invoice.invoice_number}</p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="font-bold text-lg text-primary">{invoice.invoice_number}</p>
+                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
                         {new Date(invoice.date_created).toLocaleDateString('cs-CZ')}
                       </p>
                     </div>
 
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{invoice.client_name}</p>
-                      {invoice.client_vat && <p className="text-xs text-muted-foreground">{invoice.client_vat}</p>}
+                      <p className="font-semibold truncate text-foreground">{invoice.client_name}</p>
+                      {invoice.client_vat && <p className="text-[10px] text-muted-foreground font-mono">{invoice.client_vat}</p>}
                     </div>
 
-                    <div className="flex-shrink-0 text-right">
-                      <p className="font-bold text-lg">{formatCurrency(invoice.total)}</p>
+                    <div className="flex-shrink-0 text-right mr-4">
+                      <p className="font-bold text-lg text-foreground">{formatCurrency(invoice.total)}</p>
                       {invoice.date_due && (
-                        <p className="text-xs text-muted-foreground">
-                          Due: {new Date(invoice.date_due).toLocaleDateString('cs-CZ')}
+                        <p className="text-[10px] text-muted-foreground font-medium">
+                          Splatnost: {new Date(invoice.date_due).toLocaleDateString('cs-CZ')}
                         </p>
                       )}
                     </div>
@@ -443,14 +451,14 @@ export default function InvoiceStorage() {
                       value={invoice.status}
                       onValueChange={(value) => updateInvoiceStatus(invoice.id, value)}
                     >
-                      <SelectTrigger className="w-[120px]">
+                      <SelectTrigger className="w-[130px] h-9 bg-background/50 border-0 rounded-lg text-xs font-semibold">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="draft">Draft</SelectItem>
-                        <SelectItem value="issued">Issued</SelectItem>
-                        <SelectItem value="paid">Paid</SelectItem>
-                        <SelectItem value="overdue">Overdue</SelectItem>
+                        <SelectItem value="draft">Koncept</SelectItem>
+                        <SelectItem value="issued">Vystaveno</SelectItem>
+                        <SelectItem value="paid">Uhrazeno</SelectItem>
+                        <SelectItem value="overdue">Po splatnosti</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -458,56 +466,62 @@ export default function InvoiceStorage() {
                   <div className="flex gap-2 flex-shrink-0">
                     <Button
                       variant="outline"
-                      size="sm"
+                      size="icon"
                       onClick={() => previewInvoiceDetails(invoice)}
+                      className="h-9 w-9 bg-background/50 border-0 rounded-lg hover:bg-primary hover:text-white transition-all"
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
                     <Button
                       variant="outline"
-                      size="sm"
+                      size="icon"
                       onClick={() => downloadInvoice(invoice)}
                       disabled={!invoice.pdf_path}
+                      className="h-9 w-9 bg-background/50 border-0 rounded-lg hover:bg-success hover:text-white transition-all"
                     >
                       <Download className="h-4 w-4" />
                     </Button>
                     <Button
                       variant="outline"
-                      size="sm"
+                      size="icon"
                       onClick={() => deleteInvoice(invoice.id, invoice.pdf_path)}
+                      className="h-9 w-9 bg-background/50 border-0 rounded-lg hover:bg-destructive hover:text-white transition-all"
                     >
-                      <Trash2 className="h-4 w-4 text-destructive" />
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
               </Card>
-            ))}
-          </div>
-        )}
+            ))
+          )}
+        </div>
 
-        {/* Invoice Preview Dialog */}
         <Dialog open={!!previewInvoice} onOpenChange={() => setPreviewInvoice(null)}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-0">
+          <DialogContent className="max-w-[794px] w-full p-0 border-0 bg-transparent shadow-2xl rounded-xl overflow-hidden">
             {previewInvoice && companyInfo && (
-              <InvoicePreview
-                companyInfo={companyInfo}
-                invoiceNumber={previewInvoice.invoice_number}
-                clientName={previewInvoice.client_name}
-                clientVat={previewInvoice.client_vat}
-                clientDic={previewInvoice.client_dic}
-                clientAddress={previewInvoice.client_address}
-                clientEmail={previewInvoice.client_email}
-                clientPhone={previewInvoice.client_phone}
-                dateCreated={previewInvoice.date_created}
-                performanceDates={previewInvoice.date_performance ? [{ id: '1', startDate: previewInvoice.date_performance }] : []}
-                dateDue={previewInvoice.date_due}
-                variableSymbol={previewInvoice.variable_symbol}
-                items={invoiceItems}
-                notes={previewInvoice.notes}
-                subtotal={parseFloat(previewInvoice.subtotal)}
-                vatAmount={parseFloat(previewInvoice.vat_amount)}
-                total={parseFloat(previewInvoice.total)}
-              />
+              <div className="bg-white p-0">
+                <InvoicePreview
+                  companyInfo={companyInfo}
+                  invoiceNumber={previewInvoice.invoice_number}
+                  clientName={previewInvoice.client_name}
+                  clientVat={previewInvoice.client_vat}
+                  clientDic={previewInvoice.client_dic}
+                  clientAddress={previewInvoice.client_address}
+                  clientEmail={previewInvoice.client_email}
+                  clientPhone={previewInvoice.client_phone}
+                  dateCreated={previewInvoice.date_created}
+                  performanceDates={previewInvoice.date_performance ? [{ id: '1', startDate: previewInvoice.date_performance }] : []}
+                  dateDue={previewInvoice.date_due}
+                  variableSymbol={previewInvoice.variable_symbol}
+                  items={invoiceItems}
+                  notes={previewInvoice.notes}
+                  subtotal={parseFloat(previewInvoice.subtotal)}
+                  vatAmount={parseFloat(previewInvoice.vat_amount)}
+                  total={parseFloat(previewInvoice.total)}
+                  paymentMethod={previewInvoice.payment_method}
+                  datePaid={previewInvoice.date_paid}
+                />
+              </div>
             )}
           </DialogContent>
         </Dialog>

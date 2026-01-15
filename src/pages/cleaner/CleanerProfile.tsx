@@ -12,7 +12,7 @@ import { User, Mail, Phone, Calendar, MapPin, Lock, ChevronDown, Upload, LogOut,
 import { useNavigate } from 'react-router-dom';
 import { ClientHeroHeader } from '@/components/client/ClientHeroHeader';
 import { DatePicker } from '@/components/ui/date-time-picker';
-import { ClientLoading } from '@/components/client/ClientLoading';
+import { LoadingOverlay } from '@/components/LoadingOverlay';
 
 export default function CleanerProfile() {
   const { user, signOut } = useAuth();
@@ -246,7 +246,7 @@ export default function CleanerProfile() {
   };
 
   if (loading && !profileData.email) {
-    return <ClientLoading message="Načítám Váš profil..." />;
+    return <LoadingOverlay message="Načítám Váš profil..." />;
   }
 
   return (

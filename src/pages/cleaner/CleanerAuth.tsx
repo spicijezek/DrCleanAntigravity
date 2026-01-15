@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2 } from 'lucide-react';
+import { LoadingOverlay } from '@/components/LoadingOverlay';
 
 export default function CleanerAuth() {
   const [email, setEmail] = useState('');
@@ -187,7 +187,7 @@ export default function CleanerAuth() {
                 </div>
 
                 <Button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-900/20" disabled={loading}>
-                  {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Přihlásit se'}
+                  {loading ? "Přihlašování..." : 'Přihlásit se'}
                 </Button>
               </form>
             </TabsContent>
@@ -243,13 +243,14 @@ export default function CleanerAuth() {
                 </div>
 
                 <Button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-900/20" disabled={loading}>
-                  {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Zaregistrovat se'}
+                  {loading ? "Registrace..." : 'Zaregistrovat se'}
                 </Button>
               </form>
             </TabsContent>
           </Tabs>
         </CardContent>
       </Card>
+      {loading && <LoadingOverlay message={email ? "Pracuji na tom..." : "Načítám..."} />}
     </div>
   );
 }

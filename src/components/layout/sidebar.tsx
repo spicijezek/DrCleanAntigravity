@@ -43,11 +43,6 @@ const navigationItems = [
     href: "/team"
   },
   {
-    title: "Protocols",
-    icon: FileText,
-    href: "/protocols"
-  },
-  {
     title: "Finances",
     icon: DollarSign,
     href: "/finances"
@@ -115,7 +110,7 @@ export function Sidebar() {
     }
   };
 
-  const fullName = user?.user_metadata?.full_name || 'Admin';
+  const fullName = user?.user_metadata?.full_name || 'DrClean Admin';
   const email = user?.email || '';
 
   return (
@@ -127,30 +122,10 @@ export function Sidebar() {
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      {/* Sidebar Header with Profile Info */}
-      {shouldBeExpanded && (
-        <div className="relative overflow-hidden bg-gradient-to-br from-blue-600 to-indigo-700 p-4 text-white">
-          <div className="absolute top-0 right-0 -mt-2 -mr-2 h-16 w-16 rounded-full bg-white/10 blur-xl" />
-          <div className="absolute bottom-0 left-0 -mb-2 -ml-2 h-12 w-12 rounded-full bg-white/10 blur-lg" />
-
-          <div className="relative z-10 flex items-center gap-3">
-            <Avatar className="h-10 w-10 border-2 border-white/20">
-              <AvatarImage src={avatarUrl} />
-              <AvatarFallback className="bg-white/20 text-white font-bold">
-                {fullName[0]}
-              </AvatarFallback>
-            </Avatar>
-            <div className="overflow-hidden">
-              <p className="text-sm font-semibold leading-none truncate">{fullName}</p>
-              <p className="text-[10px] text-blue-100 mt-1 truncate">{email}</p>
-            </div>
-          </div>
-        </div>
-      )}
 
       <div className="flex flex-col flex-1 p-2 overflow-y-auto">
         <nav className="flex-1 space-y-1">
-          <div className={cn("text-[10px] font-semibold text-muted-foreground px-2 mb-2 uppercase tracking-wider", !shouldBeExpanded && "sr-only")}>Menu</div>
+
           {navigationItems.map((item) => {
             const isActive = location.pathname === item.href;
             const isDisabled = isInvoiceUser;
@@ -175,10 +150,7 @@ export function Sidebar() {
             );
           })}
 
-          {/* Invoices section */}
-          {shouldBeExpanded && navigationItems.length > 0 && (
-            <div className="text-[10px] font-semibold text-muted-foreground px-2 mt-4 mb-2 uppercase tracking-wider">Invoices</div>
-          )}
+
           {invoiceNavigationItems.map((item) => {
             const isActive = location.pathname === item.href;
             return (
@@ -203,9 +175,7 @@ export function Sidebar() {
           {/* Admin-only navigation items */}
           {profile?.is_admin && (
             <>
-              {shouldBeExpanded && (
-                <div className="text-[10px] font-semibold text-muted-foreground px-2 mt-4 mb-2 uppercase tracking-wider">Admin</div>
-              )}
+
               {adminNavigationItems.map((item) => {
                 const isActive = location.pathname === item.href;
                 return (

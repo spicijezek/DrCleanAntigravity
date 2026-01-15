@@ -16,6 +16,8 @@ import { InvoicePreview } from "@/components/invoices/InvoicePreview";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import { uploadToCloudinary } from "@/lib/cloudinary";
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
+import { LoadingOverlay } from "@/components/LoadingOverlay";
 
 interface InvoiceItem {
   id: string;
@@ -888,56 +890,66 @@ export default function InvoiceGenerator() {
 
   return (
     <Layout>
-      <div className="p-4 md:p-6 pb-24 lg:pb-6">
-        <div className="mb-6 flex flex-col md:flex-row md:items-start justify-between gap-4">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold">Invoice Generator</h1>
-            <p className="text-muted-foreground">Create & Preview Invoices</p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Button onClick={downloadPDF} variant="outline" size="sm" className="hidden sm:flex">
-              <Download className="h-4 w-4 mr-2" />
-              Download PDF
-            </Button>
-            <Button
-              onClick={saveInvoice}
-              disabled={loading || !clientName || items.some(i => !i.description) || isInvoiceUser}
-              className={isInvoiceUser ? "opacity-50 cursor-not-allowed" : ""}
-              size="sm"
-            >
-              {isInvoiceUser ? <Lock className="h-4 w-4 mr-2" /> : <Save className="h-4 w-4 mr-2" />}
-              {loading ? "Saving..." : "Save Invoice"}
-            </Button>
-            <Button
-              onClick={() => navigate('/invoices/storage')}
-              variant="outline"
-              disabled={isInvoiceUser}
-              className={isInvoiceUser ? "opacity-50 cursor-not-allowed" : ""}
-              size="sm"
-            >
-              {isInvoiceUser ? <Lock className="h-4 w-4 mr-2" /> : <FileText className="h-4 w-4 mr-2" />}
-              Storage
-            </Button>
-            <Button onClick={() => navigate('/invoices/default-info')} variant="outline" size="sm">
-              <Settings className="h-4 w-4 mr-2" />
-              Default
-            </Button>
-          </div>
-        </div>
+      <div className="container mx-auto p-4 sm:p-6 pb-24 space-y-6 max-w-7xl animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <AdminPageHeader
+          title="Invoice Generator"
+          description="Vytvářejte a spravujte faktury pro své klienty"
+          action={
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                variant="outline"
+                onClick={downloadPDF}
+                className="bg-card/50 backdrop-blur-sm border-0 shadow-sm rounded-xl px-4 h-10"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Stáhnout PDF
+              </Button>
+              <Button
+                onClick={saveInvoice}
+                disabled={loading || !clientName || items.some(i => !i.description) || isInvoiceUser}
+                variant="gradient"
+                className="shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all rounded-xl px-4 h-10"
+              >
+                {isInvoiceUser ? <Lock className="h-4 w-4 mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+                {loading ? "Ukládání..." : "Uložit fakturu"}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => navigate('/invoices/storage')}
+                className="bg-card/50 backdrop-blur-sm border-0 shadow-sm rounded-xl px-4 h-10"
+              >
+                <FileText className="h-4 w-4 mr-2" />
+                Sklad
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => navigate('/invoices/default-info')}
+                className="bg-card/50 backdrop-blur-sm border-0 shadow-sm rounded-xl px-4 h-10"
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                Výchozí
+              </Button>
+            </div>
+          }
+        />
+
+        {loading && <LoadingOverlay message="Zpracovávám..." />}
 
         {/* Desktop Layout: Grid side-by-side */}
-        <div className="hidden lg:grid grid-cols-2 gap-6 h-[calc(100vh-200px)] overflow-hidden">
+        <div className="hidden lg:grid grid-cols-2 gap-8 h-[calc(100vh-250px)] overflow-hidden">
           {/* Form Section */}
           <div className="overflow-y-auto pr-2">
-            <Card className="p-6 space-y-6">
+            <Card className="p-6 bg-card/50 backdrop-blur-sm border-0 shadow-lg rounded-3xl overflow-hidden">
               {renderFormContent()}
             </Card>
           </div>
 
           {/* Preview Section */}
-          <div className="overflow-y-auto bg-slate-200/50 rounded-xl p-4 flex justify-center border border-dashed border-slate-300">
+          <div className="overflow-y-auto bg-slate-200/30 backdrop-blur-sm rounded-3xl p-6 flex justify-center border border-dashed border-slate-300 transition-all duration-300 hover:border-primary/30">
             <div className="w-full max-w-[800px] h-fit">
-              {renderPreview()}
+              <Card className="p-0 bg-white border-0 shadow-2xl rounded-xl overflow-hidden">
+                {renderPreview()}
+              </Card>
             </div>
           </div>
         </div>
@@ -945,20 +957,21 @@ export default function InvoiceGenerator() {
         {/* Mobile/Tablet Layout: Tabs */}
         <div className="lg:hidden">
           <Tabs defaultValue="form" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-4 bg-white shadow-sm sticky top-0 z-20">
-              <TabsTrigger value="form" className="data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none">Úprava</TabsTrigger>
-              <TabsTrigger value="preview" className="data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none">Náhled</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2 mb-6 bg-card/50 backdrop-blur-sm border-0 shadow-lg rounded-xl p-1">
+              <TabsTrigger value="form" className="rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm">Úprava</TabsTrigger>
+              <TabsTrigger value="preview" className="rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm">Náhled</TabsTrigger>
             </TabsList>
 
             <TabsContent value="form">
-              <Card className="p-4 space-y-6 border-none shadow-none bg-transparent">
+              <Card className="p-6 bg-card/50 backdrop-blur-sm border-0 shadow-lg rounded-3xl overflow-hidden space-y-6">
                 {renderFormContent()}
               </Card>
 
-              <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t z-50 lg:hidden shadow-[0_-4px_10px_rgba(0,0,0,0.05)]">
+              <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-lg border-t z-50 lg:hidden shadow-[0_-4px_10px_rgba(0,0,0,0.05)]">
                 <Button
                   onClick={saveInvoice}
-                  className="w-full h-12 text-lg font-bold"
+                  className="w-full h-12 text-lg font-bold rounded-xl shadow-lg shadow-primary/20"
+                  variant="gradient"
                   disabled={loading || !clientName || items.some(i => !i.description) || isInvoiceUser}
                 >
                   <Save className="h-5 w-5 mr-2" />
@@ -968,10 +981,12 @@ export default function InvoiceGenerator() {
             </TabsContent>
 
             <TabsContent value="preview">
-              <div className="bg-slate-200/50 rounded-xl p-0.5 flex justify-center border border-dashed border-slate-300 min-h-[500px] overflow-hidden">
+              <div className="bg-slate-200/30 backdrop-blur-sm rounded-3xl p-2 flex justify-center border border-dashed border-slate-300 min-h-[500px] overflow-hidden">
                 <div className="w-full overflow-x-auto scrollbar-hide py-4">
                   <div className="w-[800px] mx-auto origin-top scale-[0.4] sm:scale-[0.55] md:scale-[0.75] transform-gpu transition-all">
-                    {renderPreview()}
+                    <Card className="p-0 bg-white border-0 shadow-2xl rounded-xl overflow-hidden">
+                      {renderPreview()}
+                    </Card>
                   </div>
                 </div>
               </div>
