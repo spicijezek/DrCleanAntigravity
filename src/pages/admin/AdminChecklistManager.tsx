@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 import {
     ChefHat, Sofa, BedDouble, Bath, Baby, Home, DoorOpen,
     Navigation, Trash2, CheckCircle2,
-    Building2, MapPin, Plus, User, Search, X
+    Building2, MapPin, Plus, User, Search, X, TrendingUp
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
@@ -32,6 +32,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { Layout } from '@/components/layout/Layout';
 import { LoadingOverlay } from '@/components/LoadingOverlay';
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 // --- Constants (Same as Client Side) ---
 const ROOM_TYPES = [
@@ -74,6 +75,7 @@ export default function AdminChecklistManager() {
     const [newChecklistAddress, setNewChecklistAddress] = useState('');
     const [addingTaskRoomId, setAddingTaskRoomId] = useState<string | null>(null);
     const [newTaskText, setNewTaskText] = useState('');
+    const [clientSearch, setClientSearch] = useState('');
 
     useEffect(() => {
         fetchClients();
@@ -253,7 +255,15 @@ export default function AdminChecklistManager() {
 
     const activeChecklist = checklists.find(c => c.id === activeChecklistId);
 
-    if (loading) return <LoadingOverlay message="Načítám..." />;
+    const filteredClients = clients.filter(client => {
+        const searchLower = clientSearch.toLowerCase();
+        return (
+            client.name?.toLowerCase().includes(searchLower) ||
+            client.email?.toLowerCase().includes(searchLower)
+        );
+    });
+
+    if (loading && clients.length === 0) return <LoadingOverlay message="Načítám..." />;
 
     return (
         <Layout>
@@ -272,104 +282,134 @@ export default function AdminChecklistManager() {
                 <div className="flex flex-col gap-6">
 
 
-                    {/* Client Selector */}
-                    <Card>
-                        <CardContent className="pt-6">
-                            <Label>Vyberte klienta</Label>
-                            <Select value={selectedClientId} onValueChange={setSelectedClientId}>
-                                <SelectTrigger className="w-full mt-2">
-                                    <SelectValue placeholder="Vybrat klienta..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {clients.map(client => (
-                                        <SelectItem key={client.id} value={client.id}>
-                                            {client.name} {client.email ? `(${client.email})` : ''}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </CardContent>
-                    </Card>
+                    <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-top-4 duration-1000">
+                        {/* Glassmorphic Filter Bar */}
+                        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl p-2 sm:p-3 rounded-[2.5rem] border border-white/20 shadow-2xl">
+                            <div className="flex-1 px-2">
+                                <div className="relative group">
+                                    <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5 transition-colors group-focus-within:text-blue-500" />
+                                    <Input
+                                        placeholder="Hledat klienta po jméně nebo emailu..."
+                                        className="pl-12 h-12 bg-white/50 dark:bg-slate-800/50 border-0 shadow-sm rounded-full focus-visible:ring-2 focus-visible:ring-blue-500/20 transition-all w-full text-base"
+                                        value={clientSearch}
+                                        onChange={(e) => setClientSearch(e.target.value)}
+                                    />
+                                </div>
+                            </div>
 
-                    {/* Address Switcher (Only if client selected) */}
-                    {selectedClientId && (
-                        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
-                            {checklists.map(c => (
-                                <button
-                                    key={c.id}
-                                    onClick={() => setActiveChecklistId(c.id)}
-                                    className={cn(
-                                        "flex items-center gap-2 px-4 py-2 rounded-full border transition-all whitespace-nowrap",
-                                        activeChecklistId === c.id
-                                            ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                                            : "bg-background text-muted-foreground hover:bg-muted"
-                                    )}
-                                >
-                                    <MapPin className="h-4 w-4" />
-                                    {c.street || 'Domov'}
-                                </button>
-                            ))}
-
-                            <Dialog open={isNewChecklistOpen} onOpenChange={setIsNewChecklistOpen}>
-                                <DialogTrigger asChild>
-                                    <button className="flex items-center gap-2 px-4 py-2 rounded-full border border-dashed hover:bg-muted/50 transition-all text-muted-foreground whitespace-nowrap">
-                                        <Plus className="h-4 w-4" />
-                                        Přidat adresu
-                                    </button>
-                                </DialogTrigger>
-                                <DialogContent>
-                                    <DialogHeader>
-                                        <DialogTitle>Nová adresa úklidu</DialogTitle>
-                                        <DialogDescription>Pojmenujte tento plán (např. Doma, Kancelář...)</DialogDescription>
-                                    </DialogHeader>
-                                    <div className="py-4">
-                                        <Label>Název místa / Adresa</Label>
-                                        <Input
-                                            value={newChecklistAddress}
-                                            onChange={e => setNewChecklistAddress(e.target.value)}
-                                            placeholder="Např. Byt v centru"
-                                        />
-                                    </div>
-                                    <DialogFooter>
-                                        <Button onClick={createChecklist} disabled={!newChecklistAddress.trim()}>Vytvořit</Button>
-                                    </DialogFooter>
-                                </DialogContent>
-                            </Dialog>
+                            <div className="flex flex-wrap items-center gap-2 px-2 lg:px-0">
+                                <div className="flex items-center gap-3 bg-white/80 dark:bg-slate-800/80 pl-4 pr-2 h-12 rounded-full border border-white/40 shadow-sm min-w-[240px] transition-all hover:shadow-md">
+                                    <User className="h-5 w-5 text-blue-500 shrink-0" />
+                                    <Select value={selectedClientId} onValueChange={setSelectedClientId}>
+                                        <SelectTrigger className="border-0 bg-transparent shadow-none focus:ring-0 p-0 h-auto font-bold text-slate-700 dark:text-slate-200 text-sm">
+                                            <SelectValue placeholder="Vyberte klienta" />
+                                        </SelectTrigger>
+                                        <SelectContent className="rounded-3xl border-white/20 shadow-2xl backdrop-blur-xl bg-white/90 dark:bg-slate-900/90 max-h-[300px]">
+                                            {filteredClients.map(client => (
+                                                <SelectItem key={client.id} value={client.id} className="rounded-2xl py-2.5">
+                                                    {client.name} {client.email ? `(${client.email})` : ''}
+                                                </SelectItem>
+                                            ))}
+                                            {filteredClients.length === 0 && (
+                                                <div className="p-4 text-center text-muted-foreground text-sm italic">
+                                                    Žádní klienti nenalezeni
+                                                </div>
+                                            )}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
                         </div>
-                    )}
+
+                        {/* Address Switcher Pills (Only if client selected) */}
+                        {selectedClientId && (
+                            <div className="flex overflow-x-auto pb-1 scrollbar-hide px-2 gap-2">
+                                <ToggleGroup
+                                    type="single"
+                                    value={activeChecklistId || ""}
+                                    onValueChange={(val) => val && setActiveChecklistId(val)}
+                                    className="justify-start gap-1"
+                                >
+                                    {checklists.map(c => (
+                                        <ToggleGroupItem
+                                            key={c.id}
+                                            value={c.id}
+                                            className="rounded-full px-5 h-10 data-[state=on]:bg-blue-600 data-[state=on]:text-white data-[state=on]:shadow-lg whitespace-nowrap border-0 bg-white/40 dark:bg-slate-800/40 text-[10px] font-black uppercase tracking-widest transition-all gap-2"
+                                        >
+                                            <MapPin className="h-3.5 w-3.5" />
+                                            {c.street || 'Domov'}
+                                        </ToggleGroupItem>
+                                    ))}
+
+                                    <Dialog open={isNewChecklistOpen} onOpenChange={setIsNewChecklistOpen}>
+                                        <DialogTrigger asChild>
+                                            <button className="flex items-center gap-2 px-5 h-10 rounded-full border border-white/40 border-dashed hover:bg-white/60 dark:hover:bg-slate-800/60 transition-all text-[10px] font-black uppercase tracking-widest whitespace-nowrap bg-white/20 dark:bg-slate-800/20">
+                                                <Plus className="h-3.5 w-3.5" />
+                                                Přidat adresu
+                                            </button>
+                                        </DialogTrigger>
+                                        <DialogContent className="rounded-[2.5rem] border-white/20 shadow-2xl backdrop-blur-xl">
+                                            <DialogHeader>
+                                                <DialogTitle>Nová adresa úklidu</DialogTitle>
+                                                <DialogDescription>Pojmenujte tento plán (např. Doma, Kancelář...)</DialogDescription>
+                                            </DialogHeader>
+                                            <div className="py-4 space-y-3">
+                                                <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground px-1">Název místa / Adresa</Label>
+                                                <Input
+                                                    value={newChecklistAddress}
+                                                    onChange={e => setNewChecklistAddress(e.target.value)}
+                                                    placeholder="Např. Byt v centru"
+                                                    className="h-12 bg-white/50 dark:bg-slate-800/50 border-0 shadow-sm rounded-2xl focus-visible:ring-2 focus-visible:ring-blue-500/20"
+                                                />
+                                            </div>
+                                            <DialogFooter>
+                                                <Button
+                                                    onClick={createChecklist}
+                                                    disabled={!newChecklistAddress.trim()}
+                                                    variant="gradient"
+                                                    className="rounded-2xl h-11 px-6 font-bold"
+                                                >
+                                                    Vytvořit
+                                                </Button>
+                                            </DialogFooter>
+                                        </DialogContent>
+                                    </Dialog>
+                                </ToggleGroup>
+                            </div>
+                        )}
+                    </div>
                 </div>
+
 
                 {selectedClientId && activeChecklist && (
                     <>
                         {/* Quick Add Bar */}
-                        <div>
-                            <h3 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider">Přidat Místnost</h3>
-                            <ScrollArea className="w-full whitespace-nowrap pb-4">
-                                <div className="flex gap-4">
-                                    {ROOM_TYPES.map((type) => (
-                                        <button
-                                            key={type.id}
-                                            onClick={() => addRoom(type.id)}
-                                            className={cn(
-                                                "flex flex-col items-center gap-2 min-w-[80px] group transition-all",
-                                                "hover:scale-105 active:scale-95"
-                                            )}
-                                        >
-                                            <div className={cn(
-                                                "h-14 w-14 rounded-2xl flex items-center justify-center shadow-sm transition-shadow group-hover:shadow-md",
-                                                type.bg, type.color
-                                            )}>
-                                                <type.icon className="h-7 w-7" />
-                                            </div>
-                                            <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground">
-                                                {type.id}
-                                            </span>
-                                        </button>
-                                    ))}
-                                </div>
-                                <ScrollBar orientation="horizontal" />
-                            </ScrollArea>
-                        </div>
+                        <ScrollArea className="w-full whitespace-nowrap pb-4">
+                            <div className="flex gap-4">
+                                {ROOM_TYPES.map((type) => (
+                                    <button
+                                        key={type.id}
+                                        onClick={() => addRoom(type.id)}
+                                        className={cn(
+                                            "flex flex-col items-center gap-2 min-w-[80px] group transition-all",
+                                            "hover:scale-105 active:scale-95"
+                                        )}
+                                    >
+                                        <div className={cn(
+                                            "h-14 w-14 rounded-2xl flex items-center justify-center shadow-sm transition-shadow group-hover:shadow-md",
+                                            type.bg, type.color
+                                        )}>
+                                            <type.icon className="h-7 w-7" />
+                                        </div>
+                                        <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground">
+                                            {type.id}
+                                        </span>
+                                    </button>
+                                ))}
+                            </div>
+                            <ScrollBar orientation="horizontal" />
+                        </ScrollArea>
+
 
                         {/* Active Rooms Grid */}
                         <div className="space-y-4">

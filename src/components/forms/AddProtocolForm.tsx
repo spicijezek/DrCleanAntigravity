@@ -4,12 +4,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { X, Upload } from 'lucide-react';
+import { X, Upload, FileText, Tag, AlignLeft } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { ModalOverlay } from '@/components/ui/modal-overlay';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { uploadToCloudinary } from '@/lib/cloudinary';
+import { cn } from '@/lib/utils';
 
 interface AddProtocolFormProps {
   onClose: () => void;
@@ -31,16 +32,18 @@ export function AddProtocolForm({ onClose, onProtocolAdded }: AddProtocolFormPro
     e.preventDefault();
     if (!user) return;
     if (!file) {
-      toast({ title: 'Select a file', description: 'Please choose a PDF or Word document', variant: 'destructive' });
+      toast({
+        title: 'Vyberte soubor',
+        description: 'Prosím vyberte PDF nebo Word dokument',
+        variant: 'destructive'
+      });
       return;
     }
 
     setLoading(true);
     try {
-      // Upload file to Cloudinary instead of Supabase
       const cloudinaryUrl = await uploadToCloudinary(file);
 
-      // Save protocol metadata to database
       const protocolData = {
         title: formData.title,
         description: formData.description || null,
@@ -59,14 +62,14 @@ export function AddProtocolForm({ onClose, onProtocolAdded }: AddProtocolFormPro
       if (dbError) throw dbError;
 
       toast({
-        title: 'Success',
-        description: 'Protocol uploaded successfully',
+        title: 'Úspěch',
+        description: 'Protokol byl úspěšně nahrán',
       });
 
       onProtocolAdded();
     } catch (error: any) {
       toast({
-        title: 'Error',
+        title: 'Chyba',
         description: error.message,
         variant: 'destructive',
       });
@@ -85,22 +88,20 @@ export function AddProtocolForm({ onClose, onProtocolAdded }: AddProtocolFormPro
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
-      // Check file type (accept PDF, DOC, DOCX)
       const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
       if (!allowedTypes.includes(selectedFile.type)) {
         toast({
-          title: 'Invalid file type',
-          description: 'Please select a PDF or Word document',
+          title: 'Neplatný typ souboru',
+          description: 'Prosím vyberte PDF nebo Word dokument',
           variant: 'destructive',
         });
         return;
       }
 
-      // Check file size (max 10MB)
       if (selectedFile.size > 10 * 1024 * 1024) {
         toast({
-          title: 'File too large',
-          description: 'Please select a file smaller than 10MB',
+          title: 'Soubor je příliš velký',
+          description: 'Prosím vyberte soubor menší než 10MB',
           variant: 'destructive',
         });
         return;
@@ -112,88 +113,106 @@ export function AddProtocolForm({ onClose, onProtocolAdded }: AddProtocolFormPro
 
   return (
     <ModalOverlay>
-      <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto border-0 shadow-none rounded-lg m-0 bg-background">
-        <CardHeader className="flex flex-row items-center justify-between p-6 bg-background">
-          <CardTitle>Add Protocol</CardTitle>
-          <Button variant="ghost" size="icon" onClick={onClose}>
-            <X className="h-4 w-4" />
-          </Button>
-        </CardHeader>
-        <CardContent className="p-6 bg-background">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="title">Title *</Label>
-              <Input
-                id="title"
-                name="title"
-                value={formData.title}
-                onChange={handleChange}
-                required
-              />
-            </div>
+      <div className="w-full max-w-2xl px-4 py-8 pointer-events-none">
+        <Card className="pointer-events-auto border-0 shadow-2xl rounded-[2.5rem] overflow-hidden bg-background/95 backdrop-blur-xl relative">
+          <div className="absolute left-0 top-0 bottom-0 w-2 bg-gradient-to-b from-primary to-primary/60" />
 
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
-                rows={3}
-              />
-            </div>
+          <CardHeader className="flex flex-row items-center justify-between p-8 pb-4">
+            <CardTitle className="text-2xl font-bold tracking-tight">Přidat protokol</CardTitle>
+            <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full hover:bg-muted/50 transition-colors">
+              <X className="h-5 w-5" />
+            </Button>
+          </CardHeader>
+          <CardContent className="p-8 pt-4">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="title" className="text-sm font-semibold flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-primary" /> Název *
+                </Label>
+                <Input
+                  id="title"
+                  name="title"
+                  value={formData.title}
+                  onChange={handleChange}
+                  placeholder="Název protokolu"
+                  required
+                  className="rounded-xl border-primary/20 focus:border-primary focus:ring-primary/20 h-11"
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="tags">Tags (comma separated)</Label>
-              <Input
-                id="tags"
-                name="tags"
-                value={formData.tags}
-                onChange={handleChange}
-                placeholder="e.g. cleaning, safety, procedures"
-              />
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="description" className="text-sm font-semibold flex items-center gap-2">
+                  <AlignLeft className="h-4 w-4 text-primary" /> Popis
+                </Label>
+                <Textarea
+                  id="description"
+                  name="description"
+                  value={formData.description}
+                  onChange={handleChange}
+                  placeholder="Stručný popis obsahu..."
+                  rows={3}
+                  className="rounded-xl border-primary/20 focus:border-primary focus:ring-primary/20 min-h-[100px]"
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="file">Document *</Label>
-              <div className="border-2 border-dashed border-border rounded-lg p-6">
-                <div className="text-center">
-                  <Upload className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
-                  <div className="text-sm text-muted-foreground mb-2">
-                    {file ? file.name : 'Choose a file or drag and drop'}
+              <div className="space-y-2">
+                <Label htmlFor="tags" className="text-sm font-semibold flex items-center gap-2">
+                  <Tag className="h-4 w-4 text-primary" /> Štítky (oddělené čárkou)
+                </Label>
+                <Input
+                  id="tags"
+                  name="tags"
+                  value={formData.tags}
+                  onChange={handleChange}
+                  placeholder="např. úklid, bezpečnost, postupy"
+                  className="rounded-xl border-primary/20 focus:border-primary focus:ring-primary/20 h-11"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold flex items-center gap-2">
+                  <Upload className="h-4 w-4 text-primary" /> Dokument *
+                </Label>
+                <div
+                  className={cn(
+                    "border-2 border-dashed rounded-[2rem] p-8 transition-all cursor-pointer",
+                    file ? "border-primary bg-primary/5" : "border-primary/20 hover:border-primary/40 hover:bg-muted/50"
+                  )}
+                  onClick={() => document.getElementById('file')?.click()}
+                >
+                  <div className="text-center">
+                    <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                      <Upload className="h-6 w-6 text-primary" />
+                    </div>
+                    <div className="text-sm font-medium mb-1">
+                      {file ? file.name : 'Vyberte soubor nebo jej přetáhněte sem'}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      PDF, DOC, DOCX do 10MB
+                    </div>
+                    <Input
+                      id="file"
+                      type="file"
+                      accept=".pdf,.doc,.docx"
+                      onChange={handleFileChange}
+                      className="hidden"
+                    />
                   </div>
-                  <div className="text-xs text-muted-foreground mb-4">
-                    PDF, DOC, DOCX up to 10MB
-                  </div>
-                  <Input
-                    id="file"
-                    type="file"
-                    accept=".pdf,.doc,.docx"
-                    onChange={handleFileChange}
-                    className="hidden"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => document.getElementById('file')?.click()}
-                  >
-                    Select File
-                  </Button>
                 </div>
               </div>
-            </div>
 
-            <div className="flex gap-2 justify-end">
-              <Button type="button" variant="outline" onClick={onClose}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={loading}>
-                {loading ? 'Uploading...' : 'Add Protocol'}
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+              <div className="flex gap-3 justify-end pt-4">
+                <Button type="button" variant="outline" onClick={onClose} className="rounded-xl border-primary/20 px-8">
+                  Zrušit
+                </Button>
+                <Button type="submit" disabled={loading} className="rounded-xl bg-primary px-12 h-11 font-bold">
+                  {loading ? 'Nahrávám...' : 'Přidat protokol'}
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
     </ModalOverlay>
   );
 }

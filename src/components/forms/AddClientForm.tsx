@@ -72,9 +72,9 @@ export function AddClientForm({ onClose, onClientAdded, editingClient }: AddClie
         date_of_birth: formData.date_of_birth || null,
         client_type: clientType,
       };
-      
+
       const validationResult = clientFormSchema.safeParse(submitData);
-      
+
       if (!validationResult.success) {
         const firstError = validationResult.error.errors[0];
         toast({
@@ -106,8 +106,8 @@ export function AddClientForm({ onClose, onClientAdded, editingClient }: AddClie
         if (oldAddress !== newAddress && newAddress) {
           const { error: jobsError } = await supabase
             .from('jobs')
-            .update({ 
-              title: newAddress 
+            .update({
+              title: newAddress
             })
             .eq('client_id', editingClient.id)
             .eq('title', oldAddress); // Only update jobs that match the old address
@@ -138,7 +138,7 @@ export function AddClientForm({ onClose, onClientAdded, editingClient }: AddClie
           description: 'Client added successfully',
         });
       }
-      
+
       onClientAdded();
     } catch (error: any) {
       toast({
@@ -160,7 +160,7 @@ export function AddClientForm({ onClose, onClientAdded, editingClient }: AddClie
 
   const fetchAresData = async (searchValue: string, searchType: 'ico' | 'name') => {
     if (!searchValue || searchValue.trim().length < 3) return;
-    
+
     setFetchingAres(true);
     try {
       const body = searchType === 'ico' ? { ico: searchValue } : { name: searchValue };
@@ -240,177 +240,212 @@ export function AddClientForm({ onClose, onClientAdded, editingClient }: AddClie
 
   return (
     <ModalOverlay>
-      <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto border-0 shadow-none rounded-lg m-0 bg-background">
-        <CardHeader className="flex flex-row items-center justify-between relative">
-          <CardTitle className="pr-8">{editingClient ? 'Edit Client' : 'Add New Client'}</CardTitle>
-          <Button variant="ghost" size="icon" onClick={onClose} className="absolute top-2 right-2">
-            <X className="h-4 w-4" />
-          </Button>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Client Type Selection */}
-            <div className="space-y-3 p-3 bg-muted/30 rounded-lg">
-              <Label className="text-sm font-semibold">Client Type</Label>
-              <RadioGroup value={clientType} onValueChange={setClientType} className="flex gap-6">
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="person" id="person" />
-                  <Label htmlFor="person" className="cursor-pointer">Person</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="company" id="company" />
-                  <Label htmlFor="company" className="cursor-pointer">Company</Label>
-                </div>
-              </RadioGroup>
-            </div>
+      <div className="w-full max-w-2xl px-4 py-8 pointer-events-none">
+        <Card className="pointer-events-auto border-0 shadow-2xl rounded-[2.5rem] overflow-hidden bg-background/95 backdrop-blur-xl relative">
+          {/* Decorative side line */}
+          <div className="absolute left-0 top-0 bottom-0 w-2 bg-gradient-to-b from-primary to-primary/60" />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">{clientType === 'company' ? 'Company Name *' : 'Name *'}</Label>
-                <Input
-                  id="name"
-                  name="name"
-                  value={formData.name}
-                  onChange={clientType === 'company' ? handleCompanyNameChange : handleChange}
-                  required
-                  disabled={fetchingAres}
-                  placeholder={clientType === 'company' ? 'Enter company name to search ARES' : ''}
-                />
-                {fetchingAres && clientType === 'company' && (
-                  <p className="text-xs text-muted-foreground">Searching ARES...</p>
-                )}
+          <CardHeader className="flex flex-row items-center justify-between p-8 pb-4">
+            <CardTitle className="text-2xl font-bold tracking-tight">
+              {editingClient ? 'Upravit klienta' : 'Přidat nového klienta'}
+            </CardTitle>
+            <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full hover:bg-muted/50 transition-colors">
+              <X className="h-5 w-5" />
+            </Button>
+          </CardHeader>
+          <CardContent className="p-8 pt-4">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Client Type Selection */}
+              <div className="space-y-3 p-4 bg-primary/5 rounded-3xl border border-primary/10">
+                <Label className="text-sm font-bold uppercase tracking-wider text-primary/70">Typ klienta</Label>
+                <RadioGroup value={clientType} onValueChange={setClientType} className="flex gap-8">
+                  <div className="flex items-center space-x-2 cursor-pointer group">
+                    <RadioGroupItem value="person" id="person" className="border-primary/50 text-primary" />
+                    <Label htmlFor="person" className="cursor-pointer font-medium group-hover:text-primary transition-colors">Fyzická osoba</Label>
+                  </div>
+                  <div className="flex items-center space-x-2 cursor-pointer group">
+                    <RadioGroupItem value="company" id="company" className="border-primary/50 text-primary" />
+                    <Label htmlFor="company" className="cursor-pointer font-medium group-hover:text-primary transition-colors">Firma</Label>
+                  </div>
+                </RadioGroup>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone (+420)</Label>
-                <Input
-                  id="phone"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  placeholder="+420 123 456 789"
-                />
-              </div>
-              {clientType === 'person' ? (
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div className="space-y-2">
-                  <Label htmlFor="date_of_birth">Date of Birth (DD/MM/YYYY)</Label>
+                  <Label htmlFor="name" className="text-sm font-semibold">{clientType === 'company' ? 'Název firmy *' : 'Jméno a příjmení *'}</Label>
                   <Input
-                    id="date_of_birth"
-                    name="date_of_birth"
-                    type="date"
-                    value={formData.date_of_birth}
-                    onChange={handleChange}
-                    placeholder="DD/MM/YYYY"
-                  />
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  <Label htmlFor="company_id">Company ID (IČO)</Label>
-                  <Input
-                    id="company_id"
-                    name="company_id"
-                    value={formData.company_id}
-                    onChange={handleCompanyIdChange}
-                    placeholder="Enter 8-digit IČO"
+                    id="name"
+                    name="name"
+                    value={formData.name}
+                    onChange={clientType === 'company' ? handleCompanyNameChange : handleChange}
+                    required
                     disabled={fetchingAres}
+                    placeholder={clientType === 'company' ? 'Zadejte název k vyhledání...' : 'Jan Novák'}
+                    className="rounded-xl border-primary/20 focus:border-primary focus:ring-primary/20"
                   />
-                  {fetchingAres && (
-                    <p className="text-xs text-muted-foreground">Fetching data from ARES...</p>
+                  {fetchingAres && clientType === 'company' && (
+                    <p className="text-[10px] text-primary animate-pulse font-medium">Vyhledávám v ARES...</p>
                   )}
                 </div>
-              )}
-              <div className="space-y-2">
-                <Label htmlFor="address">Address</Label>
-                <Input
-                  id="address"
-                  name="address"
-                  value={formData.address}
-                  onChange={handleChange}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="city">City</Label>
-                <Input
-                  id="city"
-                  name="city"
-                  value={formData.city}
-                  onChange={handleChange}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="postal_code">Postal Code</Label>
-                <Input
-                  id="postal_code"
-                  name="postal_code"
-                  value={formData.postal_code}
-                  onChange={handleChange}
-                />
-              </div>
-              
-              {clientType === 'company' && (
                 <div className="space-y-2">
-                  <Label htmlFor="reliable_person">Reliable Person</Label>
+                  <Label htmlFor="email" className="text-sm font-semibold">Email</Label>
                   <Input
-                    id="reliable_person"
-                    name="reliable_person"
-                    value={formData.reliable_person}
+                    id="email"
+                    name="email"
+                    type="email"
+                    value={formData.email}
                     onChange={handleChange}
+                    placeholder="email@priklad.cz"
+                    className="rounded-xl border-primary/20 focus:border-primary focus:ring-primary/20"
                   />
                 </div>
-              )}
-              <div className="space-y-2">
-                <Label htmlFor="date_added">Date Added (DD/MM/YYYY)</Label>
-                <Input
-                  id="date_added"
-                  name="date_added"
-                  type="date"
-                  value={formData.date_added}
-                  onChange={handleChange}
-                  placeholder="DD/MM/YYYY"
-                  required
-                />
+                <div className="space-y-2">
+                  <Label htmlFor="phone" className="text-sm font-semibold">Telefon (+420)</Label>
+                  <Input
+                    id="phone"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    placeholder="+420 123 456 789"
+                    className="rounded-xl border-primary/20 focus:border-primary focus:ring-primary/20"
+                  />
+                </div>
+                {clientType === 'person' ? (
+                  <div className="space-y-2">
+                    <Label htmlFor="date_of_birth" className="text-sm font-semibold">Datum narození</Label>
+                    <Input
+                      id="date_of_birth"
+                      name="date_of_birth"
+                      type="date"
+                      value={formData.date_of_birth}
+                      onChange={handleChange}
+                      className="rounded-xl border-primary/20 focus:border-primary focus:ring-primary/20"
+                    />
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Label htmlFor="company_id" className="text-sm font-semibold">IČO (Firma)</Label>
+                    <Input
+                      id="company_id"
+                      name="company_id"
+                      value={formData.company_id}
+                      onChange={handleCompanyIdChange}
+                      placeholder="8místné IČO"
+                      disabled={fetchingAres}
+                      className="rounded-xl border-primary/20 focus:border-primary focus:ring-primary/20"
+                    />
+                    {fetchingAres && (
+                      <p className="text-[10px] text-primary animate-pulse font-medium">Načítám data z ARES...</p>
+                    )}
+                  </div>
+                )}
+                <div className="space-y-2">
+                  <Label htmlFor="address" className="text-sm font-semibold">Adresa</Label>
+                  <Input
+                    id="address"
+                    name="address"
+                    value={formData.address}
+                    onChange={handleChange}
+                    placeholder="Ulice a č.p."
+                    className="rounded-xl border-primary/20 focus:border-primary focus:ring-primary/20"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="city" className="text-sm font-semibold">Město</Label>
+                  <Input
+                    id="city"
+                    name="city"
+                    value={formData.city}
+                    onChange={handleChange}
+                    placeholder="Praha"
+                    className="rounded-xl border-primary/20 focus:border-primary focus:ring-primary/20"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="postal_code" className="text-sm font-semibold">PSČ</Label>
+                  <Input
+                    id="postal_code"
+                    name="postal_code"
+                    value={formData.postal_code}
+                    onChange={handleChange}
+                    placeholder="110 00"
+                    className="rounded-xl border-primary/20 focus:border-primary focus:ring-primary/20"
+                  />
+                </div>
+
+                {clientType === 'company' && (
+                  <div className="space-y-2">
+                    <Label htmlFor="reliable_person" className="text-sm font-semibold">Kontaktní osoba</Label>
+                    <Input
+                      id="reliable_person"
+                      name="reliable_person"
+                      value={formData.reliable_person}
+                      onChange={handleChange}
+                      placeholder="Jméno jednatele / kontaktu"
+                      className="rounded-xl border-primary/20 focus:border-primary focus:ring-primary/20"
+                    />
+                  </div>
+                )}
+                <div className="space-y-2">
+                  <Label htmlFor="date_added" className="text-sm font-semibold">Datum přidání *</Label>
+                  <Input
+                    id="date_added"
+                    name="date_added"
+                    type="date"
+                    value={formData.date_added}
+                    onChange={handleChange}
+                    required
+                    className="rounded-xl border-primary/20 focus:border-primary focus:ring-primary/20"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="client_source" className="text-sm font-semibold">Zdroj klienta</Label>
+                  <Input
+                    id="client_source"
+                    name="client_source"
+                    placeholder="Např. Google, Doporučení"
+                    value={formData.client_source}
+                    onChange={handleChange}
+                    className="rounded-xl border-primary/20 focus:border-primary focus:ring-primary/20"
+                  />
+                </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="client_source">Client Source</Label>
-                <Input
-                  id="client_source"
-                  name="client_source"
-                  placeholder="e.g., Google, Recommendation, Website"
-                  value={formData.client_source}
-                  onChange={handleChange}
-                />
+                <Label htmlFor="notes" className="text-sm font-semibold">Poznámky</Label>
+                <div className="relative group">
+                  <Textarea
+                    id="notes"
+                    name="notes"
+                    value={formData.notes}
+                    onChange={handleChange}
+                    rows={3}
+                    placeholder="Interní poznámky ke klientovi..."
+                    className="rounded-2xl border-primary/20 focus:border-primary focus:ring-primary/20 resize-none"
+                  />
+                </div>
               </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="notes">Notes</Label>
-              <Textarea
-                id="notes"
-                name="notes"
-                value={formData.notes}
-                onChange={handleChange}
-                rows={3}
-              />
-            </div>
-            <div className="flex gap-2 justify-end">
-              <Button type="button" variant="outline" onClick={onClose}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={loading}>
-                {loading ? (editingClient ? 'Updating...' : 'Adding...') : (editingClient ? 'Update Client' : 'Add Client')}
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+              <div className="flex gap-3 justify-end pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={onClose}
+                  className="rounded-xl border-primary/20 hover:bg-primary/5 transition-all"
+                >
+                  Zrušit
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={loading}
+                  className="rounded-xl bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 px-8"
+                >
+                  {loading ? (editingClient ? 'Ukládám...' : 'Přidávám...') : (editingClient ? 'Uložit změny' : 'Přidat klienta')}
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
     </ModalOverlay>
+
   );
 }

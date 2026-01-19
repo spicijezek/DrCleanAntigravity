@@ -3,12 +3,13 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
+import { cn } from "@/lib/utils"
 import { supabase } from "@/integrations/supabase/client"
 import { useAuth } from "@/contexts/AuthContext"
-import { 
-  CheckCircle, 
-  Clock, 
-  AlertCircle, 
+import {
+  CheckCircle,
+  Clock,
+  AlertCircle,
   Star,
   DollarSign,
   Users,
@@ -48,18 +49,47 @@ const getActivityIcon = (type: string) => {
 const getStatusColor = (status: string) => {
   switch (status) {
     case "completed":
-      return "bg-success text-success-foreground"
+      return "bg-emerald-500 text-white"
     case "pending":
-      return "bg-warning text-warning-foreground"
+      return "bg-amber-500 text-white"
     case "paid":
-      return "bg-primary text-primary-foreground"
+      return "bg-indigo-600 text-white"
     case "new":
-      return "bg-accent text-accent-foreground"
+      return "bg-blue-500 text-white"
     case "scheduled":
-      return "bg-info text-info-foreground"
+      return "bg-slate-600 text-white"
     default:
-      return "bg-muted text-muted-foreground"
+      return "bg-slate-400 text-white"
   }
+}
+
+const getCzechStatus = (status: string) => {
+  switch (status) {
+    case "completed": return "Dokončeno";
+    case "pending": return "Čekající";
+    case "paid": return "Zaplaceno";
+    case "new": return "Nový";
+    case "scheduled": return "Plánováno";
+    default: return status;
+  }
+}
+
+const getCzechTypeTitle = (type: string, title: string) => {
+  switch (type) {
+    case "job_completed": return "Úklid dokončen";
+    case "job_created": return "Nová rezervace";
+    case "payment": return "Platba přijata";
+    case "new_client": return "Nový klient";
+    case "review": return "Nová recenze";
+    default: return title;
+  }
+}
+
+const getCzechTime = (time: string) => {
+  if (time.includes('moments ago')) return 'před chvílí';
+  if (time.includes('h ago')) return `před ${time.split('h')[0]} hod.`;
+  if (time.includes('days ago')) return `před ${time.split(' ')[0]} dny`;
+  return time;
 }
 
 export function RecentActivity() {
@@ -79,7 +109,7 @@ export function RecentActivity() {
     try {
       const now = new Date();
       const threeDaysAgo = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000).toISOString();
-      
+
       // Fetch recent jobs
       const { data: jobs } = await supabase
         .from('jobs')
@@ -89,7 +119,7 @@ export function RecentActivity() {
         `)
         .gte('created_at', threeDaysAgo)
         .order('created_at', { ascending: false })
-        .limit(10); // Fetch more to show in "View All"
+        .limit(10);
 
       // Fetch recent clients
       const { data: clients } = await supabase
@@ -97,22 +127,23 @@ export function RecentActivity() {
         .select('id, name, created_at')
         .gte('created_at', threeDaysAgo)
         .order('created_at', { ascending: false })
-        .limit(5); // Fetch more to show in "View All"
+        .limit(5);
 
       const recentActivities: Activity[] = [];
 
       // Add job activities
       jobs?.forEach(job => {
-        const clientName = job.clients?.name || 'Unknown client';
-        
+        const clientName = job.clients?.name || 'Neznámý klient';
+
         // Job created activity
-        const jobAge = Math.floor((now.getTime() - new Date(job.created_at).getTime()) / (1000 * 60 * 60));
+        const jobDate = new Date(job.created_at);
+        const jobAge = Math.floor((now.getTime() - jobDate.getTime()) / (1000 * 60 * 60));
         recentActivities.push({
           id: `job-created-${job.id}`,
           type: 'job_created',
-          title: 'New cleaning scheduled',
+          title: 'Nová rezervace',
           description: `${job.title} - ${clientName}`,
-          time: jobAge < 1 ? 'moments ago' : jobAge < 24 ? `${jobAge}h ago` : `${Math.floor(jobAge/24)} days ago`,
+          time: jobAge < 1 ? 'moments ago' : jobAge < 24 ? `${jobAge}h ago` : `${Math.floor(jobAge / 24)} days ago`,
           status: job.status,
           amount: job.revenue ? `${job.revenue.toLocaleString()} CZK` : undefined,
           entityId: job.id,
@@ -121,13 +152,14 @@ export function RecentActivity() {
 
         // If job was completed/paid, add separate activity
         if (job.status === 'completed' || job.status === 'paid') {
-          const updateAge = Math.floor((now.getTime() - new Date(job.updated_at).getTime()) / (1000 * 60 * 60));
+          const updateDate = new Date(job.updated_at);
+          const updateAge = Math.floor((now.getTime() - updateDate.getTime()) / (1000 * 60 * 60));
           recentActivities.push({
             id: `job-completed-${job.id}`,
             type: job.status === 'paid' ? 'payment' : 'job_completed',
-            title: job.status === 'paid' ? 'Payment received' : 'Cleaning completed',
+            title: job.status === 'paid' ? 'Platba přijata' : 'Úklid dokončen',
             description: `${job.title} - ${clientName}`,
-            time: updateAge < 1 ? 'moments ago' : updateAge < 24 ? `${updateAge}h ago` : `${Math.floor(updateAge/24)} days ago`,
+            time: updateAge < 1 ? 'moments ago' : updateAge < 24 ? `${updateAge}h ago` : `${Math.floor(updateAge / 24)} days ago`,
             status: job.status,
             amount: job.revenue ? `${job.revenue.toLocaleString()} CZK` : undefined,
             entityId: job.id,
@@ -138,24 +170,18 @@ export function RecentActivity() {
 
       // Add client activities
       clients?.forEach(client => {
-        const clientAge = Math.floor((now.getTime() - new Date(client.created_at).getTime()) / (1000 * 60 * 60));
+        const clientDate = new Date(client.created_at);
+        const clientAge = Math.floor((now.getTime() - clientDate.getTime()) / (1000 * 60 * 60));
         recentActivities.push({
           id: `client-${client.id}`,
           type: 'new_client',
-          title: 'New client',
-          description: `${client.name} - new client added`,
-          time: clientAge < 1 ? 'moments ago' : clientAge < 24 ? `${clientAge}h ago` : `${Math.floor(clientAge/24)} days ago`,
+          title: 'Nový klient',
+          description: `${client.name} - byl přidán do systému`,
+          time: clientAge < 1 ? 'moments ago' : clientAge < 24 ? `${clientAge}h ago` : `${Math.floor(clientAge / 24)} days ago`,
           status: 'new',
           entityId: client.id,
           entityType: 'client'
         });
-      });
-
-      // Sort by most recent
-      recentActivities.sort((a, b) => {
-        const timeA = a.time.includes('moments') ? 0 : parseInt(a.time.match(/\d+/)?.[0] || '999');
-        const timeB = b.time.includes('moments') ? 0 : parseInt(b.time.match(/\d+/)?.[0] || '999');
-        return timeA - timeB;
       });
 
       setActivities(recentActivities);
@@ -174,24 +200,18 @@ export function RecentActivity() {
     }
   };
 
-  const displayedActivities = showAll ? activities : activities.slice(0, 3);
+  const displayedActivities = showAll ? activities : activities.slice(0, 5);
 
   if (loading) {
     return (
-      <Card>
+      <Card className="rounded-[2.5rem] border-0 shadow-xl bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl animate-pulse">
         <CardHeader>
-          <CardTitle>Recent Activity</CardTitle>
+          <div className="h-8 w-48 bg-slate-200 dark:bg-slate-800 rounded-xl" />
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             {[...Array(3)].map((_, i) => (
-              <div key={i} className="flex items-start gap-4 p-3 rounded-lg border animate-pulse">
-                <div className="rounded-full bg-muted h-8 w-8"></div>
-                <div className="flex-1 space-y-2">
-                  <div className="h-4 bg-muted rounded w-3/4"></div>
-                  <div className="h-3 bg-muted rounded w-1/2"></div>
-                </div>
-              </div>
+              <div key={i} className="h-20 bg-slate-100 dark:bg-slate-800/50 rounded-2xl" />
             ))}
           </div>
         </CardContent>
@@ -200,67 +220,75 @@ export function RecentActivity() {
   }
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Recent Activity</CardTitle>
-        {activities.length > 3 && (
-          <Button 
-            variant="outline" 
+    <Card className="rounded-[2.5rem] border-0 shadow-xl bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-1000">
+      <CardHeader className="flex flex-row items-center justify-between pb-6">
+        <CardTitle className="text-2xl font-black tracking-tight flex items-center gap-3">
+          <div className="h-10 w-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-sm">
+            <Clock className="h-5 w-5" />
+          </div>
+          Nedávná Aktivita
+        </CardTitle>
+        {activities.length > 5 && (
+          <Button
+            variant="ghost"
             size="sm"
             onClick={() => setShowAll(!showAll)}
+            className="rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-primary/5 text-primary"
           >
-            {showAll ? 'View Less' : 'View All'}
+            {showAll ? 'Zobrazit méně' : 'Zobrazit vše'}
           </Button>
         )}
       </CardHeader>
       <CardContent>
         {activities.length === 0 ? (
-          <div className="text-center py-8">
-            <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground">No recent activity</p>
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <div className="h-16 w-16 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-300 mb-4">
+              <AlertCircle className="h-8 w-8" />
+            </div>
+            <p className="text-muted-foreground font-black uppercase tracking-widest text-[10px]">Žádná aktivita za poslední 3 dny</p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {displayedActivities.map((activity) => {
-              const Icon = getActivityIcon(activity.type)
+              const Icon = getActivityIcon(activity.type);
+              const colorClass = getStatusColor(activity.status);
+
               return (
                 <div
                   key={activity.id}
-                  className="flex items-start gap-4 p-3 rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer group"
+                  className="flex items-center gap-4 p-4 rounded-3xl bg-white/60 dark:bg-slate-800/60 border border-white/20 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group cursor-pointer"
                   onClick={() => handleActivityClick(activity)}
                 >
-                  <div className="rounded-full bg-primary/10 p-2">
-                    <Icon className="h-4 w-4 text-primary" />
+                  <div className={cn("h-12 w-12 rounded-2xl flex items-center justify-center text-white font-black shadow-lg group-hover:scale-110 transition-transform shrink-0", colorClass)}>
+                    <Icon className="h-5 w-5" />
                   </div>
-                  
-                  <div className="flex-1 space-y-1">
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
-                        {activity.title}
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <h4 className="text-sm font-black text-slate-900 dark:text-slate-100 truncate group-hover:text-primary transition-colors">
+                        {getCzechTypeTitle(activity.type, activity.title)}
                       </h4>
-                      <div className="flex items-center gap-2">
-                        {activity.amount && (
-                          <span className="text-sm font-semibold text-primary">
-                            {activity.amount}
-                          </span>
-                        )}
-                        <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                      </div>
+                      {activity.amount && (
+                        <span className="text-xs font-black text-primary shrink-0">
+                          {activity.amount}
+                        </span>
+                      )}
                     </div>
-                    
-                    <p className="text-sm text-muted-foreground">
+
+                    <p className="text-xs text-muted-foreground font-medium truncate mb-2">
                       {activity.description}
                     </p>
-                    
+
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-muted-foreground">
-                        {activity.time}
+                      <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/40">
+                        {getCzechTime(activity.time)}
                       </span>
-                      <Badge className={getStatusColor(activity.status)}>
-                        {activity.status}
+                      <Badge className={cn("rounded-lg px-2 py-0 h-5 text-[9px] font-black uppercase tracking-tighter border-0", colorClass)}>
+                        {getCzechStatus(activity.status)}
                       </Badge>
                     </div>
                   </div>
+                  <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-primary transition-colors" />
                 </div>
               )
             })}

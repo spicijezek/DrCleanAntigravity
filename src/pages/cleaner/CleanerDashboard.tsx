@@ -92,6 +92,7 @@ export default function CleanerDashboard() {
     roomId: string;
   } | null>(null);
   const [currentUserTeamMember, setCurrentUserTeamMember] = useState<TeamMember | null>(null);
+  const [expandedChecklists, setExpandedChecklists] = useState<Record<string, boolean>>({});
 
   const calculateTimeEstimate = (booking: Booking) => {
     // Show real time if started and completed
@@ -370,6 +371,10 @@ export default function CleanerDashboard() {
         started_at: new Date().toISOString(),
         status: 'in_progress'
       } as Booking : b));
+
+      // Auto-expand checklist
+      setExpandedChecklists(prev => ({ ...prev, [bookingToStart]: true }));
+
       toast.success('Zakázka zahájena');
 
       const startedId = bookingToStart;
@@ -528,6 +533,29 @@ export default function CleanerDashboard() {
               </div>
             </div>
 
+            {/* Notes Section - Always Visible */}
+            {(booking.admin_notes || booking.booking_details?.notes) && (
+              <div className="space-y-3">
+                <h4 className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4 text-amber-500" /> Poznámky k úklidu
+                </h4>
+                <div className="grid gap-3">
+                  {booking.admin_notes && (
+                    <div className="p-4 bg-amber-50/50 dark:bg-amber-900/10 rounded-2xl border border-amber-100/50 text-sm">
+                      <p className="font-bold text-amber-900 dark:text-amber-200 mb-1">Interní poznámka (Admin):</p>
+                      <p className="text-amber-800/80 dark:text-amber-300/80 italic">{booking.admin_notes}</p>
+                    </div>
+                  )}
+                  {booking.booking_details?.notes && (
+                    <div className="p-4 bg-blue-50/50 dark:bg-blue-900/10 rounded-2xl border border-blue-100/50 text-sm">
+                      <p className="font-bold text-blue-900 dark:text-blue-200 mb-1">Specifické požadavky k termínu:</p>
+                      <p className="text-blue-800/80 dark:text-blue-300/80 italic">{booking.booking_details.notes}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Service Details */}
             {booking.booking_details && <div className="space-y-3">
               <h4 className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
@@ -586,24 +614,28 @@ export default function CleanerDashboard() {
                   <h4 className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
                     <ClipboardList className="h-4 w-4" /> Checklist
                   </h4>
-                  {booking.started_at && (
-                    <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
-                      Aktivní
+                  {booking.status === 'in_progress' && (
+                    <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-0.5 rounded-full flex items-center gap-1">
+                      <span className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
+                      Právě probíhá
                     </span>
                   )}
                 </div>
 
-                <Collapsible key={booking.started_at ? 'open' : 'closed'} defaultOpen={!!booking.started_at}>
+                <Collapsible
+                  open={expandedChecklists[booking.id] || booking.status === 'in_progress'}
+                  onOpenChange={(open) => setExpandedChecklists(prev => ({ ...prev, [booking.id]: open }))}
+                >
                   <CollapsibleTrigger asChild>
                     <Button
                       variant="outline"
                       className="w-full justify-between h-auto py-3 px-4 rounded-xl border-dashed hover:border-solid hover:bg-muted/30 hover:text-primary transition-all group"
                     >
-                      <span className="font-semibold text-sm">Zobrazit seznam úkolů</span>
+                      <span className="font-semibold text-sm">Zobrazit pokoje a úkoly</span>
                       <ChevronDown className="h-4 w-4 opacity-50 transition-transform duration-300 group-data-[state=open]:rotate-180" />
                     </Button>
                   </CollapsibleTrigger>
-                  <CollapsibleContent className="mt-4 space-y-4">
+                  <CollapsibleContent className="mt-4 space-y-4 animate-in slide-in-from-top-2 duration-300">
                     {booking.checklist.special_requirements && (
                       <div className="bg-indigo-50 dark:bg-indigo-950/30 p-3 rounded-xl border border-indigo-100 text-sm text-indigo-900 dark:text-indigo-300">
                         <strong>Speciální požadavky:</strong> {booking.checklist.special_requirements}
@@ -611,20 +643,29 @@ export default function CleanerDashboard() {
                     )}
 
                     {booking.checklist.rooms.map(room => (
-                      <div key={room.id} className="border rounded-xl overflow-hidden bg-card shadow-sm">
-                        <div className="bg-muted/30 px-4 py-3 flex items-center justify-between border-b">
-                          <h5 className="font-medium text-foreground">{room.room_name}</h5>
+                      <div key={room.id} id={`room-${room.id}`} className={cn(
+                        "border rounded-xl overflow-hidden bg-card shadow-sm transition-all duration-300",
+                        room.is_completed ? "opacity-75 grayscale-[0.5]" : "border-primary/10 shadow-md"
+                      )}>
+                        <div className={cn(
+                          "px-4 py-3 flex items-center justify-between border-b",
+                          room.is_completed ? "bg-muted/30" : "bg-primary/5"
+                        )}>
+                          <div className="flex items-center gap-2">
+                            <h5 className="font-bold text-foreground">{room.room_name}</h5>
+                            {room.is_completed && <CheckCircle2 className="h-4 w-4 text-green-500" />}
+                          </div>
                           {room.is_completed ? (
-                            <Badge className="bg-green-50 text-green-700 border-green-100 hover:bg-green-50">Hotovo</Badge>
+                            <Badge className="bg-green-100 text-green-700 border-0 hover:bg-green-100">Hotovo</Badge>
                           ) : isLeadCleaner(booking) ? (
                             <Button
                               size="sm"
-                              variant={booking.started_at ? "default" : "secondary"}
-                              disabled={!booking.started_at}
+                              variant={booking.status === 'in_progress' ? "default" : "secondary"}
+                              disabled={booking.status !== 'in_progress'}
                               onClick={() => setRoomToComplete({ bookingId: booking.id, roomId: room.id })}
-                              className={cn("h-7 text-xs rounded-lg transition-all px-3", booking.started_at ? "shadow-md hover:shadow-lg" : "opacity-30")}
+                              className={cn("h-7 text-xs rounded-lg transition-all px-3 font-bold", booking.status === 'in_progress' ? "shadow-md hover:shadow-lg bg-primary hover:bg-primary/90" : "opacity-30")}
                             >
-                              Hotovo
+                              Označit jako hotové
                             </Button>
                           ) : (
                             <Badge variant="outline" className="text-[10px] opacity-50">Jen pro vedoucího</Badge>
@@ -632,15 +673,17 @@ export default function CleanerDashboard() {
                         </div>
                         <div className="p-3 bg-white dark:bg-slate-950">
                           {room.tasks.length > 0 ? (
-                            <ul className="space-y-2 mb-4">
+                            <ul className="space-y-2 mb-2">
                               {room.tasks.map(task => (
-                                <li key={task.id} className="text-sm flex gap-3 text-muted-foreground">
-                                  <div className="h-1.5 w-1.5 rounded-full bg-primary/40 mt-1.5 shrink-0" />
-                                  <span>{task.task_text}</span>
+                                <li key={task.id} className="text-sm flex gap-3 text-muted-foreground items-start">
+                                  <div className="h-4 w-4 rounded-full border border-primary/30 flex items-center justify-center shrink-0 mt-0.5">
+                                    <div className="h-1.5 w-1.5 rounded-full bg-primary/40" />
+                                  </div>
+                                  <span className={cn(room.is_completed && "line-through opacity-70")}>{task.task_text}</span>
                                 </li>
                               ))}
                             </ul>
-                          ) : <p className="text-xs text-muted-foreground italic mb-4">Žádné úkoly</p>}
+                          ) : <p className="text-xs text-muted-foreground italic mb-2">Žádné specifické úkoly</p>}
                         </div>
                       </div>
                     ))}
@@ -684,7 +727,7 @@ export default function CleanerDashboard() {
 
             {/* Action Buttons */}
             <div className="pt-2">
-              {!booking.started_at ? (
+              {booking.status !== 'in_progress' && !booking.completed_at ? (
                 isLeadCleaner(booking) ? (
                   <Button
                     onClick={() => setBookingToStart(booking.id)}
@@ -697,23 +740,35 @@ export default function CleanerDashboard() {
                     Zahájit úklid může pouze vedoucí úklidu
                   </div>
                 )
-              ) : (
-                booking.checklist && areAllRoomsCompleted(booking.checklist) && (
-                  isLeadCleaner(booking) ? (
-                    <Button
-                      onClick={() => setBookingToComplete(booking.id)}
-                      className="w-full h-12 text-lg font-semibold rounded-2xl bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 shadow-lg hover:shadow-green-500/25 transition-all animate-in zoom-in duration-300"
-                    >
-                      Ukončit Zakázku
-                    </Button>
-                  ) : (
-                    <div className="text-center p-3 bg-green-50/30 rounded-2xl border border-dashed text-sm text-green-700/70 italic">
-                      Vše hotovo. Ukončit zakázku může pouze vedoucí úklidu.
-                    </div>
-                  )
+              ) : booking.status === 'in_progress' ? (
+                isLeadCleaner(booking) ? (
+                  <Button
+                    onClick={() => {
+                      if (booking.checklist && !areAllRoomsCompleted(booking.checklist)) {
+                        toast.error('Nejdříve musíte dokončit všechny místnosti');
+                        return;
+                      }
+                      setBookingToComplete(booking.id);
+                    }}
+                    className={cn(
+                      "w-full h-12 text-lg font-semibold rounded-2xl transition-all shadow-lg",
+                      booking.checklist && areAllRoomsCompleted(booking.checklist)
+                        ? "bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 shadow-green-500/25"
+                        : "bg-slate-200 text-slate-500 cursor-not-allowed"
+                    )}
+                  >
+                    Ukončit Zakázku
+                  </Button>
+                ) : (
+                  <div className="text-center p-3 bg-green-50/30 rounded-2xl border border-dashed text-sm text-green-700/70 italic">
+                    {booking.checklist && areAllRoomsCompleted(booking.checklist)
+                      ? "Vše hotovo. Ukončit zakázku může pouze vedoucí úklidu."
+                      : "Úklid probíhá..."}
+                  </div>
                 )
-              )}
+              ) : null}
             </div>
+
 
 
           </CardContent>

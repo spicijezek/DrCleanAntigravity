@@ -142,23 +142,17 @@ const App = () => (
             } />
             <Route path="/admin/app-bookings" element={
               <ProtectedRoute>
-                <Layout>
-                  <AppBookings />
-                </Layout>
+                <AppBookings />
               </ProtectedRoute>
             } />
             <Route path="/admin/checklists" element={
               <ProtectedRoute>
-                <Layout>
-                  <AdminChecklistManager />
-                </Layout>
+                <AdminChecklistManager />
               </ProtectedRoute>
             } />
             <Route path="/admin/app-registers" element={
               <ProtectedRoute>
-                <Layout>
-                  <AppRegisters />
-                </Layout>
+                <AppRegisters />
               </ProtectedRoute>
             } />
             <Route path="/" element={
@@ -179,11 +173,6 @@ const App = () => (
             <Route path="/team" element={
               <ProtectedRoute>
                 <Team />
-              </ProtectedRoute>
-            } />
-            <Route path="/protocols" element={
-              <ProtectedRoute>
-                <Protocols />
               </ProtectedRoute>
             } />
             <Route path="/finances" element={

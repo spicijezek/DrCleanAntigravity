@@ -131,6 +131,24 @@ All colors MUST be HSL.
   }
 }
 
+@layer utilities {
+  /* Minimal Scrollbar */
+  .minimal-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .minimal-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .minimal-scrollbar::-webkit-scrollbar-thumb {
+    background-color: hsla(215, 16%, 47%, 0.3);
+    border-radius: 20px;
+  }
+  .minimal-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: hsla(215, 16%, 47%, 0.5);
+  }
+}
+
 /* Mobile optimization for iPhone 14 Pro and similar devices */
 @layer utilities {
   /* iPhone 14 Pro responsive breakpoints */
@@ -146,9 +164,9 @@ All colors MUST be HSL.
     .space-y-6 > * + * { margin-top: 1rem !important; }
     
     /* Grid adjustments */
-    .md\\:grid-cols-2 { grid-template-columns: repeat(1, minmax(0, 1fr)) !important; }
-    .lg\\:grid-cols-3 { grid-template-columns: repeat(1, minmax(0, 1fr)) !important; }
-    .lg\\:grid-cols-4 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+    .md\:grid-cols-2 { grid-template-columns: repeat(1, minmax(0, 1fr)) !important; }
+    .lg\:grid-cols-3 { grid-template-columns: repeat(1, minmax(0, 1fr)) !important; }
+    .lg\:grid-cols-4 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
     
     /* Button optimizations */
     .flex.gap-2.mt-2 { flex-direction: column !important; gap: 0.5rem !important; }

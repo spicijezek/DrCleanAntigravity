@@ -89,147 +89,149 @@ export function Header() {
 
     <>
       <header className="sticky top-0 z-[10100] w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-sm transition-all duration-300">
-        <div className="w-full mx-auto px-4 md:px-6 flex h-16 items-center justify-between">
+        <div className="w-full mx-auto px-4 md:px-2 flex h-16 items-center justify-between">
           {/* Left Side: Hamburger & Logo */}
-          <div className="flex items-center gap-4">
-            <Sheet>
-              {/* Mobile Hamburger Trigger - Hidden on PC */}
-              <SheetTrigger asChild className="md:hidden">
-                <Button variant="ghost" size="icon" aria-label="Open menu" className="text-muted-foreground hover:text-foreground">
-                  <Menu className="h-6 w-6" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="w-[300px] sm:w-[350px] p-0 border-r-0">
-                <div className="flex flex-col h-full bg-background animate-in slide-in-from-left duration-300">
-                  {/* Menu Header with Bubble Animation */}
-                  <div className="relative overflow-hidden bg-gradient-to-br from-blue-600 to-indigo-700 p-6 text-white">
-                    <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-white/10 blur-2xl" />
-                    <div className="absolute bottom-0 left-0 -mb-4 -ml-4 h-20 w-20 rounded-full bg-white/10 blur-xl" />
+          <div className="flex items-center -ml-1">
+            {/* Hamburger Trigger - Mobile ONLY */}
+            <div className="md:hidden mr-2">
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button variant="ghost" size="icon" aria-label="Open menu" className="text-muted-foreground hover:text-foreground">
+                    <Menu className="h-6 w-6" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left" className="w-[300px] sm:w-[350px] p-0 border-r-0">
+                  <div className="flex flex-col h-full bg-background animate-in slide-in-from-left duration-300">
+                    {/* Menu Header with Bubble Animation */}
+                    <div className="relative overflow-hidden bg-gradient-to-br from-blue-600 to-indigo-700 p-6 text-white">
+                      <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-white/10 blur-2xl" />
+                      <div className="absolute bottom-0 left-0 -mb-4 -ml-4 h-20 w-20 rounded-full bg-white/10 blur-xl" />
 
-                    <div className="relative z-10 flex items-center gap-3 mb-2">
-                      <Avatar className="h-12 w-12 border-2 border-white/20">
-                        <AvatarImage src={avatarUrl} />
-                        <AvatarFallback className="bg-white/20 text-white font-bold">
-                          {fullName[0]}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="text-lg font-semibold leading-none">{fullName}</p>
-                        <p className="text-sm text-blue-100 mt-1 truncate max-w-[180px]">{email}</p>
+                      <div className="relative z-10 flex items-center gap-3 mb-2">
+                        <Avatar className="h-12 w-12 border-2 border-white/20">
+                          <AvatarImage src={avatarUrl} />
+                          <AvatarFallback className="bg-white/20 text-white font-bold">
+                            {fullName[0]}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="text-lg font-semibold leading-none">{fullName}</p>
+                          <p className="text-sm text-blue-100 mt-1 truncate max-w-[180px]">{email}</p>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Menu Items */}
-                  <div className="flex-1 py-6 px-4 space-y-2 overflow-y-auto">
-                    <div className="text-xs font-semibold text-muted-foreground px-4 mb-2 uppercase tracking-wider">Menu</div>
-                    {navigationItems.map((item) => (
-                      <SheetClose key={item.href} asChild>
-                        <div
-                          onClick={() => navigate(item.href)}
-                          className={cn(
-                            "flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium text-sm cursor-pointer",
-                            location.pathname === item.href
-                              ? "bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300"
-                              : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                          )}
-                        >
-                          <item.icon className="h-5 w-5" />
-                          {item.title}
-                        </div>
-                      </SheetClose>
-                    ))}
-
-                    {/* Admin Items */}
-                    {profile?.is_admin && (
-                      <>
-                        <div className="text-xs font-semibold text-muted-foreground px-4 mt-6 mb-2 uppercase tracking-wider">Admin</div>
-                        {adminItems.map((item) => (
-                          <SheetClose key={item.href} asChild>
-                            <div
-                              onClick={() => navigate(item.href)}
-                              className={cn(
-                                "flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium text-sm cursor-pointer",
-                                location.pathname === item.href
-                                  ? "bg-orange-50 text-orange-700 dark:bg-orange-900/20 dark:text-orange-300"
-                                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                              )}
-                            >
-                              <item.icon className="h-5 w-5" />
-                              {item.title}
-                            </div>
-                          </SheetClose>
-                        ))}
-
-                        {/* Invoices Sub-section */}
-                        <div className="text-xs font-semibold text-muted-foreground px-4 mt-6 mb-2 uppercase tracking-wider">Invoices</div>
-                        {invoiceItems.map((item) => (
-                          <SheetClose key={item.href} asChild>
-                            <div
-                              onClick={() => navigate(item.href)}
-                              className={cn(
-                                "flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium text-sm cursor-pointer",
-                                location.pathname === item.href
-                                  ? "bg-purple-50 text-purple-700 dark:bg-purple-900/20 dark:text-purple-300"
-                                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                              )}
-                            >
-                              <item.icon className="h-5 w-5" />
-                              {item.title}
-                            </div>
-                          </SheetClose>
-                        ))}
-
-                        <SheetClose asChild>
+                    {/* Menu Items */}
+                    <div className="flex-1 py-6 px-4 space-y-2 overflow-y-auto">
+                      <div className="text-xs font-semibold text-muted-foreground px-4 mb-2 uppercase tracking-wider">Menu</div>
+                      {navigationItems.map((item) => (
+                        <SheetClose key={item.href} asChild>
                           <div
-                            onClick={() => navigate('/invoices/storage')}
-                            className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium text-sm cursor-pointer text-muted-foreground hover:bg-muted hover:text-foreground"
+                            onClick={() => navigate(item.href)}
+                            className={cn(
+                              "flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium text-sm cursor-pointer",
+                              location.pathname === item.href
+                                ? "bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300"
+                                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                            )}
                           >
-                            <FileText className="h-5 w-5" />
-                            Storage
+                            <item.icon className="h-5 w-5" />
+                            {item.title}
                           </div>
                         </SheetClose>
-                        <SheetClose asChild>
-                          <div
-                            onClick={() => navigate('/invoices/default-info')}
-                            className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium text-sm cursor-pointer text-muted-foreground hover:bg-muted hover:text-foreground"
-                          >
-                            <Settings className="h-5 w-5" />
-                            Default Info
-                          </div>
-                        </SheetClose>
+                      ))}
 
-                        {/* Link to Client App */}
-                        <div className="mt-6 px-2">
+                      {/* Admin Items */}
+                      {profile?.is_admin && (
+                        <>
+                          <div className="text-xs font-semibold text-muted-foreground px-4 mt-6 mb-2 uppercase tracking-wider">Admin</div>
+                          {adminItems.map((item) => (
+                            <SheetClose key={item.href} asChild>
+                              <div
+                                onClick={() => navigate(item.href)}
+                                className={cn(
+                                  "flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium text-sm cursor-pointer",
+                                  location.pathname === item.href
+                                    ? "bg-orange-50 text-orange-700 dark:bg-orange-900/20 dark:text-orange-300"
+                                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                                )}
+                              >
+                                <item.icon className="h-5 w-5" />
+                                {item.title}
+                              </div>
+                            </SheetClose>
+                          ))}
+
+                          {/* Invoices Sub-section */}
+                          <div className="text-xs font-semibold text-muted-foreground px-4 mt-6 mb-2 uppercase tracking-wider">Invoices</div>
+                          {invoiceItems.map((item) => (
+                            <SheetClose key={item.href} asChild>
+                              <div
+                                onClick={() => navigate(item.href)}
+                                className={cn(
+                                  "flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium text-sm cursor-pointer",
+                                  location.pathname === item.href
+                                    ? "bg-purple-50 text-purple-700 dark:bg-purple-900/20 dark:text-purple-300"
+                                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                                )}
+                              >
+                                <item.icon className="h-5 w-5" />
+                                {item.title}
+                              </div>
+                            </SheetClose>
+                          ))}
+
                           <SheetClose asChild>
-                            <Button
-                              onClick={() => navigate('/klient')}
-                              className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md rounded-xl py-6"
+                            <div
+                              onClick={() => navigate('/invoices/storage')}
+                              className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium text-sm cursor-pointer text-muted-foreground hover:bg-muted hover:text-foreground"
                             >
-                              Switch to Client App
-                            </Button>
+                              <FileText className="h-5 w-5" />
+                              Storage
+                            </div>
                           </SheetClose>
-                        </div>
-                      </>
-                    )}
-                  </div>
+                          <SheetClose asChild>
+                            <div
+                              onClick={() => navigate('/invoices/default-info')}
+                              className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium text-sm cursor-pointer text-muted-foreground hover:bg-muted hover:text-foreground"
+                            >
+                              <Settings className="h-5 w-5" />
+                              Default Info
+                            </div>
+                          </SheetClose>
 
-                  {/* Footer Actions */}
-                  <div className="p-6 border-t bg-muted/20">
-                    <SheetClose asChild>
-                      <Button
-                        variant="ghost"
-                        className="w-full justify-start text-muted-foreground hover:text-destructive hover:bg-destructive/10 gap-3"
-                        onClick={handleSignOut}
-                      >
-                        <LogOut className="h-5 w-5" />
-                        Sign Out
-                      </Button>
-                    </SheetClose>
+                          {/* Link to Client App */}
+                          <div className="mt-6 px-2">
+                            <SheetClose asChild>
+                              <Button
+                                onClick={() => navigate('/klient')}
+                                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md rounded-xl py-6"
+                              >
+                                Switch to Client App
+                              </Button>
+                            </SheetClose>
+                          </div>
+                        </>
+                      )}
+                    </div>
+
+                    {/* Footer Actions */}
+                    <div className="p-6 border-t bg-muted/20">
+                      <SheetClose asChild>
+                        <Button
+                          variant="ghost"
+                          className="w-full justify-start text-muted-foreground hover:text-destructive hover:bg-destructive/10 gap-3"
+                          onClick={handleSignOut}
+                        >
+                          <LogOut className="h-5 w-5" />
+                          Sign Out
+                        </Button>
+                      </SheetClose>
+                    </div>
                   </div>
-                </div>
-              </SheetContent>
-            </Sheet>
+                </SheetContent>
+              </Sheet>
+            </div>
 
             {/* Company logo */}
             <div className="flex items-center gap-3 cursor-pointer group" onClick={() => navigate('/')}>
@@ -282,11 +284,12 @@ export function Header() {
             </DropdownMenu>
           </div>
         </div>
-      </header>
+      </header >
 
       {showSettings && (
         <SettingsPage onClose={() => setShowSettings(false)} />
-      )}
+      )
+      }
     </>
   );
 }

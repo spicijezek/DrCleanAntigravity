@@ -7,10 +7,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { User, Building2, Mail, Phone, MapPin, Calendar, FileText, Download, Eye, FileText as InvoiceIcon } from 'lucide-react';
-import { Card } from '@/components/ui/card';
+import { User, Building2, Mail, Phone, MapPin, Calendar, FileText, Download, Eye, FileText as InvoiceIcon, X, Globe, UserCheck, StickyNote } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { InvoicePreview } from '@/components/invoices/InvoicePreview';
+import { cn } from '@/lib/utils';
 
 interface Client {
   id: string;
@@ -66,7 +67,6 @@ export function ClientDetailsPopup({ client, isOpen, onClose, onClientUpdated }:
   };
 
   const fetchClientInvoices = async () => {
-    // Try by client_id first
     const { data: byId } = await supabase
       .from("invoices")
       .select("*")
@@ -78,7 +78,6 @@ export function ClientDetailsPopup({ client, isOpen, onClose, onClientUpdated }:
       return;
     }
 
-    // Fallback for older invoices without client_id: match by client_name
     const { data: byName } = await supabase
       .from("invoices")
       .select("*")
@@ -107,15 +106,11 @@ export function ClientDetailsPopup({ client, isOpen, onClose, onClientUpdated }:
       let downloadUrl = "";
 
       if (invoice.pdf_path.startsWith('http')) {
-        // It's a Cloudinary URL
         downloadUrl = invoice.pdf_path;
-
-        // Force download for Cloudinary
         if (downloadUrl.includes('cloudinary.com')) {
           downloadUrl = downloadUrl.replace('/upload/', '/upload/fl_attachment/');
         }
       } else {
-        // It's an old Supabase path
         const { data, error } = await supabase.storage
           .from("invoices")
           .download(invoice.pdf_path);
@@ -136,7 +131,7 @@ export function ClientDetailsPopup({ client, isOpen, onClose, onClientUpdated }:
       }
     } catch (error) {
       console.error("Error downloading invoice:", error);
-      toast({ title: "Error", description: "Error downloading invoice", variant: "destructive" });
+      toast({ title: "Chyba", description: "Nepodařilo se stáhnout fakturu", variant: "destructive" });
     }
   };
 
@@ -170,16 +165,16 @@ export function ClientDetailsPopup({ client, isOpen, onClose, onClientUpdated }:
       if (error) throw error;
 
       toast({
-        title: 'Success',
-        description: 'Client updated successfully',
+        title: 'Úspěch',
+        description: 'Klient byl úspěšně aktualizován',
       });
 
       onClientUpdated(formData);
       onClose();
     } catch (error: any) {
       toast({
-        title: 'Error',
-        description: 'Failed to update client',
+        title: 'Chyba',
+        description: 'Nepodařilo se aktualizovat klienta',
         variant: 'destructive',
       });
     } finally {
@@ -189,230 +184,280 @@ export function ClientDetailsPopup({ client, isOpen, onClose, onClientUpdated }:
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto p-6">
-        <DialogHeader className="mb-6">
-          <DialogTitle className="flex items-center gap-2 text-xl">
-            {client.client_type === 'company' ? (
-              <Building2 className="h-5 w-5" />
-            ) : (
-              <User className="h-5 w-5" />
-            )}
-            Client Details
-          </DialogTitle>
-        </DialogHeader>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-0 border-0 bg-transparent shadow-none">
+        <Card className="border-0 shadow-2xl rounded-[2.5rem] overflow-hidden bg-background/95 backdrop-blur-xl relative">
+          <div className="absolute left-0 top-0 bottom-0 w-2 bg-gradient-to-b from-primary to-primary/60" />
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="name" className="mb-2 block">Name *</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => handleInputChange('name', e.target.value)}
-                required
-              />
+          <DialogHeader className="p-8 pb-4">
+            <div className="flex items-center justify-between">
+              <DialogTitle className="flex items-center gap-3 text-2xl font-bold tracking-tight">
+                <div className="w-10 h-10 bg-primary/10 rounded-2xl flex items-center justify-center">
+                  {client.client_type === 'company' ? (
+                    <Building2 className="h-5 w-5 text-primary" />
+                  ) : (
+                    <User className="h-5 w-5 text-primary" />
+                  )}
+                </div>
+                Detail klienta
+              </DialogTitle>
+              <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full hover:bg-muted/50 transition-colors">
+                <X className="h-5 w-5" />
+              </Button>
             </div>
+          </DialogHeader>
 
-            <div>
-              <Label htmlFor="client_type" className="mb-2 block">Type</Label>
-              <Select
-                value={formData.client_type}
-                onValueChange={(value) => handleInputChange('client_type', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="person">Person</SelectItem>
-                  <SelectItem value="company">Company</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="email" className="flex items-center gap-1 mb-2">
-                <Mail className="h-3 w-3" />
-                Email
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                value={formData.email || ''}
-                onChange={(e) => handleInputChange('email', e.target.value)}
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="phone" className="flex items-center gap-1 mb-2">
-                <Phone className="h-3 w-3" />
-                Phone
-              </Label>
-              <Input
-                id="phone"
-                value={formData.phone || ''}
-                onChange={(e) => handleInputChange('phone', e.target.value)}
-              />
-            </div>
-          </div>
-
-          <div>
-            <Label htmlFor="address" className="flex items-center gap-1 mb-2">
-              <MapPin className="h-3 w-3" />
-              Address
-            </Label>
-            <Input
-              id="address"
-              value={formData.address || ''}
-              onChange={(e) => handleInputChange('address', e.target.value)}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="city" className="mb-2 block">City</Label>
-              <Input
-                id="city"
-                value={formData.city || ''}
-                onChange={(e) => handleInputChange('city', e.target.value)}
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="postal_code" className="mb-2 block">Postal Code</Label>
-              <Input
-                id="postal_code"
-                value={formData.postal_code || ''}
-                onChange={(e) => handleInputChange('postal_code', e.target.value)}
-              />
-            </div>
-          </div>
-
-          {formData.client_type === 'company' && (
-            <>
-              <div>
-                <Label htmlFor="company_id" className="mb-2 block">Company ID</Label>
-                <Input
-                  id="company_id"
-                  value={formData.company_id || ''}
-                  onChange={(e) => handleInputChange('company_id', e.target.value)}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="company_legal_name" className="mb-2 block">Company Legal Name</Label>
-                <Input
-                  id="company_legal_name"
-                  value={formData.company_legal_name || ''}
-                  onChange={(e) => handleInputChange('company_legal_name', e.target.value)}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="reliable_person" className="mb-2 block">Reliable Person</Label>
-                <Input
-                  id="reliable_person"
-                  value={formData.reliable_person || ''}
-                  onChange={(e) => handleInputChange('reliable_person', e.target.value)}
-                />
-              </div>
-            </>
-          )}
-
-          <div>
-            <Label htmlFor="client_source" className="mb-2 block">Client Source</Label>
-            <Input
-              id="client_source"
-              value={formData.client_source || ''}
-              onChange={(e) => handleInputChange('client_source', e.target.value)}
-              placeholder="e.g., referral, website, advertisement"
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="notes" className="flex items-center gap-1 mb-2">
-              <FileText className="h-3 w-3" />
-              Notes
-            </Label>
-            <Textarea
-              id="notes"
-              value={formData.notes || ''}
-              onChange={(e) => handleInputChange('notes', e.target.value)}
-              rows={3}
-            />
-          </div>
-
-          <div className="flex justify-end gap-3 pt-6 border-t">
-            <Button type="button" variant="outline" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? 'Updating...' : 'Update Client'}
-            </Button>
-          </div>
-        </form>
-
-        {/* Client Invoices Section */}
-        <div className="mt-8 pt-6 border-t">
-          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-            <InvoiceIcon className="h-5 w-5" />
-            Client Invoices ({invoices.length})
-          </h3>
-          {invoices.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No invoices found for this client yet.</p>
-          ) : (
-            <div className="space-y-2 max-h-[300px] overflow-y-auto">
-              {invoices.map((invoice) => (
-                <Card key={invoice.id} className="p-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="font-semibold">{invoice.invoice_number}</p>
-                        <Badge variant={
-                          invoice.status === 'paid' ? 'default' :
-                            invoice.status === 'issued' ? 'secondary' :
-                              'outline'
-                        } className="text-xs">
-                          {invoice.status}
-                        </Badge>
+          <CardContent className="p-8 pt-4">
+            <form onSubmit={handleSubmit} className="space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-6">
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                      <User className="h-4 w-4" /> Základní údaje
+                    </h3>
+                    <div className="grid gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="name" className="text-sm font-semibold">Jméno / Název *</Label>
+                        <Input
+                          id="name"
+                          value={formData.name}
+                          onChange={(e) => handleInputChange('name', e.target.value)}
+                          required
+                          className="rounded-xl border-primary/20 focus:border-primary focus:ring-primary/20 h-11"
+                        />
                       </div>
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(invoice.date_created).toLocaleDateString('cs-CZ')} • {new Intl.NumberFormat('cs-CZ', { style: 'currency', currency: 'CZK' }).format(invoice.total)}
-                      </p>
-                    </div>
-                    <div className="flex gap-1">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => previewInvoiceDetails(invoice)}
-                      >
-                        <Eye className="h-3 w-3" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => downloadInvoice(invoice)}
-                        disabled={!invoice.pdf_path}
-                      >
-                        <Download className="h-3 w-3" />
-                      </Button>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="client_type" className="text-sm font-semibold">Typ klienta</Label>
+                        <Select
+                          value={formData.client_type}
+                          onValueChange={(value) => handleInputChange('client_type', value)}
+                        >
+                          <SelectTrigger className="rounded-xl border-primary/20 focus:ring-primary/20 h-11">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-xl border-primary/20">
+                            <SelectItem value="person">Fyzická osoba</SelectItem>
+                            <SelectItem value="company">Firma</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
                   </div>
-                </Card>
-              ))}
+
+                  <div className="space-y-4 pt-4">
+                    <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                      <Mail className="h-4 w-4" /> Kontaktní údaje
+                    </h3>
+                    <div className="grid gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="email" className="text-sm font-semibold flex items-center gap-2">
+                          <Mail className="h-4 w-4 text-primary" /> Email
+                        </Label>
+                        <Input
+                          id="email"
+                          type="email"
+                          value={formData.email || ''}
+                          onChange={(e) => handleInputChange('email', e.target.value)}
+                          className="rounded-xl border-primary/20 focus:border-primary focus:ring-primary/20 h-11"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="phone" className="text-sm font-semibold flex items-center gap-2">
+                          <Phone className="h-4 w-4 text-primary" /> Telefon
+                        </Label>
+                        <Input
+                          id="phone"
+                          value={formData.phone || ''}
+                          onChange={(e) => handleInputChange('phone', e.target.value)}
+                          className="rounded-xl border-primary/20 focus:border-primary focus:ring-primary/20 h-11"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-6">
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                      <MapPin className="h-4 w-4" /> Adresa a fakturace
+                    </h3>
+                    <div className="grid gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="address" className="text-sm font-semibold">Ulice a č.p.</Label>
+                        <Input
+                          id="address"
+                          value={formData.address || ''}
+                          onChange={(e) => handleInputChange('address', e.target.value)}
+                          className="rounded-xl border-primary/20 focus:border-primary focus:ring-primary/20 h-11"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="city" className="text-sm font-semibold">Město</Label>
+                          <Input
+                            id="city"
+                            value={formData.city || ''}
+                            onChange={(e) => handleInputChange('city', e.target.value)}
+                            className="rounded-xl border-primary/20 focus:border-primary focus:ring-primary/20 h-11"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="postal_code" className="text-sm font-semibold">PSČ</Label>
+                          <Input
+                            id="postal_code"
+                            value={formData.postal_code || ''}
+                            onChange={(e) => handleInputChange('postal_code', e.target.value)}
+                            className="rounded-xl border-primary/20 focus:border-primary focus:ring-primary/20 h-11"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {formData.client_type === 'company' && (
+                    <div className="space-y-4 pt-4 p-6 rounded-3xl bg-primary/5 border border-primary/10">
+                      <div className="grid gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="company_id" className="text-sm font-semibold">IČO</Label>
+                          <Input
+                            id="company_id"
+                            value={formData.company_id || ''}
+                            onChange={(e) => handleInputChange('company_id', e.target.value)}
+                            className="rounded-xl border-primary/20 focus:border-primary focus:ring-primary/20 h-11 bg-background"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="company_legal_name" className="text-sm font-semibold">Právní název firmy</Label>
+                          <Input
+                            id="company_legal_name"
+                            value={formData.company_legal_name || ''}
+                            onChange={(e) => handleInputChange('company_legal_name', e.target.value)}
+                            className="rounded-xl border-primary/20 focus:border-primary focus:ring-primary/20 h-11 bg-background"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="reliable_person" className="text-sm font-semibold">Kontaktní osoba</Label>
+                          <Input
+                            id="reliable_person"
+                            value={formData.reliable_person || ''}
+                            onChange={(e) => handleInputChange('reliable_person', e.target.value)}
+                            className="rounded-xl border-primary/20 focus:border-primary focus:ring-primary/20 h-11 bg-background"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-primary/10">
+                <div className="space-y-2">
+                  <Label htmlFor="client_source" className="text-sm font-semibold flex items-center gap-2">
+                    <Globe className="h-4 w-4 text-primary" /> Zdroj klienta
+                  </Label>
+                  <Input
+                    id="client_source"
+                    value={formData.client_source || ''}
+                    onChange={(e) => handleInputChange('client_source', e.target.value)}
+                    placeholder="např. doporučení, web, reklama"
+                    className="rounded-xl border-primary/20 focus:border-primary focus:ring-primary/20 h-11"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="notes" className="text-sm font-semibold flex items-center gap-2">
+                    <StickyNote className="h-4 w-4 text-primary" /> Poznámky
+                  </Label>
+                  <Textarea
+                    id="notes"
+                    value={formData.notes || ''}
+                    onChange={(e) => handleInputChange('notes', e.target.value)}
+                    rows={1}
+                    className="rounded-xl border-primary/20 focus:border-primary focus:ring-primary/20 min-h-[44px]"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-6 border-t border-primary/10">
+                <Button type="button" variant="outline" onClick={onClose} className="rounded-xl border-primary/20 px-8">
+                  Zrušit
+                </Button>
+                <Button type="submit" disabled={loading} className="rounded-xl bg-primary px-12 h-11 font-bold">
+                  {loading ? 'Ukládám...' : 'Uložit změny'}
+                </Button>
+              </div>
+            </form>
+
+            {/* Invoices Section */}
+            <div className="mt-12 pt-8 border-t border-primary/10">
+              <h3 className="text-lg font-bold mb-6 flex items-center gap-3">
+                <div className="w-8 h-8 bg-primary/10 rounded-xl flex items-center justify-center">
+                  <InvoiceIcon className="h-4 w-4 text-primary" />
+                </div>
+                Faktury klienta ({invoices.length})
+              </h3>
+              {invoices.length === 0 ? (
+                <div className="p-8 rounded-[2rem] border-2 border-dashed border-primary/10 text-center">
+                  <p className="text-sm text-muted-foreground">Pro tohoto klienta nebyly nalezeny žádné faktury.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                  {invoices.map((invoice) => (
+                    <Card key={invoice.id} className="border-0 bg-primary/5 hover:bg-primary/10 transition-colors rounded-3xl overflow-hidden group">
+                      <CardContent className="p-4 flex items-center justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="font-bold tracking-tight">{invoice.invoice_number}</p>
+                            <Badge className={cn(
+                              "text-[10px] uppercase font-bold rounded-lg px-2 py-0",
+                              invoice.status === 'paid' ? "bg-green-500/10 text-green-500 hover:bg-green-500/20" :
+                                invoice.status === 'issued' ? "bg-blue-500/10 text-blue-500 hover:bg-blue-500/20" :
+                                  "bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20"
+                            )}>
+                              {invoice.status === 'paid' ? 'Zaplaceno' : invoice.status === 'issued' ? 'Vystaveno' : invoice.status}
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground font-medium">
+                            {new Date(invoice.date_created).toLocaleDateString('cs-CZ')} • <span className="text-foreground font-bold">{new Intl.NumberFormat('cs-CZ', { style: 'currency', currency: 'CZK' }).format(invoice.total)}</span>
+                          </p>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="w-9 h-9 rounded-xl bg-background shadow-sm hover:scale-110 transition-transform"
+                            onClick={() => previewInvoiceDetails(invoice)}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="w-9 h-9 rounded-xl bg-background shadow-sm hover:scale-110 transition-transform"
+                            onClick={() => downloadInvoice(invoice)}
+                            disabled={!invoice.pdf_path}
+                          >
+                            <Download className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
             </div>
-          )}
-        </div>
+          </CardContent>
+        </Card>
       </DialogContent>
 
       {/* Invoice Preview Dialog */}
       {previewInvoice && companyInfo && (
         <Dialog open={!!previewInvoice} onOpenChange={() => setPreviewInvoice(null)}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Invoice Preview</DialogTitle>
-            </DialogHeader>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto rounded-[2.5rem] p-0 border-0">
             <InvoicePreview
               companyInfo={companyInfo}
               invoiceNumber={previewInvoice.invoice_number}

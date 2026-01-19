@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -139,27 +140,27 @@ export default function Team() {
     <Layout>
       <div className="container mx-auto p-4 sm:p-6 pb-24 space-y-6 max-w-7xl animate-in fade-in slide-in-from-bottom-4 duration-700">
         <AdminPageHeader
-          title="Team"
-          description="Manage your team members and employees"
+          title="Tým"
+          description="Správa členů týmu a zaměstnanců"
           action={
             <Button
               onClick={() => setShowAddForm(true)}
               variant="gradient"
-              className="shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all rounded-xl"
+              className="shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all rounded-xl h-11 px-6 font-bold"
             >
-              <Plus className="h-4 w-4 mr-2" />
-              Add Team Member
+              <Plus className="h-5 w-5 mr-2" />
+              Přidat člena týmu
             </Button>
           }
         />
 
         <div className="space-y-6">
-          <div className="bg-card/50 backdrop-blur-sm p-6 rounded-3xl border-0 shadow-lg space-y-6">
+          <div className="bg-card/50 backdrop-blur-xl p-6 rounded-[2rem] border border-white/10 shadow-xl space-y-6">
             <div className="relative max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5" />
               <Input
-                placeholder="Search team members..."
-                className="pl-10 bg-background/50 border-0 shadow-sm focus:ring-2 focus:ring-primary/20 rounded-xl"
+                placeholder="Hledat členy týmu..."
+                className="pl-12 h-12 bg-background shadow-inner border-0 rounded-2xl focus-visible:ring-primary/20 text-base"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -168,83 +169,95 @@ export default function Team() {
 
           {/* Team Members Grid */}
           {filteredTeamMembers.length === 0 ? (
-            <Card className="p-12">
-              <div className="text-center">
-                <div className="mx-auto h-24 w-24 text-muted-foreground mb-4">
-                  <Calendar className="h-full w-full" />
-                </div>
-                <h3 className="text-lg font-medium text-foreground mb-2">No team members found</h3>
-                <p className="text-muted-foreground mb-6">Start by adding your first team member.</p>
-                <Button onClick={() => setShowAddForm(true)} className="bg-primary hover:bg-primary/90">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Team Member
-                </Button>
+            <div className="text-center py-24 bg-card/30 backdrop-blur-xl rounded-[2.5rem] border-2 border-dashed border-primary/10 max-w-2xl mx-auto shadow-inner">
+              <div className="w-20 h-20 bg-primary/5 rounded-3xl flex items-center justify-center mx-auto mb-6">
+                <Calendar className="h-10 w-10 text-primary opacity-40" />
               </div>
-            </Card>
+              <h3 className="text-2xl font-bold text-foreground mb-2">Žádní členové týmu</h3>
+              <p className="text-muted-foreground mb-8 max-w-sm mx-auto text-sm leading-relaxed">
+                Začněte přidáním prvního člena týmu do systému.
+              </p>
+              <Button onClick={() => setShowAddForm(true)} className="rounded-2xl shadow-xl h-12 px-8 bg-primary hover:bg-primary/90 text-white font-bold transition-all hover:scale-105 active:scale-95">
+                <Plus className="h-5 w-5 mr-2" />
+                Přidat člena týmu
+              </Button>
+            </div>
           ) : (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {filteredTeamMembers.map((member) => (
-                <Card key={member.id} className="bg-card/50 backdrop-blur-sm border-0 shadow-lg rounded-3xl overflow-hidden hover:shadow-xl transition-all duration-300 group">
-                  <CardHeader className="pb-4">
+                <Card key={member.id} className="bg-card/50 backdrop-blur-xl border-0 shadow-xl rounded-[2rem] overflow-hidden hover:shadow-2xl transition-all duration-500 group border border-white/10">
+                  <CardHeader className="p-6 pb-4">
                     <div className="flex items-center justify-between">
-                      <CardTitle className="text-lg">{member.name}</CardTitle>
+                      <div className="flex flex-col">
+                        <CardTitle className="text-lg font-bold tracking-tight group-hover:text-primary transition-colors">{member.name}</CardTitle>
+                        {member.position && (
+                          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mt-1">{member.position}</p>
+                        )}
+                      </div>
                       <div className="flex items-center gap-2">
-                        <Badge variant={member.is_active ? "default" : "secondary"}>
-                          {member.is_active ? "Active" : "Inactive"}
+                        <Badge className={cn(
+                          "rounded-lg px-2 py-0.5 text-[10px] uppercase font-bold border-0",
+                          member.is_active ? "bg-emerald-500 text-white" : "bg-slate-200 text-slate-600"
+                        )}>
+                          {member.is_active ? "Aktivní" : "Neaktivní"}
                         </Badge>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setEditingMember(member)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="icon"
-                          onClick={() => handleDeleteTeamMember(member.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
                       </div>
                     </div>
-                    {member.position && (
-                      <p className="text-sm text-muted-foreground">{member.position}</p>
-                    )}
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-3 min-h-[72px]">
-                      <div className="flex items-center gap-2 text-sm">
-                        <Mail className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-muted-foreground">{member.email || 'No email provided'}</span>
+                  <CardContent className="p-6 pt-0 space-y-4">
+                    <div className="space-y-3 bg-muted/20 p-4 rounded-3xl border border-white/5 min-h-[120px]">
+                      <div className="flex items-center gap-3 text-sm text-muted-foreground font-medium group-hover:text-foreground transition-colors text-xs">
+                        <Mail className="h-3.5 w-3.5 text-primary/70" />
+                        <span className="truncate">{member.email || 'E-mail neuveden'}</span>
                       </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <Phone className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-muted-foreground">{member.phone || 'No phone provided'}</span>
+                      <div className="flex items-center gap-3 text-sm text-muted-foreground font-medium group-hover:text-foreground transition-colors text-xs">
+                        <Phone className="h-3.5 w-3.5 text-primary/70" />
+                        <span>{member.phone || 'Telefon neuveden'}</span>
                       </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <MapPin className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-muted-foreground">{member.address || 'No address provided'}</span>
+                      <div className="flex items-start gap-3 text-sm text-muted-foreground font-medium group-hover:text-foreground transition-colors text-xs">
+                        <MapPin className="h-3.5 w-3.5 text-primary/70 mt-0.5" />
+                        <span className="leading-snug">{member.address || 'Adresa neuvedena'}</span>
                       </div>
                     </div>
 
-                    <div className="pt-4 border-t space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Hourly Rate:</span>
-                        <span className="font-medium">{member.hourly_rate ? `${member.hourly_rate} CZK` : 'Not set'}</span>
+                    <div className="pt-4 border-t border-white/5 space-y-3">
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-muted-foreground font-bold uppercase tracking-tight">Hodinová sazba:</span>
+                        <span className="font-black text-foreground">{member.hourly_rate ? `${member.hourly_rate} CZK` : 'Neuvedena'}</span>
                       </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Total Earned:</span>
-                        <Badge variant="secondary" className="bg-green-100 text-green-800 hover:bg-green-200">
-                          {member.calculated_total_earnings.toLocaleString()} CZK
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-muted-foreground font-bold uppercase tracking-tight">Celkem vyplaceno:</span>
+                        <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-700 border-emerald-500/20 rounded-lg px-2 py-0.5 font-black">
+                          {member.calculated_total_earnings.toLocaleString('cs-CZ')} CZK
                         </Badge>
                       </div>
                       {member.hire_date && (
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Hired:</span>
-                          <span className="font-medium">{new Date(member.hire_date).toLocaleDateString()}</span>
+                        <div className="flex justify-between items-center text-xs">
+                          <span className="text-muted-foreground font-bold uppercase tracking-tight">Datum nástupu:</span>
+                          <span className="font-black text-foreground">{new Date(member.hire_date).toLocaleDateString('cs-CZ')}</span>
                         </div>
                       )}
+                    </div>
+
+                    <div className="flex gap-2 pt-2 border-t border-white/5">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setEditingMember(member)}
+                        className="flex-1 rounded-xl h-10 border-primary/20 hover:bg-primary/5 hover:text-primary transition-all font-bold"
+                      >
+                        <Edit className="h-4 w-4 mr-2" />
+                        Upravit
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteTeamMember(member.id)}
+                        className="flex-1 rounded-xl h-10 hover:bg-red-50 hover:text-red-600 text-muted-foreground transition-all font-medium"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Smazat
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>

@@ -58,7 +58,6 @@ export function InvoicePreview({
 
     return performanceDates.map(dateItem => {
       if (dateItem.endDate && dateItem.endDate !== dateItem.startDate) {
-        // Format as range: "03-07.11.2025"
         const startDate = new Date(dateItem.startDate);
         const endDate = new Date(dateItem.endDate);
 
@@ -67,7 +66,6 @@ export function InvoicePreview({
         const month = (endDate.getMonth() + 1).toString().padStart(2, '0');
         const year = endDate.getFullYear();
 
-        // Check if same month
         if (startDate.getMonth() === endDate.getMonth() && startDate.getFullYear() === endDate.getFullYear()) {
           return `${startDay}-${endDay}.${month}.${year}`;
         } else {
@@ -79,174 +77,164 @@ export function InvoicePreview({
   };
 
   return (
-    <Card id="invoice-preview" className="p-4 md:p-8 bg-white text-black print:shadow-none shadow-none border-none">
+    <Card id="invoice-preview" className="p-8 bg-white text-slate-900 print:shadow-none shadow-none border-none font-sans leading-relaxed max-w-[794px] mx-auto min-h-[1123px] flex flex-col relative overflow-hidden">
+      {/* Top Edge Gradient Line */}
+      <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-primary to-indigo-600 opacity-80" />
+
       {/* Header */}
-      <div className="mb-4 md:mb-6 flex justify-between items-start">
-        <div className="flex-shrink-0">
-          {companyInfo?.logo_url && (
-            <img src={companyInfo.logo_url} alt="Logo" className="h-12 md:h-16" />
-          )}
-        </div>
-        <div className="text-right">
-          <h1 className="text-xl md:text-2xl font-bold text-black leading-none uppercase">Faktura</h1>
-          <p className="text-[10px] md:text-xs text-gray-500 mt-1 uppercase">Daňový doklad</p>
-          <p className="text-lg md:text-xl font-bold text-black mt-1">{invoiceNumber}</p>
-        </div>
-      </div>
-
-      {/* Supplier and Client Info */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 mb-6 md:mb-8">
+      <div className="flex justify-between items-start mb-12 mt-4">
+        {/* Left: Logo */}
         <div>
-          <h2 className="font-bold text-[11px] md:text-xs mb-2 md:mb-3 text-gray-500 uppercase border-b pb-1">Dodavatel</h2>
-          <div className="text-xs md:text-sm space-y-0.5">
-            <p className="font-bold text-base md:text-lg">{companyInfo?.company_name || "Vaše společnost"}</p>
-            {companyInfo?.address && <p>{companyInfo.address}</p>}
-            {companyInfo?.city && <p>{companyInfo.postal_code} {companyInfo.city}</p>}
-            <div className="pt-2 flex flex-wrap gap-x-4">
-              {companyInfo?.ic && <p><span className="text-gray-500">IČO:</span> {companyInfo.ic}</p>}
-              {companyInfo?.dic && <p><span className="text-gray-500">DIČ:</span> {companyInfo.dic}</p>}
+          {companyInfo?.logo_url ? (
+            <img src={companyInfo.logo_url} alt="Logo" className="h-16 w-auto object-contain" />
+          ) : (
+            <div className="flex items-center gap-2 text-2xl font-black tracking-tighter text-slate-900">
+              <div className="h-8 w-8 bg-teal-600 rounded-lg flex items-center justify-center text-white text-lg">D</div>
+              Dr.Clean
             </div>
+          )}
+        </div>
+
+        {/* Right: Invoice Info */}
+        <div className="text-right">
+          <h1 className="text-2xl font-bold text-slate-900">Faktura</h1>
+          <p className="text-xs uppercase tracking-widest text-slate-500 font-semibold mb-2">DAŇOVÝ DOKLAD</p>
+          <p className="text-3xl font-bold text-slate-900 tracking-tight">{invoiceNumber}</p>
+        </div>
+      </div>
+
+      {/* Addresses */}
+      <div className="grid grid-cols-2 gap-12 mb-12">
+        {/* Dodavatel */}
+        <div className="space-y-4">
+          <h3 className="text-sm font-bold uppercase tracking-wider text-slate-900 border-b border-transparent">DODAVATEL</h3>
+          <div className="text-sm leading-relaxed text-slate-900">
+            <p className="font-bold text-base mb-1">{companyInfo?.company_name || "Vaše společnost"}</p>
+            <p>{companyInfo?.address}</p>
+            <p>{companyInfo?.postal_code} {companyInfo?.city}</p>
+            <p className="mt-2 text-slate-700">IČO: {companyInfo?.ic}</p>
+            {companyInfo?.dic && <p className="text-slate-700">DIČ: {companyInfo.dic}</p>}
           </div>
         </div>
-        <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
-          <h2 className="font-bold text-[11px] md:text-xs mb-2 md:mb-3 text-gray-500 uppercase border-b pb-1">Odběratel</h2>
-          <div className="text-xs md:text-sm space-y-0.5">
-            <p className="font-bold text-base md:text-lg">{clientName || "Název klienta"}</p>
-            {clientAddress && <p className="whitespace-pre-line">{clientAddress}</p>}
-            <div className="pt-2">
-              {clientVat && <p><span className="text-gray-500">IČO:</span> {clientVat}</p>}
-              {clientDic && <p><span className="text-gray-500">DIČ:</span> {clientDic}</p>}
-              {clientEmail && <p><span className="text-gray-500">Email:</span> {clientEmail}</p>}
-              {clientPhone && <p><span className="text-gray-500">Tel:</span> {clientPhone}</p>}
+
+        {/* Odběratel */}
+        <div className="space-y-4">
+          <h3 className="text-sm font-bold uppercase tracking-wider text-slate-900 border-b border-transparent">ODBĚRATEL</h3>
+          <div className="text-sm leading-relaxed text-slate-900">
+            <p className="font-bold text-base mb-1">{clientName || "Jméno klienta"}</p>
+            <div className="whitespace-pre-line">
+              {clientAddress}
+            </div>
+            <div className="mt-2 space-y-0.5">
+              {clientVat && <p className="text-slate-700">IČO: {clientVat}</p>}
+              {clientDic && <p className="text-slate-700">DIČ: {clientDic}</p>}
+              {clientEmail && <p className="text-slate-700">Email: {clientEmail}</p>}
+              {clientPhone && <p className="text-slate-700">Tel: {clientPhone}</p>}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Payment Info */}
-      <div className="mb-6 md:mb-8 p-3 md:p-4 bg-gray-50 rounded border border-gray-200">
-        <h3 className="font-bold text-[11px] md:text-xs mb-3 text-gray-500 uppercase border-b pb-1">Platební údaje</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2 text-xs md:text-sm">
-          {paymentMethod === 'bank_transfer' && companyInfo?.bank_account && (
-            <div className="flex justify-between border-b border-gray-200 pb-1 sm:border-0 sm:pb-0">
-              <span className="text-gray-500">Bankovní účet:</span>
-              <span className="font-bold">{companyInfo.bank_account}/{companyInfo.bank_code}</span>
-            </div>
-          )}
-          <div className="flex justify-between border-b border-gray-200 pb-1 sm:border-0 sm:pb-0">
-            <span className="text-gray-500">Datum vystavení:</span>
-            <span className="font-medium">{formatDate(dateCreated)}</span>
+      {/* Payment Information Box */}
+      <div className="mb-10 border border-primary/10 rounded-xl p-6 bg-gradient-to-br from-primary/[0.03] to-indigo-600/[0.03] relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-primary to-indigo-600 opacity-50" />
+        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900 mb-4">ÚDAJE O PLATBĚ</h3>
+        <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm">
+          {/* Left Col */}
+          <div className="grid grid-cols-[120px_1fr] gap-1">
+            <span className="text-slate-500 font-medium">Bankovní účet:</span>
+            <span className="font-bold text-slate-900">{companyInfo?.bank_account}/{companyInfo?.bank_code}</span>
+
+            <span className="text-slate-500 font-medium">Variabilní symbol:</span>
+            <span className="font-bold text-slate-900">{variableSymbol}</span>
+
+            <span className="text-slate-500 font-medium">Způsob platby:</span>
+            <span className="font-bold text-slate-900">
+              {paymentMethod === 'cash' ? 'Hotově' : 'Převodem'}
+            </span>
           </div>
-          {paymentMethod === 'bank_transfer' && variableSymbol && (
-            <div className="flex justify-between border-b border-gray-200 pb-1 sm:border-0 sm:pb-0">
-              <span className="text-gray-500">Variabilní symbol:</span>
-              <span className="font-bold">{variableSymbol}</span>
-            </div>
-          )}
-          {dateDue && (
-            <div className="flex justify-between border-b border-gray-200 pb-1 sm:border-0 sm:pb-0 text-red-600">
-              <span className="text-red-500/70">Datum splatnosti:</span>
-              <span className="font-bold">{formatDate(dateDue)}</span>
-            </div>
-          )}
-          <div className="flex justify-between border-b border-gray-200 pb-1 sm:border-0 sm:pb-0">
-            <span className="text-gray-500">Způsob platby:</span>
-            <span className="font-medium">{paymentMethod === 'cash' ? 'Hotově' : 'Převodem'}</span>
+
+          {/* Right Col */}
+          <div className="grid grid-cols-[120px_1fr] gap-1">
+            <span className="text-slate-500 font-medium">Datum vystavení:</span>
+            <span className="font-bold text-slate-900">{formatDate(dateCreated)}</span>
+
+            <span className="text-slate-500 font-medium">Datum splatnosti:</span>
+            <span className="font-bold text-slate-900">{formatDate(dateDue || '')}</span>
+
+            <span className="text-slate-500 font-medium">Datum plnění:</span>
+            <span className="font-bold text-slate-900">{formatPerformanceDates() || formatDate(dateCreated)}</span>
           </div>
-          {paymentMethod === 'cash' && datePaid && (
-            <div className="flex justify-between border-b border-gray-200 pb-1 sm:border-0 sm:pb-0">
-              <span className="text-gray-500">Datum úhrady:</span>
-              <span className="font-medium">{formatDate(datePaid)}</span>
-            </div>
-          )}
-          {performanceDates && performanceDates.length > 0 && (
-            <div className="flex justify-between border-b border-gray-200 pb-1 sm:border-0 sm:pb-0">
-              <span className="text-gray-500">Datum plnění:</span>
-              <span className="font-medium">{formatPerformanceDates()}</span>
-            </div>
-          )}
         </div>
       </div>
 
       {/* Items Table */}
-      <div className="mb-6 md:mb-8">
-        <div className="overflow-x-auto rounded border border-gray-200">
-          <table className="w-full border-collapse text-xs md:text-sm">
-            <thead>
-              <tr className="bg-gray-100">
-                {items.some(item => item.quantity > 0) && (
-                  <th className="border-b border-gray-200 p-2 text-center font-bold text-gray-600">Množství</th>
-                )}
-                <th className="border-b border-gray-200 p-2 text-left font-bold text-gray-600">Popis položky</th>
-                <th className="border-b border-gray-200 p-2 text-center font-bold text-gray-600">DPH</th>
-                <th className="border-b border-gray-200 p-2 text-right font-bold text-gray-600 whitespace-nowrap">
-                  {items.some(item => item.quantity > 0) ? 'Cena/jedn.' : 'Cena'}
-                </th>
-                <th className="border-b border-gray-200 p-2 text-right font-bold text-gray-600 whitespace-nowrap">Celkem</th>
+      <div className="mb-8">
+        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900 mb-3">FAKTURUJEME VÁM NÁSLEDUJÍCÍ POLOŽKY</h3>
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className="bg-slate-100 border-y border-slate-200 text-xs font-bold text-slate-900">
+              <th className="py-3 px-4 w-1/2">Popis</th>
+              <th className="py-3 px-4 text-center">DPH</th>
+              <th className="py-3 px-4 text-right">Cena</th>
+              <th className="py-3 px-4 text-right">Celkem</th>
+            </tr>
+          </thead>
+          <tbody className="text-sm">
+            {items.map((item, index) => (
+              <tr key={index} className="border-b border-slate-200">
+                <td className="py-3 px-4 text-slate-900 font-medium">
+                  {item.description || "Služba"}
+                  {item.quantity > 1 && <span className="text-slate-500 font-normal ml-2">({item.quantity}x)</span>}
+                </td>
+                <td className="py-3 px-4 text-center text-slate-600">{item.vat_rate}%</td>
+                <td className="py-3 px-4 text-right text-slate-900">{item.unit_price.toLocaleString('cs-CZ', { minimumFractionDigits: 2 })} Kč</td>
+                <td className="py-3 px-4 text-right font-bold text-slate-900">
+                  {(item.quantity > 0 ? item.quantity * item.unit_price : item.unit_price).toLocaleString('cs-CZ', { minimumFractionDigits: 2 })} Kč
+                </td>
               </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {items.map((item, index) => (
-                <tr key={index}>
-                  {items.some(i => i.quantity > 0) && (
-                    <td className="p-2 text-center align-middle">
-                      {item.quantity > 0 ? item.quantity : '-'}
-                    </td>
-                  )}
-                  <td className="p-2 align-middle font-medium">{item.description || "Popis položky"}</td>
-                  <td className="p-2 text-center align-middle whitespace-nowrap">{item.vat_rate} %</td>
-                  <td className="p-2 text-right align-middle whitespace-nowrap">{item.unit_price.toLocaleString('cs-CZ', { minimumFractionDigits: 2 })} Kč</td>
-                  <td className="p-2 text-right font-bold align-middle whitespace-nowrap">
-                    {(item.quantity > 0 ? item.quantity * item.unit_price : item.unit_price).toLocaleString('cs-CZ', { minimumFractionDigits: 2 })} Kč
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+            ))}
+          </tbody>
+        </table>
       </div>
 
-      {/* Summary Section */}
-      <div className="flex flex-col md:flex-row justify-end gap-8 mb-8">
-        <div className="w-full md:w-64 space-y-2">
-          <div className="flex justify-between text-xs text-gray-500">
-            <span>Základ daně:</span>
-            <span>{subtotal.toLocaleString('cs-CZ', { minimumFractionDigits: 2 })} Kč</span>
-          </div>
-          <div className="flex justify-between text-xs text-gray-500 pb-2 border-b">
-            <span>DPH (21 %):</span>
-            <span>{vatAmount.toLocaleString('cs-CZ', { minimumFractionDigits: 2 })} Kč</span>
-          </div>
-          <div className="flex justify-between items-baseline pt-1">
-            <span className="text-sm font-bold uppercase">Celkem k úhradě:</span>
-            <div className="text-right">
-              <span className="text-2xl md:text-3xl font-black text-black tracking-tight whitespace-nowrap">
-                {total.toLocaleString('cs-CZ', { minimumFractionDigits: 2 })} Kč
-              </span>
+      {/* Total Section */}
+      <div className="flex flex-col items-end mb-20 pr-4">
+        {vatAmount > 0 && (
+          <div className="w-full max-w-[200px] mb-4 space-y-1 text-sm border-b border-slate-100 pb-4">
+            <div className="flex justify-between items-center text-slate-500">
+              <span className="font-medium">Základ daně:</span>
+              <span className="font-bold text-slate-700">{subtotal.toLocaleString('cs-CZ', { minimumFractionDigits: 2 })} Kč</span>
+            </div>
+            <div className="flex justify-between items-center text-slate-500">
+              <span className="font-medium">DPH:</span>
+              <span className="font-bold text-slate-700">{vatAmount.toLocaleString('cs-CZ', { minimumFractionDigits: 2 })} Kč</span>
             </div>
           </div>
+        )}
+        <span className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">CELKEM K ÚHRADĚ</span>
+        <div className="text-4xl font-black text-slate-900 tracking-tight">
+          {total.toLocaleString('cs-CZ', { minimumFractionDigits: 2 })} Kč
         </div>
       </div>
 
-      {/* Notes */}
+      {/* Notes (if any, pushed down) */}
       {notes && (
-        <div className="mb-8 p-3 bg-slate-50 rounded border-l-4 border-slate-300">
-          <h3 className="font-bold text-[11px] md:text-xs mb-1 text-gray-500 uppercase">Poznámka</h3>
-          <p className="text-xs md:text-sm text-gray-700 whitespace-pre-line leading-relaxed">{notes}</p>
+        <div className="mb-12 text-sm text-slate-600 italic px-4 border-l-2 border-slate-200">
+          <span className="font-bold not-italic text-slate-900">Poznámka:</span> {notes}
         </div>
       )}
 
-      {/* Footer */}
-      <div className="text-center text-xs text-gray-400 pt-6 border-t border-gray-100 flex flex-col md:flex-row justify-between items-center gap-4">
-        <div>
-          <p className="font-bold text-gray-500">Děkujeme za spolupráci!</p>
-        </div>
-        <div className="flex flex-wrap justify-center gap-x-4 gap-y-1">
-          {companyInfo?.email && <p><span className="text-gray-300">Email:</span> {companyInfo.email}</p>}
-          {companyInfo?.phone && <p><span className="text-gray-300">Tel:</span> {companyInfo.phone}</p>}
-          {companyInfo?.website && <p><span className="text-gray-300">Web:</span> {companyInfo.website}</p>}
+      {/* Footer - Centered */}
+      <div className="mt-auto pt-12 text-center pb-4">
+        <h4 className="font-bold text-slate-700 text-sm mb-4">Děkujeme za Vaši důvěru</h4>
+        <div className="text-xs text-slate-500 space-y-1">
+          {companyInfo?.email && <p>Email: {companyInfo.email}</p>}
+          {companyInfo?.phone && <p>Telefon: {companyInfo.phone}</p>}
+          {companyInfo?.website && <p>Web: {companyInfo.website}</p>}
         </div>
       </div>
+
     </Card>
   );
 }

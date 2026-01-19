@@ -3,10 +3,10 @@ import { useState, useEffect } from "react"
 import { supabase } from "@/integrations/supabase/client"
 import { useAuth } from "@/contexts/AuthContext"
 import { useNavigate } from "react-router-dom"
-import { 
-  DollarSign, 
-  Users, 
-  Calendar, 
+import {
+  DollarSign,
+  Users,
+  Calendar,
   TrendingUp,
   CheckCircle,
   Clock,
@@ -60,9 +60,9 @@ export function DashboardStats({ blurNumbers = false }: DashboardStatsProps) {
       const totalRevenue = allJobs?.reduce((sum, job) => sum + (job.revenue || 0), 0) || 0;
 
       // Calculate past 30 days revenue (jobs with payment_received_date in past 30 days)
-      const past30DaysPaidJobs = allJobs?.filter(job => 
-        job.payment_received_date && 
-        new Date(job.payment_received_date) >= thirtyDaysAgo && 
+      const past30DaysPaidJobs = allJobs?.filter(job =>
+        job.payment_received_date &&
+        new Date(job.payment_received_date) >= thirtyDaysAgo &&
         new Date(job.payment_received_date) <= now
       ) || [];
       const past30DaysRevenue = past30DaysPaidJobs.reduce((sum, job) => sum + (job.revenue || 0), 0);
@@ -76,9 +76,9 @@ export function DashboardStats({ blurNumbers = false }: DashboardStatsProps) {
 
       const totalClients = allClients?.length || 0;
       // New clients in past 30 days (based on date_added only)
-      const newClientsPast30Days = allClients?.filter(client => 
-        client.date_added && 
-        new Date(client.date_added) >= thirtyDaysAgo && 
+      const newClientsPast30Days = allClients?.filter(client =>
+        client.date_added &&
+        new Date(client.date_added) >= thirtyDaysAgo &&
         new Date(client.date_added) <= now
       ).length || 0;
 
@@ -142,41 +142,81 @@ export function DashboardStats({ blurNumbers = false }: DashboardStatsProps) {
   };
 
   return (
-    <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-4 grid-cols-2 md:grid-cols-2 lg:grid-cols-4">
       <StatsCard
-        title="Total Revenue"
+        title="Celkový Obrat"
         value={<span className={blurNumbers ? "filter blur-md" : ""}>{formatCurrency(stats.totalRevenue)}</span>}
-        change={`${formatCurrency(stats.monthlyRevenue)} past 30 days`}
-        changeType="positive"
+        change="Celková historie"
+        changeType="neutral"
         icon={DollarSign}
+        className="animate-in fade-in slide-in-from-bottom-2 duration-500"
       />
-      
+
+      <StatsCard
+        title="Obrat (30 dní)"
+        value={<span className={blurNumbers ? "filter blur-md" : ""}>{formatCurrency(stats.monthlyRevenue)}</span>}
+        change={stats.revenueChange}
+        changeType="positive"
+        icon={TrendingUp}
+        className="animate-in fade-in slide-in-from-bottom-2 duration-500 delay-75"
+      />
+
       <div className="cursor-pointer" onClick={() => navigate('/clients')}>
         <StatsCard
-          title="Active Clients"
+          title="Aktivní Klienti"
           value={<span className={blurNumbers ? "filter blur-md" : ""}>{stats.totalClients.toString()}</span>}
-          change={`${stats.newClientsThisMonth} new past 30 days`}
-          changeType="positive"
+          change="Celkový počet"
+          changeType="neutral"
           icon={Users}
+          className="animate-in fade-in slide-in-from-bottom-2 duration-500 delay-100"
         />
       </div>
-      
+
+      <StatsCard
+        title="Noví Klienti"
+        value={<span className={blurNumbers ? "filter blur-md" : ""}>{stats.newClientsThisMonth.toString()}</span>}
+        change="Za posledních 30 dní"
+        changeType="positive"
+        icon={Target}
+        className="animate-in fade-in slide-in-from-bottom-2 duration-500 delay-150"
+      />
+
       <div className="cursor-pointer" onClick={() => navigate('/jobs')}>
         <StatsCard
-          title="Completed Jobs"
+          title="Dokončené Práce"
           value={<span className={blurNumbers ? "filter blur-md" : ""}>{stats.completedJobs.toString()}</span>}
-          change={`${stats.jobsCompletedThisMonth} past 30 days`}
+          change={`${stats.jobsCompletedThisMonth} tento měsíc`}
           changeType="positive"
           icon={CheckCircle}
+          className="animate-in fade-in slide-in-from-bottom-2 duration-500 delay-200"
         />
       </div>
-      
+
       <StatsCard
-        title="Scheduled Jobs"
+        title="Naplánované Práce"
         value={<span className={blurNumbers ? "filter blur-md" : ""}>{stats.scheduledJobs.toString()}</span>}
-        change="Waiting for completion"
+        change="Čeká na vyřízení"
         changeType="neutral"
         icon={Calendar}
+        className="animate-in fade-in slide-in-from-bottom-2 duration-500 delay-250"
+      />
+
+      <StatsCard
+        title="Čekající Nabídky"
+        value={<span className={blurNumbers ? "filter blur-md" : ""}>{stats.pendingQuotes.toString()}</span>}
+        change="Potenciální zakázky"
+        changeType="neutral"
+        icon={Clock}
+        className="animate-in fade-in slide-in-from-bottom-2 duration-500 delay-300"
+      />
+
+      <StatsCard
+        title="Průměrné Hodnocení"
+        value={<span className={blurNumbers ? "filter blur-md" : ""}>4.9/5</span>}
+        change="Dle zpětné vazby"
+        changeType="positive"
+        icon={Star}
+        className="animate-in fade-in slide-in-from-bottom-2 duration-500 delay-350"
       />
     </div>
   )

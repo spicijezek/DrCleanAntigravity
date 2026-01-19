@@ -9,19 +9,25 @@ export const useClientDashboardData = () => {
     const { user } = useAuth();
     const queryClient = useQueryClient();
 
-    // 1. Fetch Client Profile
-    const { data: clientData, isLoading: isClientLoading } = useQuery({
-        queryKey: ['clientProfile', user?.id],
+    // 1. Fetch Client Profiles (Support multiple if duplicates exist)
+    const { data: clientResponse, isLoading: isClientLoading } = useQuery({
+        queryKey: ['clientProfiles', user?.id, user?.email],
         queryFn: async () => {
             if (!user) return null;
-            let { data: client, error } = await supabase
-                .from('clients')
-                .select('id, name, address, city, has_allergies, allergies_notes, has_pets, has_children, special_instructions')
-                .eq('user_id', user.id)
-                .maybeSingle();
 
-            if (!client) {
-                // Create client if not exists (migrated logic)
+            // Fetch all client records that match the user_id OR the email
+            const { data: clients, error } = await supabase
+                .from('clients')
+                .select('*')
+                .or(`user_id.eq.${user.id},email.eq.${user.email}`);
+
+            if (error) {
+                console.error("Error fetching client profiles:", error);
+                throw error;
+            }
+
+            // If no client found, create one
+            if (!clients || clients.length === 0) {
                 const name = user.user_metadata?.full_name as string || user.email || 'Klient';
                 const phone = user.user_metadata?.phone as string || null;
                 const { data: newClient, error: createError } = await supabase
@@ -33,32 +39,57 @@ export const useClientDashboardData = () => {
                         phone,
                         client_source: 'App'
                     }])
-                    .select('id, name, address, city, has_allergies, allergies_notes, has_pets, has_children, special_instructions')
+                    .select('*')
                     .single();
 
                 if (createError) throw createError;
-                client = newClient;
+                return {
+                    primary: newClient as ClientData,
+                    allIds: [newClient.id]
+                };
             }
-            return client as ClientData;
+
+            // Link any unlinked profiles with this email to this user_id
+            const unlinked = clients.filter(c => !c.user_id && c.email === user.email);
+            if (unlinked.length > 0) {
+                await Promise.all(unlinked.map(c =>
+                    supabase.from('clients').update({ user_id: user.id }).eq('id', c.id)
+                ));
+            }
+
+            // Return the "best" profile as primary, but keep all IDs for bookings search
+            const primary = clients.find(c => c.user_id === user.id) || clients[0];
+            return {
+                primary: primary as ClientData,
+                allIds: clients.map(c => c.id)
+            };
         },
         enabled: !!user,
     });
 
-    // 2. Fetch Bookings (Dependent on ClientData)
-    const { data: bookings, isLoading: isBookingsLoading } = useQuery({
-        queryKey: ['clientBookings', clientData?.id],
-        queryFn: async () => {
-            if (!clientData) return [];
+    const clientData = clientResponse?.primary;
+    const allClientIds = clientResponse?.allIds || [];
 
-            const { data: bookingsData } = await supabase
+    // 2. Fetch Bookings (Search by all associated Client IDs)
+    const { data: bookings, isLoading: isBookingsLoading } = useQuery({
+        queryKey: ['clientBookings', allClientIds],
+        queryFn: async () => {
+            if (allClientIds.length === 0) return [];
+
+            // Fetch bookings for ALL client IDs associated with this user
+            const { data: bookingsData, error: bookingsError } = await supabase
                 .from('bookings')
                 .select('*')
-                .eq('client_id', clientData.id)
+                .in('client_id', allClientIds)
                 .order('created_at', { ascending: false });
 
+            if (bookingsError) {
+                console.error("Error fetching bookings:", bookingsError);
+                return [];
+            }
             if (!bookingsData) return [];
 
-            // Enrich bookings with details (team, checklist, invoice)
+            // Enrich bookings with details
             const enrichedBookings = await Promise.all(bookingsData.map(async (booking) => {
                 let teamMembers = [];
                 let checklist = null;
@@ -87,12 +118,12 @@ export const useClientDashboardData = () => {
                 }
 
                 // Checklist
-                if ((booking.status === 'approved' || booking.status === 'completed') && booking.checklist_id) {
+                if (booking.checklist_id) {
                     const { data: linkedChecklist } = await supabase
                         .from('client_checklists')
                         .select('id, street, city, postal_code')
                         .eq('id', booking.checklist_id)
-                        .single();
+                        .maybeSingle();
 
                     if (linkedChecklist) {
                         const { data: rooms } = await supabase
@@ -108,22 +139,24 @@ export const useClientDashboardData = () => {
                 }
 
                 // Invoice
-                if (booking.status === 'completed' && booking.invoice_id) {
+                if (booking.invoice_id) {
                     const { data: invoiceData } = await supabase
                         .from('invoices')
-                        .select('id, invoice_number, total, status, pdf_path, variable_symbol, date_due, user_id')
+                        .select('*')
                         .eq('id', booking.invoice_id)
-                        .single();
+                        .maybeSingle();
 
-                    invoice = invoiceData;
+                    if (invoiceData) {
+                        invoice = invoiceData;
 
-                    if (invoiceData?.user_id) {
-                        const { data: companyData } = await supabase
-                            .from('company_info')
-                            .select('bank_account, bank_code, bank_name, iban')
-                            .eq('user_id', invoiceData.user_id)
-                            .maybeSingle();
-                        companyInfo = companyData;
+                        if (invoiceData.user_id) {
+                            const { data: companyData } = await supabase
+                                .from('company_info')
+                                .select('company_name, address, city, postal_code, ic, dic, logo_url, bank_account, bank_code, bank_name, iban, email, phone, website')
+                                .eq('user_id', invoiceData.user_id)
+                                .maybeSingle();
+                            companyInfo = companyData;
+                        }
                     }
                 }
 
@@ -148,38 +181,41 @@ export const useClientDashboardData = () => {
 
             return enrichedBookings;
         },
-        enabled: !!clientData,
+        enabled: allClientIds.length > 0,
     });
 
     // 3. Loyalty Credits
     const { data: loyaltyCredits } = useQuery({
-        queryKey: ['loyaltyCredits', clientData?.id],
+        queryKey: ['loyaltyCredits', allClientIds],
         queryFn: async () => {
-            if (!clientData) return null;
+            if (allClientIds.length === 0) return null;
+
+            // Sum credits from all associated accounts (rare but handles splitting)
             const { data } = await supabase
                 .from('loyalty_credits')
                 .select('current_credits')
-                .eq('client_id', clientData.id)
-                .single();
-            return data as LoyaltyCredits;
+                .in('client_id', allClientIds);
+
+            const total = data?.reduce((acc, curr) => acc + (curr.current_credits || 0), 0) || 0;
+            return { current_credits: total } as LoyaltyCredits;
         },
-        enabled: !!clientData,
+        enabled: allClientIds.length > 0,
     });
 
     // 4. Notifications
     const { data: notifications } = useQuery({
-        queryKey: ['notifications', clientData?.id],
+        queryKey: ['notifications', allClientIds],
         queryFn: async () => {
-            if (!clientData) return [];
+            if (allClientIds.length === 0) return [];
             const { data } = await supabase
                 .from('client_notifications')
                 .select('*')
-                .eq('client_id', clientData.id)
+                .in('client_id', allClientIds)
                 .order('created_at', { ascending: false })
-                .limit(5);
+                .limit(10);
             return data as Notification[];
         },
-        enabled: !!clientData,
+        enabled: allClientIds.length > 0,
     });
 
     // Mutations
@@ -199,6 +235,7 @@ export const useClientDashboardData = () => {
     const submitRating = useMutation({
         mutationFn: async ({ bookingId, rating, comment }: { bookingId: string, rating: number, comment: string }) => {
             if (!clientData) throw new Error("No client data");
+
             const { error } = await supabase
                 .from('booking_feedback')
                 .insert({
@@ -208,6 +245,7 @@ export const useClientDashboardData = () => {
                     comment: comment.trim() || null,
                     declined: false
                 });
+
             if (error) throw error;
 
             // Auto-mark as viewed
@@ -225,24 +263,40 @@ export const useClientDashboardData = () => {
         }
     });
 
+    const declineRating = useMutation({
+        mutationFn: async (bookingId: string) => {
+            if (!clientData) throw new Error("No client data");
+            const { error } = await supabase
+                .from('booking_feedback')
+                .insert({
+                    booking_id: bookingId,
+                    client_id: clientData.id,
+                    rating: 0,
+                    declined: true
+                });
+            if (error) throw error;
+        },
+        onSuccess: () => {
+            toast.info('Hodnocení bylo přeskočeno');
+            queryClient.invalidateQueries({ queryKey: ['clientBookings'] });
+        },
+        onError: () => {
+            toast.error('Nepodařilo se přeskočit hodnocení');
+        }
+    });
+
     // Real-time Subscriptions
     useEffect(() => {
-        if (!clientData) return;
+        if (allClientIds.length === 0) return;
 
         const channel = supabase
             .channel('dashboard-changes')
             .on('postgres_changes', {
                 event: '*',
                 schema: 'public',
-                table: 'bookings',
-                filter: `client_id=eq.${clientData.id}`
-            }, () => {
-                queryClient.invalidateQueries({ queryKey: ['clientBookings'] });
-            })
-            .on('postgres_changes', {
-                event: 'UPDATE',
-                schema: 'public',
-                table: 'checklist_rooms'
+                table: 'bookings'
+                // Filter by all IDs isn't directly supported in this complex way via filter param, 
+                // so we just listen to table changes and invalidate.
             }, () => {
                 queryClient.invalidateQueries({ queryKey: ['clientBookings'] });
             })
@@ -251,7 +305,7 @@ export const useClientDashboardData = () => {
         return () => {
             supabase.removeChannel(channel);
         };
-    }, [clientData, queryClient]);
+    }, [allClientIds, queryClient]);
 
     return {
         clientData,
@@ -260,6 +314,7 @@ export const useClientDashboardData = () => {
         notifications,
         isLoading: isClientLoading || isBookingsLoading,
         submitRating,
+        declineRating,
         markAsViewed,
     };
 };

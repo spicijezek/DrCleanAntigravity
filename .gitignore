@@ -12,6 +12,20 @@ dist
 dist-ssr
 *.local
 
+# Environment files (IMPORTANT: Never commit these!)
+.env
+.env.local
+.env.development
+.env.production
+.env.*.local
+
+# Backup files
+*.zip
+*.tar.gz
+DrClean_Backup_*
+temp_restore
+temp_restore_2
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

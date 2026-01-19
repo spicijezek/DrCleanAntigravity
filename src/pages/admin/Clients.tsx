@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -285,70 +286,74 @@ export default function Clients() {
     <Layout>
       <div className="container mx-auto p-4 sm:p-6 pb-24 space-y-6 max-w-7xl animate-in fade-in slide-in-from-bottom-4 duration-700">
         <AdminPageHeader
-          title="Clients"
-          description="Manage your client relationships"
+          title="Klienti"
+          description="Správa klientské základny a vztahů"
           action={
             <Button
               onClick={() => setShowAddForm(true)}
-              className="flex items-center gap-2 shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all rounded-xl"
+              className="flex items-center gap-2 shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all rounded-xl h-11 px-6 font-bold"
               variant="gradient"
             >
-              <Plus className="h-4 w-4" />
-              Add Client
+              <Plus className="h-5 w-5" />
+              Přidat klienta
             </Button>
           }
         />
 
         <div className="space-y-6">
-          <div className="bg-card/50 backdrop-blur-sm p-6 rounded-3xl border-0 shadow-lg space-y-6">
+          <div className="bg-card/50 backdrop-blur-xl p-6 rounded-[2rem] border border-white/10 shadow-xl space-y-6">
             {/* Period Selector and Sort Filter */}
-            <div className="filter-container flex flex-col lg:flex-row gap-4 items-start lg:items-center">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full lg:w-auto">
-                <TrendingUp className="h-4 w-4 text-primary" />
-                <span className="text-sm font-medium">Spending Period:</span>
+            <div className="filter-container flex flex-col lg:flex-row gap-6 items-start lg:items-center">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full lg:w-auto">
+                <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
+                  <TrendingUp className="h-4 w-4 text-primary" />
+                </div>
+                <span className="text-sm font-bold whitespace-nowrap">Období útrat:</span>
                 <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-                  <SelectTrigger className="w-full sm:w-48 mobile-button">
-                    <SelectValue placeholder="Select spending period..." />
+                  <SelectTrigger className="w-full sm:w-48 h-10 bg-background/50 border-0 shadow-sm rounded-xl">
+                    <SelectValue placeholder="Vyberte období..." />
                   </SelectTrigger>
-                  <SelectContent className="select-content">
-                    <SelectItem value="7">Last 7 days</SelectItem>
-                    <SelectItem value="30">Last 30 days</SelectItem>
-                    <SelectItem value="90">Last 3 months</SelectItem>
-                    <SelectItem value="180">Last 6 months</SelectItem>
-                    <SelectItem value="365">Past 365 days</SelectItem>
-                    <SelectItem value="total">Total</SelectItem>
-                    <SelectItem value="custom">Custom Range</SelectItem>
+                  <SelectContent className="rounded-xl border-primary/20">
+                    <SelectItem value="7">Posledních 7 dní</SelectItem>
+                    <SelectItem value="30">Posledních 30 dní</SelectItem>
+                    <SelectItem value="90">Poslední 3 měsíce</SelectItem>
+                    <SelectItem value="180">Posledních 6 měsíců</SelectItem>
+                    <SelectItem value="365">Poslední rok</SelectItem>
+                    <SelectItem value="total">Celkově</SelectItem>
+                    <SelectItem value="custom">Vlastní rozmezí</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full lg:w-auto">
-                <span className="text-sm font-medium">Source:</span>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full lg:w-auto">
+                <span className="text-sm font-bold whitespace-nowrap">Zdroj:</span>
                 <Select value={sourceFilter} onValueChange={setSourceFilter}>
-                  <SelectTrigger className="w-full sm:w-32 mobile-button">
-                    <SelectValue placeholder="All" />
+                  <SelectTrigger className="w-full sm:w-32 h-10 bg-background/50 border-0 shadow-sm rounded-xl">
+                    <SelectValue placeholder="Vše" />
                   </SelectTrigger>
-                  <SelectContent className="select-content">
-                    <SelectItem value="all">All</SelectItem>
-                    <SelectItem value="App">App</SelectItem>
+                  <SelectContent className="rounded-xl border-primary/20">
+                    <SelectItem value="all">Vše</SelectItem>
+                    <SelectItem value="App">Aplikace</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full lg:w-auto">
-                <ArrowUpDown className="h-4 w-4 text-primary" />
-                <span className="text-sm font-medium">Sort by:</span>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full lg:w-auto">
+                <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
+                  <ArrowUpDown className="h-4 w-4 text-primary" />
+                </div>
+                <span className="text-sm font-bold whitespace-nowrap">Řadit dle:</span>
                 <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger className="w-full sm:w-48 mobile-button">
-                    <SelectValue placeholder="Sort by..." />
+                  <SelectTrigger className="w-full sm:w-48 h-10 bg-background/50 border-0 shadow-sm rounded-xl">
+                    <SelectValue placeholder="Řadit dle..." />
                   </SelectTrigger>
-                  <SelectContent className="select-content">
-                    <SelectItem value="newest">Newest</SelectItem>
-                    <SelectItem value="oldest">Oldest</SelectItem>
-                    <SelectItem value="most_spent">Most Spent</SelectItem>
-                    <SelectItem value="alphabetical">Alphabetical</SelectItem>
-                    <SelectItem value="company">Company</SelectItem>
-                    <SelectItem value="person">Person</SelectItem>
+                  <SelectContent className="rounded-xl border-primary/20">
+                    <SelectItem value="newest">Nejnovější</SelectItem>
+                    <SelectItem value="oldest">Nejstarší</SelectItem>
+                    <SelectItem value="most_spent">Nejvíce utraceno</SelectItem>
+                    <SelectItem value="alphabetical">Abecedně</SelectItem>
+                    <SelectItem value="company">Firmy</SelectItem>
+                    <SelectItem value="person">Fyzické osoby</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -356,27 +361,30 @@ export default function Clients() {
 
             {/* Custom Date Range - Only show when custom is selected */}
             {selectedPeriod === 'custom' && (
-              <div className="bg-muted/30 p-4 rounded-2xl">
-                <h3 className="text-sm font-medium mb-2">Custom Date Range</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="bg-primary/5 p-6 rounded-2xl border border-primary/10 animate-in fade-in zoom-in-95 duration-300">
+                <h3 className="text-sm font-bold mb-4 flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-primary" />
+                  Vlastní rozmezí datumů
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label htmlFor="customStartDate" className="text-sm font-medium">From:</Label>
+                    <Label htmlFor="customStartDate" className="text-xs font-bold ml-1 uppercase text-muted-foreground">Od:</Label>
                     <Input
                       id="customStartDate"
                       type="date"
                       value={customStartDate}
                       onChange={(e) => setCustomStartDate(e.target.value)}
-                      className="mobile-button"
+                      className="h-11 bg-background/50 border-0 shadow-sm rounded-xl focus:ring-2 ring-primary/20"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="customEndDate" className="text-sm font-medium">To:</Label>
+                    <Label htmlFor="customEndDate" className="text-xs font-bold ml-1 uppercase text-muted-foreground">Do:</Label>
                     <Input
                       id="customEndDate"
                       type="date"
                       value={customEndDate}
                       onChange={(e) => setCustomEndDate(e.target.value)}
-                      className="mobile-button"
+                      className="h-11 bg-background/50 border-0 shadow-sm rounded-xl focus:ring-2 ring-primary/20"
                     />
                   </div>
                 </div>
@@ -386,87 +394,96 @@ export default function Clients() {
 
             {/* Search */}
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5" />
               <Input
-                placeholder="Search clients..."
-                className="pl-10 mobile-button w-full"
+                placeholder="Hledat klienty dle jména, e-mailu nebo telefonu..."
+                className="pl-12 h-12 bg-background shadow-inner border-0 rounded-2xl focus-visible:ring-primary/20 text-base"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
 
             {/* Period Spending Summary */}
-            <div className="bg-primary/5 p-4 rounded-2xl border border-primary/10">
-              <h3 className="text-sm font-semibold text-primary mb-1">Period Spending Summary</h3>
-              <p className="text-xs text-muted-foreground">
-                Total spent by all clients in selected period:
-                <span className="font-bold text-primary ml-1 text-sm">
-                  {filteredAndSortedClients.reduce((sum, client) => sum + client.period_spent, 0).toLocaleString('cs-CZ')} CZK
+            <div className="bg-primary/5 p-5 rounded-2xl border border-primary/10 flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-bold text-primary mb-1 uppercase tracking-wider">Souhrn útrat za období</h3>
+                <p className="text-xs text-muted-foreground font-medium">
+                  Celkem utraceno všemi klienty ve vybraném období
+                </p>
+              </div>
+              <div className="text-right">
+                <span className="text-2xl font-black text-primary">
+                  {filteredAndSortedClients.reduce((sum, client) => sum + (client.period_spent || 0), 0).toLocaleString('cs-CZ')} CZK
                 </span>
-              </p>
+              </div>
             </div>
           </div>
 
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mt-4">
             {filteredAndSortedClients.map((client) => (
-              <Card key={client.id} className="bg-card/50 backdrop-blur-sm border-0 shadow-lg rounded-3xl overflow-hidden hover:shadow-xl transition-all duration-300 group">
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <User className="h-5 w-5 text-primary" />
-                      {client.name}
+              <Card key={client.id} className="bg-card/50 backdrop-blur-xl border-0 shadow-xl rounded-[2rem] overflow-hidden hover:shadow-2xl transition-all duration-500 group border border-white/10">
+                <CardHeader className="p-6 pb-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <User className="h-5 w-5 text-primary" />
+                      </div>
+                      <CardTitle className="text-lg font-bold tracking-tight group-hover:text-primary transition-colors">{client.name}</CardTitle>
                     </div>
-                    <Badge variant={client.client_type === 'company' ? 'default' : 'secondary'}>
-                      {client.client_type === 'company' ? 'C' : 'P'}
+                    <Badge className={cn(
+                      "rounded-lg px-2 py-0.5 text-[10px] uppercase font-bold border-0",
+                      client.client_type === 'company' ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"
+                    )}>
+                      {client.client_type === 'company' ? 'Firma' : 'Osoba'}
                     </Badge>
-                  </CardTitle>
+                  </div>
                 </CardHeader>
-                <CardContent className="space-y-3 min-h-[120px]">
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Mail className="h-4 w-4" />
-                      {client.email || 'No email provided'}
+                <CardContent className="p-6 pt-0 space-y-4">
+                  <div className="space-y-3 bg-muted/20 p-4 rounded-3xl border border-white/5 min-h-[140px]">
+                    <div className="flex items-center gap-3 text-sm text-muted-foreground font-medium group-hover:text-foreground transition-colors">
+                      <Mail className="h-4 w-4 text-primary/70" />
+                      <span className="truncate">{client.email || 'E-mail neuveden'}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Phone className="h-4 w-4" />
-                      {client.phone || 'No phone provided'}
+                    <div className="flex items-center gap-3 text-sm text-muted-foreground font-medium group-hover:text-foreground transition-colors">
+                      <Phone className="h-4 w-4 text-primary/70" />
+                      <span>{client.phone || 'Telefon neuveden'}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <MapPin className="h-4 w-4" />
-                      {client.address ? `${client.address}${client.city ? `, ${client.city}` : ''}${client.postal_code ? ` ${client.postal_code}` : ''}` : 'No address provided'}
+                    <div className="flex items-start gap-3 text-sm text-muted-foreground font-medium group-hover:text-foreground transition-colors">
+                      <MapPin className="h-4 w-4 text-primary/70 mt-0.5" />
+                      <span className="leading-snug">{client.address ? `${client.address}${client.city ? `, ${client.city}` : ''}${client.postal_code ? ` ${client.postal_code}` : ''}` : 'Adresa neuvedena'}</span>
                     </div>
                   </div>
-                  <div className="flex flex-col gap-2 pt-4 border-t">
-                    <div className="flex items-center justify-between">
-                      <Badge variant="secondary" className="bg-green-100 text-green-800 hover:bg-green-200">
-                        Total: {client.total_spent?.toLocaleString('cs-CZ') || 0} CZK
-                      </Badge>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-emerald-500/5 border border-emerald-500/10 p-3 rounded-2xl">
+                      <p className="text-[10px] uppercase font-bold text-emerald-600 mb-1">Celkem útrata</p>
+                      <p className="text-sm font-black text-emerald-700">{client.total_spent?.toLocaleString('cs-CZ') || 0} CZK</p>
                     </div>
-                    <div className="flex items-center justify-between">
-                      <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                        {selectedPeriod === 'total' ? 'Total' : selectedPeriod === 'custom' ? 'Custom' : `${selectedPeriod}d`}: {client.period_spent?.toLocaleString('cs-CZ') || 0} CZK
-                      </Badge>
+                    <div className="bg-blue-500/5 border border-blue-500/10 p-3 rounded-2xl">
+                      <p className="text-[10px] uppercase font-bold text-blue-600 mb-1">Za období</p>
+                      <p className="text-sm font-black text-blue-700">{client.period_spent?.toLocaleString('cs-CZ') || 0} CZK</p>
                     </div>
-                    <div className="flex gap-2 mt-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleEditClient(client)}
-                        className="flex-1"
-                      >
-                        <Edit className="h-4 w-4 mr-1" />
-                        Edit
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => handleDeleteClient(client.id)}
-                        className="flex-1"
-                      >
-                        <Trash2 className="h-4 w-4 mr-1" />
-                        Remove
-                      </Button>
-                    </div>
+                  </div>
+
+                  <div className="flex gap-2 pt-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleEditClient(client)}
+                      className="flex-1 rounded-xl h-10 border-primary/20 hover:bg-primary/5 hover:text-primary transition-all font-bold"
+                    >
+                      <Edit className="h-4 w-4 mr-2" />
+                      Upravit
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDeleteClient(client.id)}
+                      className="flex-1 rounded-xl h-10 hover:bg-red-50 hover:text-red-600 text-muted-foreground transition-all font-medium"
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Smazat
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
@@ -474,16 +491,18 @@ export default function Clients() {
           </div>
 
           {filteredAndSortedClients.length === 0 && !loading && (
-            <div className="text-center py-12">
-              <User className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-foreground mb-2">No clients found</h3>
-              <p className="text-muted-foreground mb-4">
-                {searchTerm ? 'Try adjusting your search terms.' : 'Start by adding your first client.'}
+            <div className="text-center py-24 bg-card/30 backdrop-blur-xl rounded-[2.5rem] border-2 border-dashed border-primary/10 max-w-2xl mx-auto shadow-inner">
+              <div className="w-20 h-20 bg-primary/5 rounded-3xl flex items-center justify-center mx-auto mb-6">
+                <User className="h-10 w-10 text-primary opacity-40" />
+              </div>
+              <h3 className="text-2xl font-bold text-foreground mb-2">Žádní klienti</h3>
+              <p className="text-muted-foreground mb-8 max-w-sm mx-auto text-sm leading-relaxed">
+                {searchTerm ? 'Zkuste upravit hledaný výraz.' : 'Začněte přidáním prvního klienta.'}
               </p>
               {!searchTerm && (
-                <Button onClick={() => setShowAddForm(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Client
+                <Button onClick={() => setShowAddForm(true)} className="rounded-2xl shadow-xl h-12 px-8 bg-primary hover:bg-primary/90 text-white font-bold transition-all hover:scale-105 active:scale-95">
+                  <Plus className="h-5 w-5 mr-2" />
+                  Přidat klienta
                 </Button>
               )}
             </div>

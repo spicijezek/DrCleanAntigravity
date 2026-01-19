@@ -58,7 +58,7 @@ export function EditTeamMemberForm({ member, onClose, onMemberUpdated }: EditTea
         title: 'Success',
         description: 'Team member updated successfully',
       });
-      
+
       onMemberUpdated();
     } catch (error: any) {
       toast({
@@ -153,7 +153,7 @@ export function EditTeamMemberForm({ member, onClose, onMemberUpdated }: EditTea
                 />
               </div>
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="address">Address</Label>
               <Input

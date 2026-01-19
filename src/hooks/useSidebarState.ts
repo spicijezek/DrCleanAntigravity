@@ -3,25 +3,19 @@ import { useLocation } from 'react-router-dom';
 
 export function useSidebarState() {
   const location = useLocation();
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
   const [isHovered, setIsHovered] = useState(false);
 
   // Set sidebar state based on current route
   useEffect(() => {
-    // Only keep sidebar open on dashboard (/)
-    if (location.pathname === '/') {
-      setCollapsed(false);
-    } else {
-      setCollapsed(true);
-    }
+    // Defaultly always closed
+    setCollapsed(true);
   }, [location.pathname]);
 
   const toggleCollapsed = () => setCollapsed(!collapsed);
 
   const handleMouseEnter = () => {
-    if (location.pathname !== '/') {
-      setIsHovered(true);
-    }
+    setIsHovered(true);
   };
 
   const handleMouseLeave = () => {

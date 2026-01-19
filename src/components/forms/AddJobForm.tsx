@@ -11,6 +11,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { ModalOverlay } from '@/components/ui/modal-overlay';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { Users } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface AddJobFormProps {
   onClose: () => void;
@@ -59,7 +62,7 @@ export function AddJobForm({ onClose, onJobAdded }: AddJobFormProps) {
     scheduled_date: '',
     duration_hours: '',
     revenue: '',
-    
+
     supplies_expense_total: '',
     transport_expense_total: '',
     client_id: '',
@@ -107,7 +110,7 @@ export function AddJobForm({ onClose, onJobAdded }: AddJobFormProps) {
         .from('clients')
         .select('id, name, address, city, postal_code')
         .order('name');
-      
+
       if (error) throw error;
       setClients(data || []);
     } catch (error: any) {
@@ -122,7 +125,7 @@ export function AddJobForm({ onClose, onJobAdded }: AddJobFormProps) {
         .select('id, name')
         .eq('is_active', true)
         .order('name');
-      
+
       if (error) throw error;
       setTeamMembers(data || []);
     } catch (error: any) {
@@ -208,33 +211,33 @@ export function AddJobForm({ onClose, onJobAdded }: AddJobFormProps) {
 
   const fetchCompanyFromAres = async (ico: string) => {
     if (!ico || ico.length < 8) return;
-    
+
     setFetchingAres(true);
     try {
       const response = await fetch(`https://ares.gov.cz/ekonomicke-subjekty-v-be/rest/ekonomicke-subjekty/${ico}`);
-      
+
       if (!response.ok) throw new Error('Company not found');
-      
+
       const data = await response.json();
-      
+
       // Extract company data from ARES response
       const companyName = data.obchodniJmeno || '';
       const legalName = data.pravniForma?.nazev || '';
       const dic = data.dic || '';
-      
+
       // Extract address
       const sidlo = data.sidlo;
       let address = '';
       let city = '';
       let postalCode = '';
-      
+
       if (sidlo) {
         const street = sidlo.nazevUlice || '';
         const houseNumber = sidlo.cisloDomovni || '';
         const orientationNumber = sidlo.cisloOrientacni || '';
         city = sidlo.nazevObce || '';
         postalCode = sidlo.psc?.toString() || '';
-        
+
         address = [street, houseNumber, orientationNumber].filter(Boolean).join(' ');
       }
 
@@ -266,13 +269,13 @@ export function AddJobForm({ onClose, onJobAdded }: AddJobFormProps) {
     }
   };
 
-const toUTCFromLocal = (dt: string) => {
-  if (!dt) return null as any;
-  // Convert local datetime string to UTC ISO without double-applying timezone offset
-  return new Date(dt).toISOString();
-};
+  const toUTCFromLocal = (dt: string) => {
+    if (!dt) return null as any;
+    // Convert local datetime string to UTC ISO without double-applying timezone offset
+    return new Date(dt).toISOString();
+  };
 
-const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
 
@@ -307,9 +310,9 @@ const handleSubmit = async (e: React.FormEvent) => {
     setLoading(true);
     try {
       console.log('Starting job creation...', formData);
-      
+
       let clientId = formData.client_id;
-      
+
       // Create new client if needed
       if (isCreatingNewClient) {
         const clientData = {
@@ -320,35 +323,35 @@ const handleSubmit = async (e: React.FormEvent) => {
           user_id: user.id,
           total_spent: 0,
         };
-        
+
         const { data: newClient, error: clientError } = await supabase
           .from('clients')
           .insert(clientData)
           .select()
           .single();
-          
+
         if (clientError) throw clientError;
         clientId = newClient.id;
-        
+
         // Auto-populate address from client data
         const clientAddress = [newClientData.address, newClientData.city, newClientData.postal_code]
           .filter(Boolean)
           .join(', ');
-        
+
         setFormData(prev => ({ ...prev, address: clientAddress }));
       }
-      
+
       // Generate job number
       const { data: jobNumberData, error: jobNumberError } = await supabase
         .rpc('generate_job_number');
-      
+
       console.log('Job number generated:', jobNumberData, jobNumberError);
-      
+
       if (jobNumberError) throw jobNumberError;
-      
+
       // Use first category as primary category (required field)
       const primaryCategory = selectedCategories[0] as 'home_cleaning' | 'commercial_cleaning' | 'window_cleaning' | 'post_construction_cleaning' | 'upholstery_cleaning';
-      
+
       const jobData = {
         title: formData.address || 'Job Address',
         description: formData.description,
@@ -367,9 +370,9 @@ const handleSubmit = async (e: React.FormEvent) => {
         status: 'scheduled',
         payment_type: formData.payment_type,
       };
-      
+
       console.log('Job data to insert:', jobData);
-      
+
       const { data: insertedJob, error } = await supabase
         .from('jobs')
         .insert(jobData)
@@ -398,11 +401,11 @@ const handleSubmit = async (e: React.FormEvent) => {
 
       toast({
         title: 'Success',
-        description: isCreatingNewClient 
+        description: isCreatingNewClient
           ? 'Job and client added successfully'
           : 'Job added successfully',
       });
-      
+
       onJobAdded();
     } catch (error: any) {
       console.error('Job creation error:', error);
@@ -428,7 +431,7 @@ const handleSubmit = async (e: React.FormEvent) => {
       ...prev,
       [name]: value,
     }));
-    
+
     // Auto-populate address when client is selected
     if (name === 'client_id' && value) {
       const selectedClient = clients.find(c => c.id === value);
@@ -438,7 +441,7 @@ const handleSubmit = async (e: React.FormEvent) => {
           .join(', ');
         setFormData(prev => ({ ...prev, address: fullAddress }));
       }
-      
+
       // Fetch last job data for the selected client
       fetchLastJobForClient(value);
     }
@@ -463,7 +466,7 @@ const handleSubmit = async (e: React.FormEvent) => {
       const isSelected = prev.includes(teamMemberId);
       if (isSelected) {
         // Remove from expenses when unchecked
-        setTeamMemberExpenses(expenses => 
+        setTeamMemberExpenses(expenses =>
           expenses.filter(expense => expense.teamMemberId !== teamMemberId)
         );
         return prev.filter(id => id !== teamMemberId);
@@ -490,7 +493,7 @@ const handleSubmit = async (e: React.FormEvent) => {
 
   // Calculate total expenses
   const calculateTotalExpenses = () => {
-    const cleanerExpensesTotal = teamMemberExpenses.reduce((sum, expense) => 
+    const cleanerExpensesTotal = teamMemberExpenses.reduce((sum, expense) =>
       sum + (parseFloat(expense.cleanerExpense) || 0), 0
     );
     const suppliesTotal = parseFloat(formData.supplies_expense_total) || 0;
@@ -500,543 +503,392 @@ const handleSubmit = async (e: React.FormEvent) => {
 
   return (
     <ModalOverlay>
-      <Card className="w-full max-w-4xl max-h-[90vh] overflow-y-auto border-0 shadow-none rounded-lg m-0 bg-background">
-        <CardHeader className="flex flex-row items-center justify-between relative">
-          <CardTitle className="pr-8">Add New Job</CardTitle>
-          <Button variant="ghost" size="icon" onClick={onClose} className="absolute top-2 right-2">
-            <X className="h-4 w-4" />
-          </Button>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="address">Address *</Label>
-                <Input
-                  id="address"
-                  name="address"
-                  value={formData.address}
-                  onChange={handleChange}
-                  placeholder="Job address"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="category">Categories *</Label>
-                <MultiSelectDropdown
-                  items={[
-                    { value: 'home_cleaning', label: 'Home Cleaning' },
-                    { value: 'commercial_cleaning', label: 'Commercial Cleaning' },
-                    { value: 'window_cleaning', label: 'Window Cleaning' },
-                    { value: 'post_construction_cleaning', label: 'Post Construction Cleaning' },
-                    { value: 'upholstery_cleaning', label: 'Upholstery Cleaning' },
-                  ]}
-                  selected={selectedCategories}
-                  onChange={setSelectedCategories}
-                  placeholder="Select categories..."
-                />
-              </div>
-              
-              {/* Client Selection */}
-              <div className="space-y-2 md:col-span-2">
-                <Label>Client *</Label>
-                <div className="flex gap-2 mb-2">
-                  <Button
-                    type="button"
-                    variant={!isCreatingNewClient ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setIsCreatingNewClient(false)}
-                  >
-                    Select Existing
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={isCreatingNewClient ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setIsCreatingNewClient(true)}
-                  >
-                    Add New Client
-                  </Button>
+      <div className="w-full max-w-4xl px-4 py-8 pointer-events-none">
+        <Card className="pointer-events-auto border-0 shadow-2xl rounded-[2.5rem] overflow-hidden bg-background/95 backdrop-blur-xl relative">
+          <div className="absolute left-0 top-0 bottom-0 w-2 bg-gradient-to-b from-primary to-primary/60" />
+
+          <CardHeader className="flex flex-row items-center justify-between p-8 pb-4">
+            <CardTitle className="text-2xl font-bold tracking-tight">Přidat novou zakázku</CardTitle>
+            <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full hover:bg-muted/50 transition-colors">
+              <X className="h-5 w-5" />
+            </Button>
+          </CardHeader>
+          <CardContent className="p-8 pt-4">
+            <form onSubmit={handleSubmit} className="space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="address" className="text-sm font-semibold">Adresa úklidu *</Label>
+                  <Input
+                    id="address"
+                    name="address"
+                    value={formData.address}
+                    onChange={handleChange}
+                    placeholder="Ulice a č.p., Město"
+                    required
+                    className="rounded-xl border-primary/20 focus:border-primary focus:ring-primary/20 h-11"
+                  />
                 </div>
-                
-                {!isCreatingNewClient ? (
-                  <Select value={formData.client_id} onValueChange={(value) => {
-                    handleSelectChange('client_id', value);
-                    // Auto-populate address from selected client
-                    const client = clients.find(c => c.id === value);
-                    if (client) {
-                      const clientAddress = [client.address, client.city, client.postal_code]
-                        .filter(Boolean)
-                        .join(', ');
-                      setFormData(prev => ({ ...prev, address: clientAddress || prev.address }));
-                    }
-                    // Fetch last job data for this client
-                    fetchLastJobForClient(value);
-                  }}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select existing client" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {clients.map((client) => (
-                        <SelectItem key={client.id} value={client.id}>
-                          {client.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                ) : (
-                  <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label>Client Type</Label>
-                        <Select value={newClientData.client_type} onValueChange={(value) => handleNewClientSelectChange('client_type', value)}>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="person">Person</SelectItem>
-                            <SelectItem value="company">Company</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      
-                      {newClientData.client_type === 'person' ? (
-                        <>
-                          <div className="space-y-2">
-                            <Label htmlFor="newClientName">Name *</Label>
-                            <Input
-                              id="newClientName"
-                              name="name"
-                              value={newClientData.name}
-                              onChange={handleNewClientChange}
-                              placeholder="Full Name"
-                              required
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="newClientDateOfBirth">Date of Birth</Label>
-                            <Input
-                              id="newClientDateOfBirth"
-                              name="date_of_birth"
-                              type="date"
-                              value={newClientData.date_of_birth}
-                              onChange={handleNewClientChange}
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="newClientAddress">Address</Label>
-                            <Input
-                              id="newClientAddress"
-                              name="address"
-                              value={newClientData.address}
-                              onChange={(e) => {
-                                handleNewClientChange(e);
-                                const fullAddress = [e.target.value, newClientData.city, newClientData.postal_code]
-                                  .filter(Boolean)
-                                  .join(', ');
-                                setFormData(prev => ({ ...prev, address: fullAddress || e.target.value }));
-                              }}
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="newClientCity">City</Label>
-                            <Input
-                              id="newClientCity"
-                              name="city"
-                              value={newClientData.city}
-                              onChange={(e) => {
-                                handleNewClientChange(e);
-                                const fullAddress = [newClientData.address, e.target.value, newClientData.postal_code]
-                                  .filter(Boolean)
-                                  .join(', ');
-                                setFormData(prev => ({ ...prev, address: fullAddress }));
-                              }}
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="newClientPostalCode">Postal Code</Label>
-                            <Input
-                              id="newClientPostalCode"
-                              name="postal_code"
-                              value={newClientData.postal_code}
-                              onChange={(e) => {
-                                handleNewClientChange(e);
-                                const fullAddress = [newClientData.address, newClientData.city, e.target.value]
-                                  .filter(Boolean)
-                                  .join(', ');
-                                setFormData(prev => ({ ...prev, address: fullAddress }));
-                              }}
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="newClientEmail">Email</Label>
-                            <Input
-                              id="newClientEmail"
-                              name="email"
-                              type="email"
-                              value={newClientData.email}
-                              onChange={handleNewClientChange}
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="newClientPhone">Phone (+420)</Label>
-                            <Input
-                              id="newClientPhone"
-                              name="phone"
-                              value={newClientData.phone}
-                              onChange={handleNewClientChange}
-                              placeholder="+420 123 456 789"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="newClientSource">Client Source</Label>
-                            <Input
-                              id="newClientSource"
-                              name="client_source"
-                              value={newClientData.client_source}
-                              onChange={handleNewClientChange}
-                              placeholder="e.g., Google, Recommendation, etc."
-                            />
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          {/* IČO field first */}
-                          <div className="space-y-2">
-                            <Label htmlFor="newClientCompanyId">IČO (Company ID) *</Label>
-                            <Input
-                              id="newClientCompanyId"
-                              name="company_id"
-                              value={newClientData.company_id}
-                              onChange={(e) => {
-                                handleNewClientChange(e);
-                                if (e.target.value.length === 8) {
-                                  fetchCompanyFromAres(e.target.value);
-                                }
-                              }}
-                              placeholder="Enter 8-digit IČO"
-                              maxLength={8}
-                              disabled={fetchingAres}
-                            />
-                          </div>
-                          {/* Autofilled fields */}
-                          <div className="space-y-2">
-                            <Label htmlFor="newClientName">Company Name *</Label>
-                            <Input
-                              id="newClientName"
-                              name="name"
-                              value={newClientData.name}
-                              onChange={handleNewClientChange}
-                              placeholder="Autofilled from ARES"
-                              required
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="newClientAddress">Address</Label>
-                            <Input
-                              id="newClientAddress"
-                              name="address"
-                              value={newClientData.address}
-                              onChange={(e) => {
-                                handleNewClientChange(e);
-                                const fullAddress = [e.target.value, newClientData.city, newClientData.postal_code]
-                                  .filter(Boolean)
-                                  .join(', ');
-                                setFormData(prev => ({ ...prev, address: fullAddress || e.target.value }));
-                              }}
-                              placeholder="Autofilled from ARES"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="newClientCity">City</Label>
-                            <Input
-                              id="newClientCity"
-                              name="city"
-                              value={newClientData.city}
-                              onChange={(e) => {
-                                handleNewClientChange(e);
-                                const fullAddress = [newClientData.address, e.target.value, newClientData.postal_code]
-                                  .filter(Boolean)
-                                  .join(', ');
-                                setFormData(prev => ({ ...prev, address: fullAddress }));
-                              }}
-                              placeholder="Autofilled from ARES"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="newClientPostalCode">Postal Code</Label>
-                            <Input
-                              id="newClientPostalCode"
-                              name="postal_code"
-                              value={newClientData.postal_code}
-                              onChange={(e) => {
-                                handleNewClientChange(e);
-                                const fullAddress = [newClientData.address, newClientData.city, e.target.value]
-                                  .filter(Boolean)
-                                  .join(', ');
-                                setFormData(prev => ({ ...prev, address: fullAddress }));
-                              }}
-                              placeholder="Autofilled from ARES"
-                            />
-                          </div>
-                          {/* Non-autofilled fields below */}
-                          <div className="space-y-2">
-                            <Label htmlFor="newClientEmail">Email</Label>
-                            <Input
-                              id="newClientEmail"
-                              name="email"
-                              type="email"
-                              value={newClientData.email}
-                              onChange={handleNewClientChange}
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="newClientPhone">Phone (+420)</Label>
-                            <Input
-                              id="newClientPhone"
-                              name="phone"
-                              value={newClientData.phone}
-                              onChange={handleNewClientChange}
-                              placeholder="+420 123 456 789"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="newClientSource">Client Source</Label>
-                            <Input
-                              id="newClientSource"
-                              name="client_source"
-                              value={newClientData.client_source}
-                              onChange={handleNewClientChange}
-                              placeholder="e.g., Google, Recommendation, etc."
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="newClientReliablePerson">Contact Person</Label>
-                            <Input
-                              id="newClientReliablePerson"
-                              name="reliable_person"
-                              value={newClientData.reliable_person}
-                              onChange={handleNewClientChange}
-                              placeholder="Responsible person name"
-                            />
-                          </div>
-                        </>
-                      )}
-                      <div className="space-y-2">
-                        <Label htmlFor="newClientDateAdded">Date Added</Label>
-                        <Input
-                          id="newClientDateAdded"
-                          name="date_added"
-                          type="date"
-                          value={newClientData.date_added}
-                          onChange={handleNewClientChange}
-                          required
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="newClientNotes">Notes</Label>
-                      <Textarea
-                        id="newClientNotes"
-                        name="notes"
-                        value={newClientData.notes}
-                        onChange={handleNewClientChange}
-                        rows={3}
-                      />
-                    </div>
+                <div className="space-y-2">
+                  <Label htmlFor="category" className="text-sm font-semibold">Kategorie úklidu *</Label>
+                  <MultiSelectDropdown
+                    items={[
+                      { value: 'home_cleaning', label: 'Úklid domácnosti' },
+                      { value: 'commercial_cleaning', label: 'Úklid firem' },
+                      { value: 'window_cleaning', label: 'Mytí oken' },
+                      { value: 'post_construction_cleaning', label: 'Post-stavební úklid' },
+                      { value: 'upholstery_cleaning', label: 'Čištění čalounění' },
+                    ]}
+                    selected={selectedCategories}
+                    onChange={setSelectedCategories}
+                    placeholder="Vyberte kategorie..."
+                  />
+                </div>
+
+                <div className="space-y-2 md:col-span-2">
+                  <Label className="text-sm font-bold uppercase tracking-wider text-muted-foreground/70">Zákazník *</Label>
+                  <div className="flex gap-3 mb-4">
+                    <Button
+                      type="button"
+                      variant={!isCreatingNewClient ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setIsCreatingNewClient(false)}
+                      className="rounded-full px-6 transition-all"
+                    >
+                      Vybrat existujícího
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={isCreatingNewClient ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setIsCreatingNewClient(true)}
+                      className="rounded-full px-6 transition-all"
+                    >
+                      Přidat nového klienta
+                    </Button>
                   </div>
-                )}
+
+                  {!isCreatingNewClient ? (
+                    <Select value={formData.client_id} onValueChange={(value) => {
+                      handleSelectChange('client_id', value);
+                      const client = clients.find(c => c.id === value);
+                      if (client) {
+                        const clientAddress = [client.address, client.city, client.postal_code]
+                          .filter(Boolean)
+                          .join(', ');
+                        setFormData(prev => ({ ...prev, address: clientAddress || prev.address }));
+                      }
+                      fetchLastJobForClient(value);
+                    }}>
+                      <SelectTrigger className="rounded-xl border-primary/20 focus:border-primary h-11">
+                        <SelectValue placeholder="Vyberte klienta ze seznamu" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {clients.map((client) => (
+                          <SelectItem key={client.id} value={client.id}>
+                            {client.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <div className="space-y-5 p-6 border rounded-3xl bg-primary/5 border-primary/10 animate-in fade-in zoom-in-95 duration-300">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div className="space-y-2">
+                          <Label className="text-sm font-semibold">Typ klienta</Label>
+                          <Select value={newClientData.client_type} onValueChange={(value) => handleNewClientSelectChange('client_type', value)}>
+                            <SelectTrigger className="rounded-xl bg-background border-primary/10">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="person">Fyzická osoba</SelectItem>
+                              <SelectItem value="company">Firma</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {newClientData.client_type === 'person' ? (
+                          <>
+                            <div className="space-y-2">
+                              <Label htmlFor="newClientName" className="text-sm font-semibold">Jméno *</Label>
+                              <Input
+                                id="newClientName"
+                                name="name"
+                                value={newClientData.name}
+                                onChange={handleNewClientChange}
+                                placeholder="Jan Novák"
+                                required
+                                className="rounded-xl h-11 border-primary/10"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="newClientEmail" className="text-sm font-semibold">Email</Label>
+                              <Input
+                                id="newClientEmail"
+                                name="email"
+                                type="email"
+                                value={newClientData.email}
+                                onChange={handleNewClientChange}
+                                placeholder="email@priklad.cz"
+                                className="rounded-xl h-11 border-primary/10"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="newClientPhone" className="text-sm font-semibold">Telefon</Label>
+                              <Input
+                                id="newClientPhone"
+                                name="phone"
+                                value={newClientData.phone}
+                                onChange={handleNewClientChange}
+                                placeholder="+420..."
+                                className="rounded-xl h-11 border-primary/10"
+                              />
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="space-y-2">
+                              <Label htmlFor="newClientCompanyId" className="text-sm font-semibold">IČO *</Label>
+                              <div className="relative">
+                                <Input
+                                  id="newClientCompanyId"
+                                  name="company_id"
+                                  value={newClientData.company_id}
+                                  onChange={(e) => {
+                                    handleNewClientChange(e);
+                                    if (e.target.value.length === 8) {
+                                      fetchCompanyFromAres(e.target.value);
+                                    }
+                                  }}
+                                  placeholder="8místné IČO"
+                                  maxLength={8}
+                                  disabled={fetchingAres}
+                                  className="rounded-xl h-11 border-primary/10"
+                                />
+                                {fetchingAres && <div className="absolute right-3 top-3 animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent" />}
+                              </div>
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="newClientName" className="text-sm font-semibold">Název firmy *</Label>
+                              <Input
+                                id="newClientName"
+                                name="name"
+                                value={newClientData.name}
+                                onChange={handleNewClientChange}
+                                placeholder="Autofill z ARES"
+                                required
+                                className="rounded-xl h-11 border-primary/10"
+                              />
+                            </div>
+                          </>
+                        )}
+                        <div className="space-y-2 md:col-span-2">
+                          <Label htmlFor="newClientAddress" className="text-sm font-semibold">Adresa (pro vytvoření klienta)</Label>
+                          <Input
+                            id="newClientAddress"
+                            name="address"
+                            value={newClientData.address}
+                            onChange={(e) => {
+                              handleNewClientChange(e);
+                              const fullAddress = [e.target.value, newClientData.city, newClientData.postal_code].filter(Boolean).join(', ');
+                              setFormData(prev => ({ ...prev, address: fullAddress || e.target.value }));
+                            }}
+                            className="rounded-xl h-11 border-primary/10"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label>Team Members</Label>
-                <MultiSelectDropdown
-                  items={teamMembers.map(member => ({ value: member.id, label: member.name }))}
-                  selected={selectedTeamMembers}
-                  onChange={(selected) => {
-                    const newSelections = selected.filter(id => !selectedTeamMembers.includes(id));
-                    const removedSelections = selectedTeamMembers.filter(id => !selected.includes(id));
-                    
-                    // Remove expenses for deselected members
-                    setTeamMemberExpenses(prev => prev.filter(exp => !removedSelections.includes(exp.teamMemberId)));
-                    
-                    // Add expenses for new selections
-                    const newExpenses = newSelections.map(id => ({ teamMemberId: id, cleanerExpense: '0' }));
-                    setTeamMemberExpenses(prev => [...prev, ...newExpenses]);
-                    
-                    setSelectedTeamMembers(selected);
-                  }}
-                  placeholder="Select team members..."
-                />
-              </div>
-              <div className="space-y-2 md:col-span-2">
-                <Label>Scheduled Dates *</Label>
-                <div className="space-y-3">
-                  {scheduledDates.map((date, index) => (
-                    <div key={index} className="flex gap-2 items-center">
-                      <Input
-                        type="datetime-local"
-                        value={date}
-                        onChange={(e) => {
-                          const newDates = [...scheduledDates];
-                          newDates[index] = e.target.value;
-                          setScheduledDates(newDates);
-                        }}
-                        placeholder="DD/MM/YYYY HH:MM"
-                        required={index === 0}
-                        className="flex-1"
-                      />
-                      {scheduledDates.length > 1 && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="icon"
-                          onClick={() => {
-                            const newDates = scheduledDates.filter((_, i) => i !== index);
+
+              <div className="space-y-6 pt-6 border-t border-primary/10">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="revenue" className="text-sm font-bold text-primary flex items-center gap-2">
+                      <div className="h-2 w-2 rounded-full bg-primary" /> Celková cena (CZK) *
+                    </Label>
+                    <Input
+                      id="revenue"
+                      name="revenue"
+                      type="number"
+                      step="0.01"
+                      value={formData.revenue}
+                      onChange={handleChange}
+                      required
+                      className="rounded-xl h-12 text-lg font-bold border-primary/20 focus:border-primary focus:ring-primary/10 bg-primary/5"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="duration_hours" className="text-sm font-semibold">Doba trvání (hodiny)</Label>
+                    <Input
+                      id="duration_hours"
+                      name="duration_hours"
+                      type="number"
+                      step="0.5"
+                      value={formData.duration_hours}
+                      onChange={handleChange}
+                      className="rounded-xl h-12 border-primary/10"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold">Typ platby</Label>
+                    <Select value={formData.payment_type} onValueChange={(v) => setFormData(prev => ({ ...prev, payment_type: v }))}>
+                      <SelectTrigger className="rounded-xl h-12 border-primary/10">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="cash">Hotovost</SelectItem>
+                        <SelectItem value="bank">Převod na účet</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <Label className="text-sm font-semibold flex items-center justify-between">
+                    Termín úklidu
+                  </Label>
+                  <div className="grid gap-3">
+                    {scheduledDates.map((date, index) => (
+                      <div key={index} className="flex gap-2 animate-in slide-in-from-left-2 duration-200">
+                        <Input
+                          type="datetime-local"
+                          value={date}
+                          onChange={(e) => {
+                            const newDates = [...scheduledDates];
+                            newDates[index] = e.target.value;
                             setScheduledDates(newDates);
                           }}
-                          className="h-10 w-10"
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
-                  ))}
+                          className="rounded-xl h-11 flex-1 border-primary/10"
+                        />
+                        {scheduledDates.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setScheduledDates(scheduledDates.filter((_, i) => i !== index))}
+                            className="rounded-xl text-destructive hover:bg-destructive/10"
+                          >
+                            <X className="h-5 w-5" />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
                     onClick={() => setScheduledDates([...scheduledDates, ''])}
-                    className="w-full"
+                    className="w-full rounded-xl border-dashed border-primary/30 h-11 hover:border-primary transition-all"
                   >
-                    + Add Another Date
+                    + Přidat další termín
                   </Button>
                 </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="duration_hours">Duration (hours)</Label>
-                <Input
-                  id="duration_hours"
-                  name="duration_hours"
-                  type="number"
-                  step="0.5"
-                  value={formData.duration_hours}
-                  onChange={handleChange}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="revenue">Revenue (CZK) *</Label>
-                <Input
-                  id="revenue"
-                  name="revenue"
-                  type="number"
-                  step="0.01"
-                  value={formData.revenue}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="supplies_expense_total">Supplies Total (CZK)</Label>
-                <Input
-                  id="supplies_expense_total"
-                  name="supplies_expense_total"
-                  type="number"
-                  step="0.01"
-                  value={formData.supplies_expense_total}
-                  onChange={handleChange}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="transport_expense_total">Transport Total (CZK)</Label>
-                <Input
-                  id="transport_expense_total"
-                  name="transport_expense_total"
-                  type="number"
-                  step="0.01"
-                  value={formData.transport_expense_total}
-                  onChange={handleChange}
-                />
-              </div>
-            </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
-                rows={3}
-              />
-            </div>
-
-            {/* Cleaner Expenses */}
-            {selectedTeamMembers.length > 0 && (
-              <div className="space-y-4">
-                <Label className="text-lg font-semibold">Cleaner Expenses</Label>
+              <div className="space-y-4 pt-6 border-t border-primary/10">
+                <Label className="text-sm font-bold uppercase tracking-wider text-muted-foreground/70 flex items-center gap-2">
+                  <Users className="h-4 w-4" /> Přiřazení týmu a odměny
+                </Label>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {selectedTeamMembers.map((teamMemberId) => {
-                    const teamMember = teamMembers.find(tm => tm.id === teamMemberId);
-                    const expense = teamMemberExpenses.find(exp => exp.teamMemberId === teamMemberId);
-                    
-                    return (
-                      <div key={teamMemberId} className="flex items-center gap-3 p-3 border rounded-lg">
-                        <div className="flex-1">
-                          <span className="text-sm font-medium">{teamMember?.name}</span>
-                        </div>
-                        <div className="w-32">
+                  {teamMembers.map(member => (
+                    <div key={member.id} className={cn(
+                      "flex flex-col gap-3 p-4 rounded-2xl border transition-all duration-300",
+                      selectedTeamMembers.includes(member.id)
+                        ? "bg-primary/5 border-primary/30 shadow-sm"
+                        : "bg-muted/10 border-transparent hover:border-primary/10"
+                    )}>
+                      <div className="flex items-center gap-3">
+                        <Checkbox
+                          id={`member-${member.id}`}
+                          checked={selectedTeamMembers.includes(member.id)}
+                          onCheckedChange={() => handleTeamMemberToggle(member.id)}
+                        />
+                        <Label htmlFor={`member-${member.id}`} className="font-bold text-base cursor-pointer flex-1">
+                          {member.name}
+                        </Label>
+                      </div>
+
+                      {selectedTeamMembers.includes(member.id) && (
+                        <div className="flex items-center gap-2 animate-in slide-in-from-top-1 duration-200">
+                          <span className="text-xs font-semibold text-muted-foreground">Odměna:</span>
                           <Input
                             type="number"
                             step="0.01"
-                            value={expense?.cleanerExpense || '0'}
-                            onChange={(e) => updateTeamMemberExpense(teamMemberId, e.target.value)}
-                            placeholder="0"
-                            className="text-right"
+                            value={teamMemberExpenses.find(exp => exp.teamMemberId === member.id)?.cleanerExpense || '0'}
+                            onChange={(e) => updateTeamMemberExpense(member.id, e.target.value)}
+                            className="h-9 rounded-lg border-primary/20 text-right font-bold w-24"
                           />
+                          <span className="text-xs font-bold">Kč</span>
                         </div>
-                        <span className="text-sm text-muted-foreground">CZK</span>
-                      </div>
-                    );
-                  })}
+                      )}
+                    </div>
+                  ))}
                 </div>
               </div>
-            )}
 
-            {/* Total Expenses Summary */}
-            <div className="bg-muted/50 p-4 rounded-lg">
-              <div className="flex justify-between items-center">
-                <Label className="text-lg font-semibold">Total Expenses</Label>
-                <div className="text-xl font-bold">
-                  {calculateTotalExpenses().toFixed(2)} CZK
+              <div className="bg-slate-900 text-slate-50 p-6 rounded-[2rem] shadow-xl space-y-4">
+                <div className="flex justify-between items-center group">
+                  <Label className="text-lg font-bold text-slate-300">Celkové náklady</Label>
+                  <div className="text-3xl font-black text-primary">
+                    {calculateTotalExpenses().toFixed(0)} <span className="text-lg">Kč</span>
+                  </div>
                 </div>
-              </div>
-              <div className="mt-2 text-sm text-muted-foreground">
-                <div className="flex justify-between">
-                  <span>Cleaner expenses:</span>
-                  <span>{teamMemberExpenses.reduce((sum, exp) => sum + (parseFloat(exp.cleanerExpense) || 0), 0).toFixed(2)} CZK</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Supplies:</span>
-                  <span>{(parseFloat(formData.supplies_expense_total) || 0).toFixed(2)} CZK</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Transport:</span>
-                  <span>{(parseFloat(formData.transport_expense_total) || 0).toFixed(2)} CZK</span>
-                </div>
-              </div>
-            </div>
 
-            <div className="flex gap-2 justify-end">
-              <Button type="button" variant="outline" onClick={onClose}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={loading}>
-                {loading ? 'Adding...' : 'Add Job'}
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+                <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-800">
+                  <div className="space-y-1">
+                    <Label className="text-xs uppercase font-bold text-slate-500">Uklízeči</Label>
+                    <p className="font-bold text-lg">{teamMemberExpenses.reduce((sum, exp) => sum + (parseFloat(exp.cleanerExpense) || 0), 0).toFixed(0)} Kč</p>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs uppercase font-bold text-slate-500">Ostatní</Label>
+                    <div className="flex gap-2 text-slate-900">
+                      <Input
+                        type="number"
+                        placeholder="Materiál"
+                        value={formData.supplies_expense_total}
+                        onChange={(e) => setFormData(prev => ({ ...prev, supplies_expense_total: e.target.value }))}
+                        className="h-8 rounded-lg bg-slate-800 border-0 text-slate-100 placeholder:text-slate-600 text-xs w-20"
+                      />
+                      <Input
+                        type="number"
+                        placeholder="Doprava"
+                        value={formData.transport_expense_total}
+                        onChange={(e) => setFormData(prev => ({ ...prev, transport_expense_total: e.target.value }))}
+                        className="h-8 rounded-lg bg-slate-800 border-0 text-slate-100 placeholder:text-slate-600 text-xs w-20"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="description" className="text-sm font-semibold">Popis zakázky</Label>
+                <Textarea
+                  id="description"
+                  name="description"
+                  value={formData.description}
+                  onChange={handleChange}
+                  rows={3}
+                  placeholder="Speciální požadavky..."
+                  className="rounded-2xl border-primary/10 focus:border-primary resize-none"
+                />
+              </div>
+
+              <div className="flex gap-3 justify-end pt-4">
+                <Button type="button" variant="outline" onClick={onClose} className="rounded-xl border-primary/20">
+                  Zrušit
+                </Button>
+                <Button type="submit" disabled={loading} className="rounded-xl bg-primary px-12 h-11 font-bold">
+                  {loading ? 'Vytvářím...' : 'Vytvořit zakázku'}
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
     </ModalOverlay>
+
   );
 }

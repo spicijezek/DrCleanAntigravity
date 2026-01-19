@@ -6,11 +6,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MultiSelectDropdown } from '@/components/ui/multi-select';
-import { X } from 'lucide-react';
+import { X, Users } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { ModalOverlay } from '@/components/ui/modal-overlay';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface EditJobFormProps {
   job: any;
@@ -37,11 +39,11 @@ interface TeamMemberExpense {
 }
 
 export function EditJobForm({ job, onClose, onJobUpdated }: EditJobFormProps) {
-const toUTCFromLocal = (dt: string) => {
-  if (!dt) return null as any;
-  // Convert local datetime string to UTC ISO without double-applying timezone offset
-  return new Date(dt).toISOString();
-};
+  const toUTCFromLocal = (dt: string) => {
+    if (!dt) return null as any;
+    // Convert local datetime string to UTC ISO without double-applying timezone offset
+    return new Date(dt).toISOString();
+  };
   const toLocalInput = (iso?: string) => {
     if (!iso) return '';
     const d = new Date(iso);
@@ -56,7 +58,7 @@ const toUTCFromLocal = (dt: string) => {
     scheduled_date: job.scheduled_date ? toLocalInput(job.scheduled_date) : '',
     duration_hours: job.duration_hours?.toString() || '',
     revenue: job.revenue?.toString() || '',
-    
+
     client_id: job.client_id || '',
     status: job.status || 'scheduled',
     payment_received_date: job.payment_received_date ? toLocalInput(job.payment_received_date) : '',
@@ -95,7 +97,7 @@ const toUTCFromLocal = (dt: string) => {
         .from('clients')
         .select('id, name, address, city, postal_code')
         .order('name');
-      
+
       if (error) throw error;
       setClients(data || []);
     } catch (error: any) {
@@ -110,7 +112,7 @@ const toUTCFromLocal = (dt: string) => {
         .select('id, name')
         .eq('is_active', true)
         .order('name');
-      
+
       if (error) throw error;
       setTeamMembers(data || []);
     } catch (error: any) {
@@ -124,14 +126,14 @@ const toUTCFromLocal = (dt: string) => {
         .from('job_expenses')
         .select('*')
         .eq('job_id', job.id);
-      
+
       if (error) throw error;
-      
+
       const expenses = (data || []).map(expense => ({
         teamMemberId: expense.team_member_id,
         cleanerExpense: expense.cleaner_expense?.toString() || '0',
       }));
-      
+
       setTeamMemberExpenses(expenses);
     } catch (error: any) {
       console.error('Failed to fetch job expenses:', error);
@@ -161,7 +163,7 @@ const toUTCFromLocal = (dt: string) => {
         payment_received_date: formData.status === 'paid' && formData.payment_received_date ? toUTCFromLocal(formData.payment_received_date) : null,
         payment_type: formData.payment_type,
       };
-      
+
       const { error } = await supabase
         .from('jobs')
         .update(jobData)
@@ -171,7 +173,7 @@ const toUTCFromLocal = (dt: string) => {
 
       // Delete existing job expenses and insert new ones
       await supabase.from('job_expenses').delete().eq('job_id', job.id);
-      
+
       if (teamMemberExpenses.length > 0) {
         const expenseRecords = teamMemberExpenses.map(expense => ({
           job_id: job.id,
@@ -196,7 +198,7 @@ const toUTCFromLocal = (dt: string) => {
             type: 'revenue',
             category: 'job_payment',
             amount: parseFloat(formData.revenue) || 0,
-            description: `Payment for job: ${formData.title}`,
+            description: `Platba za zakázku: ${formData.title}`,
             transaction_date: formData.payment_received_date,
             job_id: job.id,
           }]);
@@ -220,14 +222,14 @@ const toUTCFromLocal = (dt: string) => {
       }
 
       toast({
-        title: 'Success',
-        description: 'Job updated successfully',
+        title: 'Úspěch',
+        description: 'Zakázka byla úspěšně aktualizována',
       });
-      
+
       onJobUpdated();
     } catch (error: any) {
       toast({
-        title: 'Error',
+        title: 'Chyba',
         description: error.message,
         variant: 'destructive',
       });
@@ -248,7 +250,7 @@ const toUTCFromLocal = (dt: string) => {
       ...prev,
       [name]: value,
     }));
-    
+
     // Auto-populate title with address when client is selected
     if (name === 'client_id' && value) {
       const selectedClient = clients.find(c => c.id === value);
@@ -266,7 +268,7 @@ const toUTCFromLocal = (dt: string) => {
       const isSelected = prev.includes(teamMemberId);
       if (isSelected) {
         // Remove from expenses when unchecked
-        setTeamMemberExpenses(expenses => 
+        setTeamMemberExpenses(expenses =>
           expenses.filter(expense => expense.teamMemberId !== teamMemberId)
         );
         return prev.filter(id => id !== teamMemberId);
@@ -296,7 +298,7 @@ const toUTCFromLocal = (dt: string) => {
 
   // Calculate total expenses
   const calculateTotalExpenses = () => {
-    const cleanerExpensesTotal = teamMemberExpenses.reduce((sum, expense) => 
+    const cleanerExpensesTotal = teamMemberExpenses.reduce((sum, expense) =>
       sum + (parseFloat(expense.cleanerExpense) || 0), 0
     );
     const suppliesTotal = parseFloat(formData.supplies_expense_total) || 0;
@@ -306,287 +308,280 @@ const toUTCFromLocal = (dt: string) => {
 
   return (
     <ModalOverlay>
-      <Card className="w-full max-w-4xl max-h-[90vh] overflow-y-auto border-0 shadow-none rounded-lg m-0 bg-background">
-        <CardHeader className="flex flex-row items-center justify-between relative">
-          <CardTitle className="pr-8">Edit Job</CardTitle>
-          <Button variant="ghost" size="icon" onClick={onClose} className="absolute top-2 right-2">
-            <X className="h-4 w-4" />
-          </Button>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="title">Title *</Label>
-                <Input
-                  id="title"
-                  name="title"
-                  value={formData.title}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="category">Category *</Label>
-                <Select value={formData.category} onValueChange={(value) => handleSelectChange('category', value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="home_cleaning">Home Cleaning</SelectItem>
-                    <SelectItem value="commercial_cleaning">Commercial Cleaning</SelectItem>
-                    <SelectItem value="window_cleaning">Window Cleaning</SelectItem>
-                    <SelectItem value="post_construction_cleaning">Post Construction Cleaning</SelectItem>
-                    <SelectItem value="upholstery_cleaning">Upholstery Cleaning</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="client_id">Client *</Label>
-                <Select value={formData.client_id} onValueChange={(value) => handleSelectChange('client_id', value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select client" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {clients.map((client) => (
-                      <SelectItem key={client.id} value={client.id}>
-                        {client.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Team Members</Label>
-                <MultiSelectDropdown
-                  items={teamMembers.map(member => ({ value: member.id, label: member.name }))}
-                  selected={selectedTeamMembers}
-                  onChange={(selected) => {
-                    const newSelections = selected.filter(id => !selectedTeamMembers.includes(id));
-                    const removedSelections = selectedTeamMembers.filter(id => !selected.includes(id));
-                    
-                    // Remove expenses for deselected members
-                    setTeamMemberExpenses(prev => prev.filter(exp => !removedSelections.includes(exp.teamMemberId)));
-                    
-                    // Add expenses for new selections (use existing if available)
-                    const existingExpenses = teamMemberExpenses.filter(exp => selected.includes(exp.teamMemberId));
-                    const newExpenses = newSelections.map(id => ({ teamMemberId: id, cleanerExpense: '0' }));
-                    setTeamMemberExpenses([...existingExpenses, ...newExpenses]);
-                    
-                    setSelectedTeamMembers(selected);
-                  }}
-                  placeholder="Select team members..."
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="status">Status *</Label>
-                <Select value={formData.status} onValueChange={(value) => handleSelectChange('status', value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="scheduled">Scheduled</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
-                    <SelectItem value="paid">Paid</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2 md:col-span-2">
-                <Label>Scheduled Dates *</Label>
-                <div className="space-y-3">
-                  {scheduledDates.map((date, index) => (
-                    <div key={index} className="flex gap-2 items-center">
-                      <Input
-                        type="datetime-local"
-                        value={date}
-                        onChange={(e) => {
-                          const newDates = [...scheduledDates];
-                          newDates[index] = e.target.value;
-                          setScheduledDates(newDates);
-                        }}
-                        placeholder="DD/MM/YYYY HH:MM"
-                        required={index === 0}
-                        className="flex-1"
-                      />
-                      {scheduledDates.length > 1 && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="icon"
-                          onClick={() => {
-                            const newDates = scheduledDates.filter((_, i) => i !== index);
+      <div className="w-full max-w-4xl px-4 py-8 pointer-events-none">
+        <Card className="pointer-events-auto border-0 shadow-2xl rounded-[2.5rem] overflow-hidden bg-background/95 backdrop-blur-xl relative">
+          <div className="absolute left-0 top-0 bottom-0 w-2 bg-gradient-to-b from-primary to-primary/60" />
+
+          <CardHeader className="flex flex-row items-center justify-between p-8 pb-4">
+            <CardTitle className="text-2xl font-bold tracking-tight">Upravit zakázku</CardTitle>
+            <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full hover:bg-muted/50 transition-colors">
+              <X className="h-5 w-5" />
+            </Button>
+          </CardHeader>
+          <CardContent className="p-8 pt-4">
+            <form onSubmit={handleSubmit} className="space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="title" className="text-sm font-semibold">Adresa úklidu *</Label>
+                  <Input
+                    id="title"
+                    name="title"
+                    value={formData.title}
+                    onChange={handleChange}
+                    placeholder="Ulice a č.p., Město"
+                    required
+                    className="rounded-xl border-primary/20 focus:border-primary focus:ring-primary/20 h-11"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="category" className="text-sm font-semibold">Kategorie *</Label>
+                  <Select value={formData.category} onValueChange={(value) => handleSelectChange('category', value)}>
+                    <SelectTrigger className="rounded-xl border-primary/20 focus:border-primary h-11">
+                      <SelectValue placeholder="Vyberte kategorii" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="home_cleaning">Úklid domácnosti</SelectItem>
+                      <SelectItem value="commercial_cleaning">Úklid firem</SelectItem>
+                      <SelectItem value="window_cleaning">Mytí oken</SelectItem>
+                      <SelectItem value="post_construction_cleaning">Post-stavební úklid</SelectItem>
+                      <SelectItem value="upholstery_cleaning">Čištění čalounění</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="client_id" className="text-sm font-semibold">Zákazník *</Label>
+                  <Select value={formData.client_id} onValueChange={(value) => handleSelectChange('client_id', value)}>
+                    <SelectTrigger className="rounded-xl border-primary/20 focus:border-primary h-11">
+                      <SelectValue placeholder="Vyberte klienta" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {clients.map((client) => (
+                        <SelectItem key={client.id} value={client.id}>
+                          {client.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="status" className="text-sm font-semibold">Stav zakázky *</Label>
+                  <Select value={formData.status} onValueChange={(value) => handleSelectChange('status', value)}>
+                    <SelectTrigger className="rounded-xl border-primary/20 focus:border-primary h-11">
+                      <SelectValue placeholder="Vyberte stav" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="scheduled">Naplánováno</SelectItem>
+                      <SelectItem value="completed">Dokončeno</SelectItem>
+                      <SelectItem value="paid">Zaplaceno</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-4 md:col-span-2">
+                  <Label className="text-sm font-semibold flex items-center justify-between">
+                    Termíny úklidu *
+                  </Label>
+                  <div className="grid gap-3">
+                    {scheduledDates.map((date, index) => (
+                      <div key={index} className="flex gap-2 animate-in slide-in-from-left-2 duration-200">
+                        <Input
+                          type="datetime-local"
+                          value={date}
+                          onChange={(e) => {
+                            const newDates = [...scheduledDates];
+                            newDates[index] = e.target.value;
                             setScheduledDates(newDates);
                           }}
-                          className="h-10 w-10"
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
-                  ))}
+                          required={index === 0}
+                          className="rounded-xl h-11 flex-1 border-primary/10"
+                        />
+                        {scheduledDates.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setScheduledDates(scheduledDates.filter((_, i) => i !== index))}
+                            className="rounded-xl text-destructive hover:bg-destructive/10"
+                          >
+                            <X className="h-5 w-5" />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
                     onClick={() => setScheduledDates([...scheduledDates, ''])}
-                    className="w-full"
+                    className="w-full rounded-xl border-dashed border-primary/30 h-11 hover:border-primary transition-all"
                   >
-                    + Add Another Date
+                    + Přidat další termín
                   </Button>
                 </div>
+
+                {formData.status === 'paid' && (
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="payment_received_date" className="text-sm font-semibold">Datum přijetí platby</Label>
+                      <Input
+                        id="payment_received_date"
+                        name="payment_received_date"
+                        type="datetime-local"
+                        value={formData.payment_received_date}
+                        onChange={handleChange}
+                        className="rounded-xl h-11 border-primary/10"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="payment_type" className="text-sm font-semibold">Způsob platby</Label>
+                      <Select value={formData.payment_type} onValueChange={(value) => handleSelectChange('payment_type', value)}>
+                        <SelectTrigger className="rounded-xl h-11 border-primary/10">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="cash">Hotovost</SelectItem>
+                          <SelectItem value="bank">Převod na účet</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </>
+                )}
               </div>
-              {formData.status === 'paid' && (
-                <>
+
+              <div className="space-y-6 pt-6 border-t border-primary/10">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label htmlFor="payment_received_date">Payment Received Date (DD/MM/YYYY)</Label>
+                    <Label htmlFor="revenue" className="text-sm font-bold text-primary flex items-center gap-2">
+                      <div className="h-2 w-2 rounded-full bg-primary" /> Celková cena (CZK) *
+                    </Label>
                     <Input
-                      id="payment_received_date"
-                      name="payment_received_date"
-                      type="datetime-local"
-                      value={formData.payment_received_date}
+                      id="revenue"
+                      name="revenue"
+                      type="number"
+                      step="0.01"
+                      value={formData.revenue}
                       onChange={handleChange}
-                      placeholder="DD/MM/YYYY HH:MM"
+                      required
+                      className="rounded-xl h-12 text-lg font-bold border-primary/20 focus:border-primary focus:ring-primary/10 bg-primary/5"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="payment_type">Payment Type</Label>
-                    <Select value={formData.payment_type} onValueChange={(value) => handleSelectChange('payment_type', value)}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="cash">Cash</SelectItem>
-                        <SelectItem value="bank">Bank Transfer</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Label htmlFor="duration_hours" className="text-sm font-semibold">Doba trvání (hodiny)</Label>
+                    <Input
+                      id="duration_hours"
+                      name="duration_hours"
+                      type="number"
+                      step="0.5"
+                      value={formData.duration_hours}
+                      onChange={handleChange}
+                      className="rounded-xl h-12 border-primary/10"
+                    />
                   </div>
-                </>
-              )}
-              <div className="space-y-2">
-                <Label htmlFor="duration_hours">Duration (hours)</Label>
-                <Input
-                  id="duration_hours"
-                  name="duration_hours"
-                  type="number"
-                  step="0.5"
-                  value={formData.duration_hours}
-                  onChange={handleChange}
-                />
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="revenue">Revenue (CZK) *</Label>
-                <Input
-                  id="revenue"
-                  name="revenue"
-                  type="number"
-                  step="0.01"
-                  value={formData.revenue}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="supplies_expense_total">Supplies Total (CZK)</Label>
-                <Input
-                  id="supplies_expense_total"
-                  name="supplies_expense_total"
-                  type="number"
-                  step="0.01"
-                  value={formData.supplies_expense_total}
-                  onChange={handleChange}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="transport_expense_total">Transport Total (CZK)</Label>
-                <Input
-                  id="transport_expense_total"
-                  name="transport_expense_total"
-                  type="number"
-                  step="0.01"
-                  value={formData.transport_expense_total}
-                  onChange={handleChange}
-                />
-              </div>
-            </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
-                rows={3}
-              />
-            </div>
-
-            {/* Cleaner Expenses */}
-            {selectedTeamMembers.length > 0 && (
-              <div className="space-y-4">
-                <Label className="text-lg font-semibold">Cleaner Expenses</Label>
+              <div className="space-y-4 pt-6 border-t border-primary/10">
+                <Label className="text-sm font-bold uppercase tracking-wider text-muted-foreground/70 flex items-center gap-2">
+                  <Users className="h-4 w-4" /> Přiřazení týmu a odměny
+                </Label>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {selectedTeamMembers.map((teamMemberId) => {
-                    const teamMember = teamMembers.find(tm => tm.id === teamMemberId);
-                    const expense = teamMemberExpenses.find(exp => exp.teamMemberId === teamMemberId);
-                    
-                    return (
-                      <div key={teamMemberId} className="flex items-center gap-3 p-3 border rounded-lg">
-                        <div className="flex-1">
-                          <span className="text-sm font-medium">{teamMember?.name}</span>
-                        </div>
-                        <div className="w-32">
+                  {teamMembers.map(member => (
+                    <div key={member.id} className={cn(
+                      "flex flex-col gap-3 p-4 rounded-2xl border transition-all duration-300",
+                      selectedTeamMembers.includes(member.id)
+                        ? "bg-primary/5 border-primary/30 shadow-sm"
+                        : "bg-muted/10 border-transparent hover:border-primary/10"
+                    )}>
+                      <div className="flex items-center gap-3">
+                        <Checkbox
+                          id={`member-${member.id}`}
+                          checked={selectedTeamMembers.includes(member.id)}
+                          onCheckedChange={() => handleTeamMemberToggle(member.id)}
+                        />
+                        <Label htmlFor={`member-${member.id}`} className="font-bold text-base cursor-pointer flex-1">
+                          {member.name}
+                        </Label>
+                      </div>
+
+                      {selectedTeamMembers.includes(member.id) && (
+                        <div className="flex items-center gap-2 animate-in slide-in-from-top-1 duration-200">
+                          <span className="text-xs font-semibold text-muted-foreground">Odměna:</span>
                           <Input
                             type="number"
                             step="0.01"
-                            value={expense?.cleanerExpense || '0'}
-                            onChange={(e) => updateTeamMemberExpense(teamMemberId, e.target.value)}
-                            placeholder="0"
-                            className="text-right"
+                            value={teamMemberExpenses.find(exp => exp.teamMemberId === member.id)?.cleanerExpense || '0'}
+                            onChange={(e) => updateTeamMemberExpense(member.id, e.target.value)}
+                            className="h-9 rounded-lg border-primary/20 text-right font-bold w-24"
                           />
+                          <span className="text-xs font-bold">Kč</span>
                         </div>
-                        <span className="text-sm text-muted-foreground">CZK</span>
-                      </div>
-                    );
-                  })}
+                      )}
+                    </div>
+                  ))}
                 </div>
               </div>
-            )}
 
-            {/* Total Expenses Summary */}
-            <div className="bg-muted/50 p-4 rounded-lg">
-              <div className="flex justify-between items-center">
-                <Label className="text-lg font-semibold">Total Expenses</Label>
-                <div className="text-xl font-bold">
-                  {calculateTotalExpenses().toFixed(2)} CZK
+              <div className="bg-slate-900 text-slate-50 p-6 rounded-[2rem] shadow-xl space-y-4">
+                <div className="flex justify-between items-center group">
+                  <Label className="text-lg font-bold text-slate-300">Celkové náklady</Label>
+                  <div className="text-3xl font-black text-primary">
+                    {calculateTotalExpenses().toFixed(0)} <span className="text-lg">Kč</span>
+                  </div>
                 </div>
-              </div>
-              <div className="mt-2 text-sm text-muted-foreground">
-                <div className="flex justify-between">
-                  <span>Cleaner expenses:</span>
-                  <span>{teamMemberExpenses.reduce((sum, exp) => sum + (parseFloat(exp.cleanerExpense) || 0), 0).toFixed(2)} CZK</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Supplies:</span>
-                  <span>{(parseFloat(formData.supplies_expense_total) || 0).toFixed(2)} CZK</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Transport:</span>
-                  <span>{(parseFloat(formData.transport_expense_total) || 0).toFixed(2)} CZK</span>
-                </div>
-              </div>
-            </div>
 
-            <div className="flex gap-2 justify-end">
-              <Button type="button" variant="outline" onClick={onClose}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={loading}>
-                {loading ? 'Updating...' : 'Update Job'}
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+                <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-800">
+                  <div className="space-y-1">
+                    <Label className="text-xs uppercase font-bold text-slate-500">Uklízeči</Label>
+                    <p className="font-bold text-lg">{teamMemberExpenses.reduce((sum, exp) => sum + (parseFloat(exp.cleanerExpense) || 0), 0).toFixed(0)} Kč</p>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs uppercase font-bold text-slate-500">Ostatní</Label>
+                    <div className="flex gap-2 text-slate-900">
+                      <Input
+                        type="number"
+                        placeholder="Materiál"
+                        value={formData.supplies_expense_total}
+                        onChange={(e) => setFormData(prev => ({ ...prev, supplies_expense_total: e.target.value }))}
+                        className="h-8 rounded-lg bg-slate-800 border-0 text-slate-100 placeholder:text-slate-600 text-xs w-20"
+                      />
+                      <Input
+                        type="number"
+                        placeholder="Doprava"
+                        value={formData.transport_expense_total}
+                        onChange={(e) => setFormData(prev => ({ ...prev, transport_expense_total: e.target.value }))}
+                        className="h-8 rounded-lg bg-slate-800 border-0 text-slate-100 placeholder:text-slate-600 text-xs w-20"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="description" className="text-sm font-semibold">Popis zakázky</Label>
+                <Textarea
+                  id="description"
+                  name="description"
+                  value={formData.description}
+                  onChange={handleChange}
+                  rows={3}
+                  placeholder="Speciální požadavky..."
+                  className="rounded-2xl border-primary/10 focus:border-primary resize-none"
+                />
+              </div>
+
+              <div className="flex gap-3 justify-end pt-4">
+                <Button type="button" variant="outline" onClick={onClose} className="rounded-xl border-primary/20">
+                  Zrušit
+                </Button>
+                <Button type="submit" disabled={loading} className="rounded-xl bg-primary px-12 h-11 font-bold">
+                  {loading ? 'Aktualizuji...' : 'Uložit změny'}
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
     </ModalOverlay>
   );
 }
