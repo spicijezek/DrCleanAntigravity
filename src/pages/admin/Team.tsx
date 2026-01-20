@@ -145,7 +145,7 @@ export default function Team() {
           action={
             <Button
               onClick={() => setShowAddForm(true)}
-              variant="gradient"
+              variant="default"
               className="shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all rounded-xl h-11 px-6 font-bold"
             >
               <Plus className="h-5 w-5 mr-2" />

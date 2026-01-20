@@ -346,8 +346,7 @@ export default function InvoiceStorage() {
               {selectedInvoices.length > 0 && (
                 <Button
                   onClick={downloadSelectedAsZip}
-                  variant="gradient"
-                  className="shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all rounded-xl px-4 h-10"
+                  className="shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all rounded-xl px-4 h-10 bg-blue-600 hover:bg-blue-700 text-white"
                 >
                   <PackageOpen className="h-4 w-4 mr-2" />
                   Stáhnout ZIP ({selectedInvoices.length})
@@ -357,58 +356,70 @@ export default function InvoiceStorage() {
           }
         />
 
-        <Card className="p-4 bg-card/50 backdrop-blur-sm border-0 shadow-lg rounded-3xl overflow-hidden">
-          <div className="flex flex-wrap gap-4 items-center">
-            <div className="flex-1 min-w-[200px]">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Hledat podle čísla faktury nebo klienta..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 bg-background/50 border-0 rounded-xl h-11"
-                />
-              </div>
+        {/* Premium Glassmorphic Filter Bar - Monday.com Inspired */}
+        <div className="flex flex-col xl:flex-row gap-4 bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl p-3 sm:p-4 rounded-[2.5rem] border border-white/20 shadow-2xl animate-in fade-in slide-in-from-top-4 duration-700">
+
+          {/* Search & Bulk Actions (Left) */}
+          <div className="flex flex-col sm:flex-row gap-3 xl:w-auto w-full flex-1">
+            <div className="relative group flex-1 md:max-w-md">
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5 transition-colors group-focus-within:text-primary" />
+              <input
+                type="text"
+                placeholder="Hledat dle čísla faktury nebo klienta..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-12 pr-4 h-12 bg-white/50 dark:bg-slate-800/50 border-0 shadow-sm rounded-full focus:ring-2 focus:ring-primary/20 transition-all w-full text-base outline-none"
+              />
             </div>
 
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-all sm:w-[180px] bg-background/50 border-0 rounded-xl h-11">
-                <Filter className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="Filtrovat podle stavu" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Všechny stavy</SelectItem>
-                <SelectItem value="draft">Koncept</SelectItem>
-                <SelectItem value="issued">Vystaveno</SelectItem>
-                <SelectItem value="paid">Uhrazeno</SelectItem>
-                <SelectItem value="overdue">Po splatnosti</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Input
-              type="month"
-              value={dateFilter}
-              onChange={(e) => setDateFilter(e.target.value)}
-              className="w-all sm:w-[180px] bg-background/50 border-0 rounded-xl h-11"
-            />
-          </div>
-
-          {filteredInvoices.length > 0 && (
-            <div className="flex items-center justify-between pt-4 mt-4 border-t border-border/50">
-              <div className="flex items-center gap-2 px-2">
+            {filteredInvoices.length > 0 && (
+              <div className="flex items-center gap-2 bg-white/50 dark:bg-slate-800/50 px-4 rounded-full border border-white/10 shadow-sm h-12">
                 <Checkbox
                   id="select-all"
                   checked={selectedInvoices.length === filteredInvoices.length && filteredInvoices.length > 0}
                   onCheckedChange={toggleSelectAll}
                   className="rounded-md"
                 />
-                <label htmlFor="select-all" className="text-sm font-medium cursor-pointer">
+                <label htmlFor="select-all" className="text-sm font-bold cursor-pointer whitespace-nowrap">
                   Vybrat vše ({selectedInvoices.length})
                 </label>
               </div>
+            )}
+          </div>
+
+          {/* Specialized Filters (Right) */}
+          <div className="flex flex-wrap items-center gap-3 xl:justify-end">
+            <div className="flex items-center gap-2 bg-white/50 dark:bg-slate-800/50 p-1.5 rounded-full border border-white/10 shadow-sm min-w-[200px]">
+              <div className="p-2 bg-primary/10 rounded-full text-primary">
+                <Filter className="h-4 w-4" />
+              </div>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="border-0 bg-transparent shadow-none focus:ring-0 p-2 h-auto text-sm font-bold min-w-[120px]">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent className="rounded-2xl border-white/20 shadow-2xl backdrop-blur-xl bg-white/90 dark:bg-slate-900/90">
+                  <SelectItem value="all">Všechny stavy</SelectItem>
+                  <SelectItem value="draft">Koncept</SelectItem>
+                  <SelectItem value="issued">Vystaveno</SelectItem>
+                  <SelectItem value="paid">Uhrazeno</SelectItem>
+                  <SelectItem value="overdue">Po splatnosti</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-          )}
-        </Card>
+
+            <div className="flex items-center gap-2 bg-white/50 dark:bg-slate-800/50 p-1.5 rounded-full border border-white/10 shadow-sm">
+              <div className="p-2 bg-primary/10 rounded-full text-primary">
+                <Download className="h-4 w-4" />
+              </div>
+              <input
+                type="month"
+                value={dateFilter}
+                onChange={(e) => setDateFilter(e.target.value)}
+                className="bg-transparent border-0 outline-none text-sm font-bold pr-4 h-8"
+              />
+            </div>
+          </div>
+        </div>
 
         <div className="space-y-3">
           {filteredInvoices.length === 0 ? (

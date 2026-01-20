@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Checkbox } from "@/components/ui/checkbox";
 import { LoadingOverlay } from '@/components/LoadingOverlay';
+import drcleanIcon from '@/assets/drclean-icon.png';
 
 export default function ClientAuth() {
   const [email, setEmail] = useState('');
@@ -109,9 +110,14 @@ export default function ClientAuth() {
       <div className="absolute inset-0 bg-gradient-to-br from-blue-900/90 via-slate-900/90 to-black/90 backdrop-blur-sm" />
 
       <Card className="w-full max-w-md relative z-10 border-white/10 bg-white/10 backdrop-blur-xl shadow-2xl text-white">
-        <CardHeader className="text-center space-y-4">
-          <div className="mx-auto h-20 w-20 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg transform rotate-3 hover:rotate-0 transition-transform duration-300">
-            <span className="text-3xl font-bold text-white">Dr</span>
+        <CardHeader className="text-center space-y-6 pt-10 pb-8">
+          <div className="mx-auto h-24 w-24 flex items-center justify-center transform hover:scale-105 transition-transform duration-500 group">
+            <div className="absolute inset-0 bg-blue-500/20 rounded-full blur-2xl group-hover:blur-3xl transition-all opacity-50" />
+            <img
+              src={drcleanIcon}
+              alt="DrClean"
+              className="h-20 w-20 relative z-10 drop-shadow-2xl animate-spin-pulse"
+            />
           </div>
           <div>
             <CardTitle className="text-3xl font-bold tracking-tight text-white">Dr.Clean</CardTitle>

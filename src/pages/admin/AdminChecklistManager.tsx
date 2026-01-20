@@ -283,22 +283,26 @@ export default function AdminChecklistManager() {
 
 
                     <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-top-4 duration-1000">
-                        {/* Glassmorphic Filter Bar */}
-                        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl p-2 sm:p-3 rounded-[2.5rem] border border-white/20 shadow-2xl">
-                            <div className="flex-1 px-2">
+                        {/* Premium Glassmorphic Filter Bar - Monday.com Inspired */}
+                        <div className="flex flex-col xl:flex-row gap-4 bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl p-3 sm:p-4 rounded-[2.5rem] border border-white/20 shadow-2xl">
+
+                            {/* Search (Left) */}
+                            <div className="flex-1">
                                 <div className="relative group">
                                     <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5 transition-colors group-focus-within:text-blue-500" />
-                                    <Input
+                                    <input
+                                        type="text"
                                         placeholder="Hledat klienta po jméně nebo emailu..."
-                                        className="pl-12 h-12 bg-white/50 dark:bg-slate-800/50 border-0 shadow-sm rounded-full focus-visible:ring-2 focus-visible:ring-blue-500/20 transition-all w-full text-base"
+                                        className="pl-12 pr-4 h-12 bg-white/50 dark:bg-slate-800/50 border-0 shadow-sm rounded-full focus:ring-2 focus:ring-blue-500/20 transition-all w-full text-base outline-none"
                                         value={clientSearch}
                                         onChange={(e) => setClientSearch(e.target.value)}
                                     />
                                 </div>
                             </div>
 
-                            <div className="flex flex-wrap items-center gap-2 px-2 lg:px-0">
-                                <div className="flex items-center gap-3 bg-white/80 dark:bg-slate-800/80 pl-4 pr-2 h-12 rounded-full border border-white/40 shadow-sm min-w-[240px] transition-all hover:shadow-md">
+                            {/* Client Select (Right) */}
+                            <div className="flex flex-wrap items-center gap-2">
+                                <div className="flex items-center gap-3 bg-white/50 dark:bg-slate-800/50 pl-4 pr-2 h-12 rounded-full border border-white/10 shadow-sm min-w-[240px] transition-all hover:shadow-md">
                                     <User className="h-5 w-5 text-blue-500 shrink-0" />
                                     <Select value={selectedClientId} onValueChange={setSelectedClientId}>
                                         <SelectTrigger className="border-0 bg-transparent shadow-none focus:ring-0 p-0 h-auto font-bold text-slate-700 dark:text-slate-200 text-sm">
@@ -366,8 +370,7 @@ export default function AdminChecklistManager() {
                                                 <Button
                                                     onClick={createChecklist}
                                                     disabled={!newChecklistAddress.trim()}
-                                                    variant="gradient"
-                                                    className="rounded-2xl h-11 px-6 font-bold"
+                                                    className="rounded-2xl h-11 px-6 font-bold bg-blue-600 hover:bg-blue-700 text-white"
                                                 >
                                                     Vytvořit
                                                 </Button>

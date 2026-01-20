@@ -201,9 +201,10 @@ export default function AdminApproval() {
           <div className="flex flex-col sm:flex-row gap-3 xl:w-auto w-full">
             <div className="relative group flex-1 sm:w-80">
               <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5 transition-colors group-focus-within:text-blue-500" />
-              <Input
+              <input
+                type="text"
                 placeholder="Find users..."
-                className="pl-12 h-12 bg-white/50 dark:bg-slate-800/50 border-0 shadow-sm rounded-full focus-visible:ring-2 focus-visible:ring-blue-500/20 transition-all w-full text-base"
+                className="pl-12 pr-4 h-12 bg-white/50 dark:bg-slate-800/50 border-0 shadow-sm rounded-full focus:ring-2 focus:ring-blue-500/20 transition-all w-full text-base outline-none"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />

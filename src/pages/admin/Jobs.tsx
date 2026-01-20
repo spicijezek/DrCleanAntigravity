@@ -565,7 +565,7 @@ export default function Jobs() {
             </h2>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {pendingJobs.map((job) => (
-                <Card key={job.id} className="bg-amber-50/40 backdrop-blur-xl border-amber-200/50 shadow-xl rounded-[2rem] overflow-hidden hover:shadow-2xl transition-all border-l-4 border-l-amber-500 group">
+                <Card key={job.id} className="bg-amber-50/40 backdrop-blur-xl border border-border/60 shadow-soft rounded-[2rem] overflow-hidden hover:shadow-medium transition-all border-l-4 border-l-amber-500 group">
                   <CardContent className="p-6 space-y-4">
                     <div className="flex justify-between items-start">
                       <div className="space-y-1">
@@ -636,7 +636,7 @@ export default function Jobs() {
           </h2>
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {filteredAndSortedJobs.map((job) => (
-              <Card key={job.id} className="bg-card/50 backdrop-blur-xl border-0 shadow-xl rounded-[2rem] overflow-hidden hover:shadow-2xl transition-all duration-500 group border border-white/10">
+              <Card key={job.id} className="bg-card/50 backdrop-blur-xl border border-border shadow-soft rounded-[2rem] overflow-hidden hover:shadow-medium transition-all duration-500 group">
                 <CardHeader className="p-6 pb-2">
                   <div className="flex justify-between items-start">
                     <div className="space-y-2">
