@@ -43,10 +43,10 @@ export function StatsCard({
         {change && (
           <div className="mt-2 text-xs">
             <span className={cn(
-              "px-2 py-1 rounded-full font-medium",
-              changeType === "positive" && "bg-emerald-500/10 text-emerald-500",
-              changeType === "negative" && "bg-rose-500/10 text-rose-500",
-              changeType === "neutral" && "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"
+              "px-2 py-1 rounded-md font-semibold text-xs",
+              changeType === "positive" && "bg-success-light text-success border border-success-border",
+              changeType === "negative" && "bg-destructive-light text-destructive border border-destructive-border",
+              changeType === "neutral" && "bg-secondary text-muted-foreground border border-border"
             )}>
               {change}
             </span>

@@ -9,12 +9,11 @@ import { BookingDetailDialog } from '@/components/admin/bookings/BookingDetailDi
 import { CreateBookingDialog } from '@/components/admin/CreateBookingDialog';
 import { Button } from '@/components/ui/button';
 import {
-  Plus, Search, LayoutGrid, Clock, PlayCircle, CheckCircle2, History, TrendingUp, Filter, Calendar
+  Plus, Search, Calendar
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useNavigate } from 'react-router-dom';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Label } from '@/components/ui/label';
 import { subDays, startOfDay, endOfDay, isWithinInterval, parseISO, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear } from 'date-fns';
 
@@ -258,37 +257,56 @@ export default function AppBookings() {
           action={
             <Button
               onClick={() => setShowCreateDialog(true)}
-              variant="outline"
-              className="shadow-sm hover:shadow-md transition-all rounded-xl border-primary/20 text-primary hover:bg-primary/5"
+              size="sm"
+              className="flex items-center gap-2"
             >
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="h-4 w-4" />
               Vytvořit rezervaci
             </Button>
           }
         />
 
-        {/* Glassmorphic Filter Bar */}
-        <div className="flex flex-col xl:flex-row gap-4 bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl p-3 sm:p-4 rounded-[2.5rem] border border-white/20 shadow-2xl animate-in fade-in slide-in-from-top-4 duration-700">
-
-          {/* Top Row: Search & Period (Mobile) / Left Side (Desktop) */}
-          <div className="flex flex-col sm:flex-row gap-3 xl:w-auto w-full">
-            <div className="relative group flex-1 sm:w-80">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5 transition-colors group-focus-within:text-blue-500" />
-              <Input
-                placeholder="Hledat rezervaci..."
-                className="pl-12 h-12 bg-white/50 dark:bg-slate-800/50 border-0 shadow-sm rounded-full focus-visible:ring-2 focus-visible:ring-blue-500/20 transition-all w-full text-base"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
+        {/* Clean Filter Container - Monday.com Inspired */}
+        <div className="bg-card border border-border p-6 rounded-xl shadow-soft space-y-6">
+          {/* Filters Row */}
+          <div className="filter-container flex flex-col lg:flex-row gap-4 items-start lg:items-center flex-wrap">
+            {/* Search */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full lg:flex-1">
+              <span className="text-sm font-bold whitespace-nowrap">Search:</span>
+              <div className="relative w-full">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Input
+                  placeholder="Hledat rezervaci..."
+                  className="pl-10"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
             </div>
 
-            <div className="flex items-center gap-2 bg-white/50 dark:bg-slate-800/50 p-1.5 rounded-full border border-white/10 shadow-sm sm:w-auto w-full">
-              <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-full text-indigo-600 dark:text-indigo-400">
-                <TrendingUp className="h-4 w-4" />
-              </div>
+            {/* Status Filter */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full lg:w-auto">
+              <span className="text-sm font-bold whitespace-nowrap">Status:</span>
+              <Select value={filter} onValueChange={setFilter}>
+                <SelectTrigger className="w-full sm:w-48">
+                  <SelectValue placeholder="All statuses" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Vše</SelectItem>
+                  <SelectItem value="pending">Čekající</SelectItem>
+                  <SelectItem value="active">Aktivní</SelectItem>
+                  <SelectItem value="completed">Dokončené</SelectItem>
+                  <SelectItem value="other">Ostatní</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Timeline Filter */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full lg:w-auto">
+              <span className="text-sm font-bold whitespace-nowrap">Period:</span>
               <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-                <SelectTrigger className="border-0 bg-transparent shadow-none focus:ring-0 p-2 h-auto text-sm font-medium min-w-[140px]">
-                  <SelectValue placeholder="Období" />
+                <SelectTrigger className="w-full sm:w-48">
+                  <SelectValue placeholder="Select period" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Celá historie</SelectItem>
@@ -305,46 +323,38 @@ export default function AppBookings() {
             </div>
           </div>
 
-          {/* Bottom Row: Status Pills (Mobile) / Right Side (Desktop) */}
-          <div className="flex-1 overflow-x-auto scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0">
-            <ToggleGroup type="single" value={filter} onValueChange={(val) => val && setFilter(val)} className="justify-start xl:justify-end w-full gap-2">
-              <ToggleGroupItem value="all" className="rounded-full px-4 h-11 data-[state=on]:bg-blue-600 data-[state=on]:text-white data-[state=on]:shadow-lg shadow-sm border border-slate-200 bg-white/50 hover:bg-white/80 transition-all gap-2 min-w-fit">
-                <LayoutGrid className="h-4 w-4" /> Vše
-              </ToggleGroupItem>
-              <ToggleGroupItem value="pending" className="rounded-full px-4 h-11 data-[state=on]:bg-amber-500 data-[state=on]:text-white data-[state=on]:shadow-lg shadow-sm border border-slate-200 bg-white/50 hover:bg-white/80 transition-all gap-2 min-w-fit">
-                <Clock className="h-4 w-4" /> Čekající
-                {bookings.filter(b => b.status === 'pending').length > 0 && (
-                  <span className="ml-1 bg-white/30 px-1.5 py-0.5 rounded-full text-[10px] backdrop-blur-sm">
-                    {bookings.filter(b => b.status === 'pending').length}
-                  </span>
-                )}
-              </ToggleGroupItem>
-              <ToggleGroupItem value="active" className="rounded-full px-4 h-11 data-[state=on]:bg-indigo-600 data-[state=on]:text-white data-[state=on]:shadow-lg shadow-sm border border-slate-200 bg-white/50 hover:bg-white/80 transition-all gap-2 min-w-fit">
-                <PlayCircle className="h-4 w-4" /> Aktivní
-              </ToggleGroupItem>
-              <ToggleGroupItem value="completed" className="rounded-full px-4 h-11 data-[state=on]:bg-emerald-600 data-[state=on]:text-white data-[state=on]:shadow-lg shadow-sm border border-slate-200 bg-white/50 hover:bg-white/80 transition-all gap-2 min-w-fit">
-                <CheckCircle2 className="h-4 w-4" /> Dokončené
-              </ToggleGroupItem>
-              <ToggleGroupItem value="other" className="rounded-full px-4 h-11 data-[state=on]:bg-slate-700 data-[state=on]:text-white data-[state=on]:shadow-lg shadow-sm border border-slate-200 bg-white/50 hover:bg-white/80 transition-all gap-2 min-w-fit">
-                <History className="h-4 w-4" /> Ostatní
-              </ToggleGroupItem>
-            </ToggleGroup>
-          </div>
+          {/* Custom Date Range */}
+          {selectedPeriod === 'custom' && (
+            <div className="bg-primary-light p-6 rounded-xl border border-border animate-in fade-in zoom-in-95 duration-300">
+              <h3 className="text-sm font-bold mb-4 flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-primary" />
+                Custom Date Range
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="customStartDate" className="text-xs font-bold ml-1 uppercase text-muted-foreground">Od:</Label>
+                  <Input
+                    id="customStartDate"
+                    type="date"
+                    value={customStartDate}
+                    onChange={(e) => setCustomStartDate(e.target.value)}
+                    className="bg-background border border-border rounded-lg focus:ring-2 focus:ring-primary/10"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="customEndDate" className="text-xs font-bold ml-1 uppercase text-muted-foreground">Do:</Label>
+                  <Input
+                    id="customEndDate"
+                    type="date"
+                    value={customEndDate}
+                    onChange={(e) => setCustomEndDate(e.target.value)}
+                    className="bg-background border border-border rounded-lg focus:ring-2 focus:ring-primary/10"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
         </div>
-
-        {/* Custom Date Range Inputs */}
-        {selectedPeriod === 'custom' && (
-          <div className="flex items-end gap-4 bg-card p-4 rounded-xl border shadow-sm animate-in fade-in slide-in-from-top-2">
-            <div className="space-y-2">
-              <Label>Od</Label>
-              <Input type="date" value={customStartDate} onChange={(e) => setCustomStartDate(e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <Label>Do</Label>
-              <Input type="date" value={customEndDate} onChange={(e) => setCustomEndDate(e.target.value)} />
-            </div>
-          </div>
-        )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-24">
           {filteredBookings.length === 0 ? (

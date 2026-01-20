@@ -291,8 +291,7 @@ export default function Clients() {
           action={
             <Button
               onClick={() => setShowAddForm(true)}
-              className="flex items-center gap-2 shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all rounded-xl h-11 px-6 font-bold"
-              variant="gradient"
+              className="flex items-center gap-2"
             >
               <Plus className="h-5 w-5" />
               Přidat klienta
@@ -301,7 +300,7 @@ export default function Clients() {
         />
 
         <div className="space-y-6">
-          <div className="bg-card/50 backdrop-blur-xl p-6 rounded-[2rem] border border-white/10 shadow-xl space-y-6">
+          <div className="bg-card border border-border p-6 rounded-xl shadow-soft space-y-6">
             {/* Period Selector and Sort Filter */}
             <div className="filter-container flex flex-col lg:flex-row gap-6 items-start lg:items-center">
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full lg:w-auto">
@@ -310,10 +309,10 @@ export default function Clients() {
                 </div>
                 <span className="text-sm font-bold whitespace-nowrap">Období útrat:</span>
                 <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-                  <SelectTrigger className="w-full sm:w-48 h-10 bg-background/50 border-0 shadow-sm rounded-xl">
+                  <SelectTrigger className="w-full sm:w-48">
                     <SelectValue placeholder="Vyberte období..." />
                   </SelectTrigger>
-                  <SelectContent className="rounded-xl border-primary/20">
+                  <SelectContent>
                     <SelectItem value="7">Posledních 7 dní</SelectItem>
                     <SelectItem value="30">Posledních 30 dní</SelectItem>
                     <SelectItem value="90">Poslední 3 měsíce</SelectItem>
@@ -328,10 +327,10 @@ export default function Clients() {
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full lg:w-auto">
                 <span className="text-sm font-bold whitespace-nowrap">Zdroj:</span>
                 <Select value={sourceFilter} onValueChange={setSourceFilter}>
-                  <SelectTrigger className="w-full sm:w-32 h-10 bg-background/50 border-0 shadow-sm rounded-xl">
+                  <SelectTrigger className="w-full sm:w-32">
                     <SelectValue placeholder="Vše" />
                   </SelectTrigger>
-                  <SelectContent className="rounded-xl border-primary/20">
+                  <SelectContent>
                     <SelectItem value="all">Vše</SelectItem>
                     <SelectItem value="App">Aplikace</SelectItem>
                   </SelectContent>
@@ -344,10 +343,10 @@ export default function Clients() {
                 </div>
                 <span className="text-sm font-bold whitespace-nowrap">Řadit dle:</span>
                 <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger className="w-full sm:w-48 h-10 bg-background/50 border-0 shadow-sm rounded-xl">
+                  <SelectTrigger className="w-full sm:w-48">
                     <SelectValue placeholder="Řadit dle..." />
                   </SelectTrigger>
-                  <SelectContent className="rounded-xl border-primary/20">
+                  <SelectContent>
                     <SelectItem value="newest">Nejnovější</SelectItem>
                     <SelectItem value="oldest">Nejstarší</SelectItem>
                     <SelectItem value="most_spent">Nejvíce utraceno</SelectItem>
@@ -361,7 +360,7 @@ export default function Clients() {
 
             {/* Custom Date Range - Only show when custom is selected */}
             {selectedPeriod === 'custom' && (
-              <div className="bg-primary/5 p-6 rounded-2xl border border-primary/10 animate-in fade-in zoom-in-95 duration-300">
+              <div className="bg-primary-light p-6 rounded-xl border border-border animate-in fade-in zoom-in-95 duration-300">
                 <h3 className="text-sm font-bold mb-4 flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-primary" />
                   Vlastní rozmezí datumů
@@ -397,14 +396,14 @@ export default function Clients() {
               <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5" />
               <Input
                 placeholder="Hledat klienty dle jména, e-mailu nebo telefonu..."
-                className="pl-12 h-12 bg-background shadow-inner border-0 rounded-2xl focus-visible:ring-primary/20 text-base"
+                className="pl-12 h-12 bg-background border border-border rounded-xl focus-visible:ring-2 focus-visible:ring-primary/10 text-base"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
 
             {/* Period Spending Summary */}
-            <div className="bg-primary/5 p-5 rounded-2xl border border-primary/10 flex items-center justify-between">
+            <div className="bg-primary-light p-5 rounded-xl border border-border flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-bold text-primary mb-1 uppercase tracking-wider">Souhrn útrat za období</h3>
                 <p className="text-xs text-muted-foreground font-medium">
@@ -421,25 +420,25 @@ export default function Clients() {
 
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mt-4">
             {filteredAndSortedClients.map((client) => (
-              <Card key={client.id} className="bg-card/50 backdrop-blur-xl border-0 shadow-xl rounded-[2rem] overflow-hidden hover:shadow-2xl transition-all duration-500 group border border-white/10">
+              <Card key={client.id} className="border border-border shadow-soft hover:shadow-medium transition-all duration-standard rounded-xl overflow-hidden group">
                 <CardHeader className="p-6 pb-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
                         <User className="h-5 w-5 text-primary" />
                       </div>
-                      <CardTitle className="text-lg font-bold tracking-tight group-hover:text-primary transition-colors">{client.name}</CardTitle>
+                      <CardTitle className="text-lg font-semibold tracking-tight group-hover:text-primary transition-colors">{client.name}</CardTitle>
                     </div>
                     <Badge className={cn(
                       "rounded-lg px-2 py-0.5 text-[10px] uppercase font-bold border-0",
-                      client.client_type === 'company' ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"
+                      client.client_type === 'company' ? "bg-info-light text-info border border-info-border" : "bg-secondary text-secondary-foreground border border-border"
                     )}>
                       {client.client_type === 'company' ? 'Firma' : 'Osoba'}
                     </Badge>
                   </div>
                 </CardHeader>
                 <CardContent className="p-6 pt-0 space-y-4">
-                  <div className="space-y-3 bg-muted/20 p-4 rounded-3xl border border-white/5 min-h-[140px]">
+                  <div className="space-y-3 bg-secondary/20 p-4 rounded-xl border border-border min-h-[140px]">
                     <div className="flex items-center gap-3 text-sm text-muted-foreground font-medium group-hover:text-foreground transition-colors">
                       <Mail className="h-4 w-4 text-primary/70" />
                       <span className="truncate">{client.email || 'E-mail neuveden'}</span>
@@ -455,11 +454,11 @@ export default function Clients() {
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="bg-emerald-500/5 border border-emerald-500/10 p-3 rounded-2xl">
+                    <div className="bg-success-light border border-success-border p-3 rounded-xl">
                       <p className="text-[10px] uppercase font-bold text-emerald-600 mb-1">Celkem útrata</p>
                       <p className="text-sm font-black text-emerald-700">{client.total_spent?.toLocaleString('cs-CZ') || 0} CZK</p>
                     </div>
-                    <div className="bg-blue-500/5 border border-blue-500/10 p-3 rounded-2xl">
+                    <div className="bg-info-light border border-info-border p-3 rounded-xl">
                       <p className="text-[10px] uppercase font-bold text-blue-600 mb-1">Za období</p>
                       <p className="text-sm font-black text-blue-700">{client.period_spent?.toLocaleString('cs-CZ') || 0} CZK</p>
                     </div>
@@ -470,7 +469,7 @@ export default function Clients() {
                       variant="outline"
                       size="sm"
                       onClick={() => handleEditClient(client)}
-                      className="flex-1 rounded-xl h-10 border-primary/20 hover:bg-primary/5 hover:text-primary transition-all font-bold"
+                      className="flex-1 rounded-lg border border-border hover:bg-secondary hover:border-gray-300 transition-all font-semibold"
                     >
                       <Edit className="h-4 w-4 mr-2" />
                       Upravit
@@ -479,7 +478,7 @@ export default function Clients() {
                       variant="ghost"
                       size="sm"
                       onClick={() => handleDeleteClient(client.id)}
-                      className="flex-1 rounded-xl h-10 hover:bg-red-50 hover:text-red-600 text-muted-foreground transition-all font-medium"
+                      className="flex-1 rounded-lg hover:bg-destructive-light hover:text-destructive text-muted-foreground transition-all font-medium"
                     >
                       <Trash2 className="h-4 w-4 mr-2" />
                       Smazat
@@ -491,7 +490,7 @@ export default function Clients() {
           </div>
 
           {filteredAndSortedClients.length === 0 && !loading && (
-            <div className="text-center py-24 bg-card/30 backdrop-blur-xl rounded-[2.5rem] border-2 border-dashed border-primary/10 max-w-2xl mx-auto shadow-inner">
+            <div className="text-center py-24 bg-card/30 backdrop-blur-xl rounded-xl border-2 border-dashed border-border max-w-2xl mx-auto">
               <div className="w-20 h-20 bg-primary/5 rounded-3xl flex items-center justify-center mx-auto mb-6">
                 <User className="h-10 w-10 text-primary opacity-40" />
               </div>
@@ -500,7 +499,7 @@ export default function Clients() {
                 {searchTerm ? 'Zkuste upravit hledaný výraz.' : 'Začněte přidáním prvního klienta.'}
               </p>
               {!searchTerm && (
-                <Button onClick={() => setShowAddForm(true)} className="rounded-2xl shadow-xl h-12 px-8 bg-primary hover:bg-primary/90 text-white font-bold transition-all hover:scale-105 active:scale-95">
+                <Button onClick={() => setShowAddForm(true)} className="rounded-xl h-12 px-8 font-semibold transition-all hover:shadow-medium">
                   <Plus className="h-5 w-5 mr-2" />
                   Přidat klienta
                 </Button>

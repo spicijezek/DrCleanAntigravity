@@ -74,12 +74,12 @@ export function BookingCard({ booking, onViewDetail, onDelete, onCreateInvoice }
     const isStarted = !!booking.started_at || isInProgress;
 
     const statusConfig = {
-        pending: { label: 'Čeká na schválení', color: 'bg-amber-400', ghostColor: 'bg-amber-50 text-amber-700 border-amber-100' },
-        approved: { label: 'Schváleno', color: 'bg-indigo-500', ghostColor: 'bg-indigo-50 text-indigo-700 border-indigo-100' },
-        in_progress: { label: 'Probíhá', color: 'bg-emerald-500 shadow-[2px_0_10px_rgba(16,185,129,0.3)] animate-pulse', ghostColor: 'bg-emerald-50 text-emerald-700 border-emerald-100 animate-pulse' },
-        completed: { label: 'Dokončeno', color: 'bg-emerald-500', ghostColor: 'bg-emerald-50 text-emerald-700 border-emerald-100' },
-        paid: { label: 'Zaplaceno', color: 'bg-emerald-600', ghostColor: 'bg-green-50 text-green-700 border-green-100' },
-        declined: { label: 'Zamítnuto', color: 'bg-red-500', ghostColor: 'bg-red-50 text-red-700 border-red-100' }
+        pending: { label: 'Čeká na schválení', color: 'bg-warning', ghostColor: 'bg-warning-light text-warning border-warning-border' },
+        approved: { label: 'Schváleno', color: 'bg-info', ghostColor: 'bg-info-light text-info border-info-border' },
+        in_progress: { label: 'Probíhá', color: 'bg-success shadow-[2px_0_10px_rgba(16,185,129,0.2)] animate-pulse', ghostColor: 'bg-success-light text-success border-success-border animate-pulse' },
+        completed: { label: 'Dokončeno', color: 'bg-success', ghostColor: 'bg-success-light text-success border-success-border' },
+        paid: { label: 'Zaplaceno', color: 'bg-success', ghostColor: 'bg-success-light text-success border-success-border' },
+        declined: { label: 'Zamítnuto', color: 'bg-destructive', ghostColor: 'bg-destructive-light text-destructive border-destructive-border' }
     };
 
     const currentStatus = statusConfig[booking.status as keyof typeof statusConfig] || statusConfig.pending;
@@ -103,10 +103,10 @@ export function BookingCard({ booking, onViewDetail, onDelete, onCreateInvoice }
     const completedRooms = booking.checklist_rooms?.filter(r => r.is_completed).length || 0;
 
     return (
-        <Card className="group relative overflow-hidden border-0 shadow-lg hover:shadow-2xl transition-all duration-500 rounded-[2.5rem] bg-card">
+        <Card className="group relative overflow-hidden border border-border shadow-soft hover:shadow-medium transition-all duration-standard rounded-xl bg-card">
             {/* Thick left accent strip */}
             <div className={cn(
-                "absolute left-0 top-0 bottom-0 w-2.5 z-20 transition-all duration-500",
+                "absolute left-0 top-0 bottom-0 w-1 z-20 transition-all duration-standard",
                 currentStatus.color
             )} />
 
@@ -114,7 +114,7 @@ export function BookingCard({ booking, onViewDetail, onDelete, onCreateInvoice }
                 {/* Header: Service & Status */}
                 <div className="flex justify-between items-start gap-4">
                     <div className="space-y-1">
-                        <h3 className="text-2xl font-black tracking-tight text-foreground/90 leading-tight">
+                        <h3 className="text-xl font-semibold tracking-tight text-foreground leading-tight">
                             {details?.service_title || booking.service_type || 'Úklid'}
                         </h3>
                         <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground/60 uppercase tracking-widest leading-none">
@@ -122,16 +122,16 @@ export function BookingCard({ booking, onViewDetail, onDelete, onCreateInvoice }
                         </div>
                     </div>
                     <div className="flex flex-col items-end gap-2">
-                        <Badge className={cn("px-4 py-1.5 text-[11px] font-black rounded-full border shadow-sm uppercase tracking-wider", currentStatus.ghostColor)}>
+                        <Badge variant={isPending ? 'warning' : isCompleted ? 'success' : isDeclined ? 'destructive' : 'default'} className="uppercase tracking-wide">
                             {currentStatus.label}
                         </Badge>
                         <Button
-                            variant="ghost"
+                            variant="outline"
                             size="sm"
                             onClick={() => onViewDetail(booking)}
-                            className="h-9 px-4 rounded-2xl bg-slate-50 hover:bg-slate-100 text-slate-600 font-bold text-xs"
+                            className="flex items-center gap-2"
                         >
-                            <Eye className="h-4 w-4 mr-2" /> Detail
+                            <Eye className="h-4 w-4" /> Detail
                         </Button>
                     </div>
                 </div>
@@ -139,68 +139,72 @@ export function BookingCard({ booking, onViewDetail, onDelete, onCreateInvoice }
                 {/* Main Info Grid */}
                 <div className="grid grid-cols-1 gap-4">
                     {/* Client & Address Container */}
-                    <div className="p-5 rounded-[2rem] bg-slate-50/50 border border-slate-100/50 space-y-4 shadow-sm group-hover:bg-slate-50 transition-colors duration-500">
+                    <div className="p-4 rounded-lg bg-muted/30 border border-border/50 space-y-3">
                         {/* Client Row */}
-                        <div className="flex items-center gap-4">
-                            <div className="h-10 w-10 rounded-2xl bg-white flex items-center justify-center shadow-sm text-indigo-500 shrink-0 border border-indigo-50">
-                                <UserIcon className="h-5 w-5" />
+                        <div className="flex items-center gap-3">
+                            <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                                <UserIcon className="h-4 w-4" />
                             </div>
                             <div className="min-w-0 flex-1">
-                                <p className="text-[10px] font-bold text-indigo-900/40 uppercase tracking-widest leading-none mb-1">Zákazník</p>
-                                <p className="text-base font-bold text-slate-900 truncate">{booking.clients?.name}</p>
+                                <p className="text-xs text-muted-foreground">Zákazník</p>
+                                <p className="text-sm font-semibold text-foreground truncate">{booking.clients?.name}</p>
                             </div>
                             <div className="flex items-center gap-1.5 shrink-0">
-                                <a href={`tel:${booking.clients?.phone}`} className="h-8 w-8 rounded-full bg-white flex items-center justify-center text-slate-400 hover:text-indigo-500 transition-colors shadow-sm border border-slate-100">
+                                <a href={`tel:${booking.clients?.phone}`} className="h-8 w-8 rounded-lg bg-background flex items-center justify-center text-muted-foreground hover:text-primary transition-colors border border-border">
                                     <Phone className="h-3.5 w-3.5" />
                                 </a>
-                                <a href={`mailto:${booking.clients?.email}`} className="h-8 w-8 rounded-full bg-white flex items-center justify-center text-slate-400 hover:text-indigo-500 transition-colors shadow-sm border border-slate-100">
+                                <a href={`mailto:${booking.clients?.email}`} className="h-8 w-8 rounded-lg bg-background flex items-center justify-center text-muted-foreground hover:text-primary transition-colors border border-border">
                                     <Mail className="h-3.5 w-3.5" />
                                 </a>
                             </div>
                         </div>
 
                         {/* Location/Time Row */}
-                        <div className="flex items-center gap-4 pt-4 border-t border-slate-100/50">
-                            <div className="h-10 w-10 rounded-2xl bg-white flex items-center justify-center shadow-sm text-emerald-500 shrink-0 border border-emerald-50">
-                                <CalendarIcon className="h-5 w-5" />
+                        <div className="flex items-center gap-3 pt-3 border-t border-border/50">
+                            <div className="h-9 w-9 rounded-lg bg-success/10 flex items-center justify-center text-success shrink-0">
+                                <CalendarIcon className="h-4 w-4" />
                             </div>
                             <div className="min-w-0 flex-1">
-                                <p className="text-[10px] font-bold text-emerald-900/40 uppercase tracking-widest leading-none mb-1">Termín a adresa</p>
+                                <p className="text-xs text-muted-foreground">Termín a adresa</p>
                                 <div className="flex items-center gap-2">
-                                    <span className="text-sm font-bold text-slate-900 whitespace-nowrap">
+                                    <span className="text-sm font-semibold text-foreground">
                                         {format(new Date(booking.scheduled_date), 'd. MMMM yyyy, HH:mm', { locale: cs })}
                                     </span>
                                     {isStarted && (
-                                        <Badge className="bg-emerald-50 text-emerald-700 border-emerald-100 text-[10px] font-bold h-5 px-1.5 uppercase">
+                                        <Badge variant="success" className="text-[10px] h-5 px-1.5">
                                             <Play className="h-2 w-2 mr-1 fill-current" /> {booking.started_at ? format(new Date(booking.started_at), 'HH:mm') : 'Zahájeno'}
                                         </Badge>
                                     )}
                                 </div>
-                                <p className="text-sm text-slate-500 truncate mt-0.5 leading-tight">{booking.address}</p>
+                                <p className="text-xs text-muted-foreground truncate mt-0.5">{booking.address}</p>
+                            </div>
+                        </div>
+
+                        {/* Price & Loyalty Row */}
+                        <div className="flex items-center gap-3 pt-3 border-t border-border/50">
+                            <div className="h-9 w-9 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-600 shrink-0">
+                                <Sparkles className="h-4 w-4" />
+                            </div>
+                            <div className="min-w-0 flex-1 flex items-center justify-between">
+                                <div className="space-y-0.5">
+                                    <p className="text-xs text-muted-foreground">Cena úklidu</p>
+                                    <p className="text-lg font-bold text-emerald-600 leading-tight">{displayPrice}</p>
+                                </div>
+                                {loyaltyPoints > 0 && (
+                                    <Badge variant="outline" className="h-8 px-3 bg-emerald-50/50 border-emerald-100/50 text-emerald-700 font-black gap-1.5 rounded-lg uppercase tracking-tight text-[10px]">
+                                        <Sparkles className="h-3 w-3" />
+                                        {loyaltyPoints} Bodů
+                                    </Badge>
+                                )}
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Footer: Price, Loyalty & Progress */}
-                <div className="flex items-end justify-between gap-6 pt-2">
-                    {/* Price & Loyalty */}
-                    <div className="space-y-3 shrink-0">
-                        <div className="space-y-0.5">
-                            <p className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest">Cena úklidu</p>
-                            <p className="text-2xl font-black text-emerald-600 leading-none">{displayPrice}</p>
-                        </div>
-                        {loyaltyPoints > 0 && (
-                            <div className="inline-flex items-center gap-1.5 bg-amber-50 text-amber-700 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border border-amber-100 shadow-sm">
-                                <Sparkles className="h-3 w-3 fill-amber-400" />
-                                {loyaltyPoints} Bodů
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Progress Tracker (If assigned) */}
-                    {totalRooms > 0 && (
-                        <div className="flex-1 max-w-[180px] space-y-2">
+                {/* Footer: Progress Tracker */}
+                {totalRooms > 0 && (
+                    <div className="pt-2">
+                        <div className="space-y-2">
                             <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest">
                                 <span className="flex items-center gap-1.5 text-slate-400">
                                     <Clock className="h-3 w-3" /> Postup
@@ -216,8 +220,8 @@ export function BookingCard({ booking, onViewDetail, onDelete, onCreateInvoice }
                                 />
                             </div>
                         </div>
-                    )}
-                </div>
+                    </div>
+                )}
             </div>
         </Card>
     );

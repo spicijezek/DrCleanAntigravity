@@ -85,6 +85,12 @@ export default function Jobs() {
   const [selectedClient, setSelectedClient] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState('status');
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [clientTypeFilter, setClientTypeFilter] = useState('all');
+  const [timelineFilter, setTimelineFilter] = useState('all');
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
   const [approvingJob, setApprovingJob] = useState<Job | null>(null);
   const [scheduledDate, setScheduledDate] = useState('');
   const [scheduledTime, setScheduledTime] = useState('');
@@ -148,21 +154,48 @@ export default function Jobs() {
         job.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
         job.client_name?.toLowerCase().includes(searchTerm.toLowerCase());
 
-      // Filter by category if a category is selected
-      const categoryFilters = ['home_cleaning', 'commercial_cleaning', 'window_cleaning', 'post_construction_cleaning', 'upholstery_cleaning'];
-      if (categoryFilters.includes(sortBy)) {
-        return matchesSearch && job.category === sortBy;
+      // Category filter
+      const matchesCategory = categoryFilter === 'all' || job.category === categoryFilter;
+
+      // Status filter
+      const matchesStatus = statusFilter === 'all' || job.status === statusFilter;
+
+      // Client type filter
+      const matchesClientType = clientTypeFilter === 'all' || job.client_type === clientTypeFilter;
+
+      // Timeline filter
+      let matchesTimeline = true;
+      if (timelineFilter !== 'all') {
+        const now = new Date();
+        const jobDate = new Date(job.scheduled_date || job.created_at);
+
+        switch (timelineFilter) {
+          case '7':
+            const sevenDaysAgo = new Date(now);
+            sevenDaysAgo.setDate(now.getDate() - 7);
+            matchesTimeline = jobDate >= sevenDaysAgo;
+            break;
+          case '30':
+            const thirtyDaysAgo = new Date(now);
+            thirtyDaysAgo.setDate(now.getDate() - 30);
+            matchesTimeline = jobDate >= thirtyDaysAgo;
+            break;
+          case '90':
+            const ninetyDaysAgo = new Date(now);
+            ninetyDaysAgo.setDate(now.getDate() - 90);
+            matchesTimeline = jobDate >= ninetyDaysAgo;
+            break;
+          case 'custom':
+            if (customStartDate && customEndDate) {
+              const start = new Date(customStartDate);
+              const end = new Date(customEndDate + 'T23:59:59');
+              matchesTimeline = jobDate >= start && jobDate <= end;
+            }
+            break;
+        }
       }
 
-      // Filter by client type
-      if (sortBy === 'person') {
-        return matchesSearch && job.client_type === 'person';
-      }
-      if (sortBy === 'company') {
-        return matchesSearch && job.client_type === 'company';
-      }
-
-      return matchesSearch;
+      return matchesSearch && matchesCategory && matchesStatus && matchesClientType && matchesTimeline;
     })
     .sort((a, b) => {
       // Apply selected sort
@@ -373,41 +406,153 @@ export default function Jobs() {
           title="Zakázky"
           description="Správa a plánování úklidových zakázek"
           action={
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
-              <div className="relative flex-1 sm:w-64">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                <Input
-                  placeholder="Hledat zakázky..."
-                  className="pl-10 h-11 bg-card/50 backdrop-blur-sm border-0 shadow-sm rounded-xl focus-visible:ring-primary/20"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-              <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="w-full sm:w-48 h-11 bg-card/50 backdrop-blur-sm border-0 shadow-sm rounded-xl">
-                  <Filter className="h-4 w-4 mr-2 text-muted-foreground" />
-                  <SelectValue placeholder="Řadit a filtrovat" />
+            <Button
+              onClick={() => setShowAddForm(true)}
+              className="flex items-center gap-2"
+            >
+              <Plus className="h-5 w-5" />
+              Přidat zakázku
+            </Button>
+          }
+        />
+
+        {/* Comprehensive Filter Container */}
+        <div className="bg-card border border-border p-6 rounded-xl shadow-soft space-y-6">
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5" />
+            <Input
+              placeholder="Hledat zakázky dle čísla, názvu, kategorie nebo klienta..."
+              className="pl-12 h-12 bg-background border border-border rounded-xl focus-visible:ring-2 focus-visible:ring-primary/10 text-base"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+
+          {/* Filters Row */}
+          <div className="filter-container flex flex-col lg:flex-row gap-4 items-start lg:items-center flex-wrap">
+            {/* Category Filter */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full lg:w-auto">
+              <span className="text-sm font-bold whitespace-nowrap">Kategorie:</span>
+              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <SelectTrigger className="w-full sm:w-56">
+                  <SelectValue placeholder="Všechny kategorie" />
                 </SelectTrigger>
-                <SelectContent className="rounded-xl border-primary/20">
+                <SelectContent>
+                  <SelectItem value="all">Všechny kategorie</SelectItem>
+                  <SelectItem value="home_cleaning">Úklid domácnosti</SelectItem>
+                  <SelectItem value="commercial_cleaning">Komerční úklid</SelectItem>
+                  <SelectItem value="window_cleaning">Mytí oken</SelectItem>
+                  <SelectItem value="post_construction_cleaning">Po-stavební úklid</SelectItem>
+                  <SelectItem value="upholstery_cleaning">Čištění čalounění</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Status Filter */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full lg:w-auto">
+              <span className="text-sm font-bold whitespace-nowrap">Status:</span>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-full sm:w-48">
+                  <SelectValue placeholder="Všechny stavy" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Všechny stavy</SelectItem>
+                  <SelectItem value="scheduled">Naplánováno</SelectItem>
+                  <SelectItem value="in_progress">Probíhá</SelectItem>
+                  <SelectItem value="completed">Dokončeno</SelectItem>
+                  <SelectItem value="paid">Zaplaceno</SelectItem>
+                  <SelectItem value="cancelled">Zrušeno</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Client Type Filter */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full lg:w-auto">
+              <span className="text-sm font-bold whitespace-nowrap">Typ klienta:</span>
+              <Select value={clientTypeFilter} onValueChange={setClientTypeFilter}>
+                <SelectTrigger className="w-full sm:w-40">
+                  <SelectValue placeholder="Všichni" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Všichni</SelectItem>
+                  <SelectItem value="person">Fyzické osoby</SelectItem>
+                  <SelectItem value="company">Firmy</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Timeline Filter */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full lg:w-auto">
+              <span className="text-sm font-bold whitespace-nowrap">Časové období:</span>
+              <Select value={timelineFilter} onValueChange={setTimelineFilter}>
+                <SelectTrigger className="w-full sm:w-48">
+                  <SelectValue placeholder="Vše" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Vše</SelectItem>
+                  <SelectItem value="7">Posledních 7 dní</SelectItem>
+                  <SelectItem value="30">Posledních 30 dní</SelectItem>
+                  <SelectItem value="90">Poslední 3 měsíce</SelectItem>
+                  <SelectItem value="custom">Vlastní rozmezí</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Sort By */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full lg:w-auto">
+              <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
+                <ArrowUpDown className="h-4 w-4 text-primary" />
+              </div>
+              <span className="text-sm font-bold whitespace-nowrap">Řadit dle:</span>
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="w-full sm:w-48">
+                  <SelectValue placeholder="Řadit dle..." />
+                </SelectTrigger>
+                <SelectContent>
                   <SelectItem value="status">Status</SelectItem>
                   <SelectItem value="newest">Nejnovější</SelectItem>
                   <SelectItem value="oldest">Nejstarší</SelectItem>
                   <SelectItem value="most_spent">Nejvyšší tržba</SelectItem>
                   <SelectItem value="alphabetical">Abecedně</SelectItem>
-                  <SelectItem value="person">Fyzické osoby</SelectItem>
-                  <SelectItem value="company">Firmy</SelectItem>
                 </SelectContent>
               </Select>
-              <Button
-                onClick={() => setShowAddForm(true)}
-                className="h-11 bg-primary hover:bg-primary/90 text-primary-foreground shadow-md hover:shadow-lg transition-all rounded-xl gap-2 px-6 font-bold"
-              >
-                <Plus className="h-5 w-5" />
-                Přidat zakázku
-              </Button>
             </div>
-          }
-        />
+          </div>
+
+          {/* Custom Date Range - Only show when custom is selected */}
+          {timelineFilter === 'custom' && (
+            <div className="bg-primary-light p-6 rounded-xl border border-border animate-in fade-in zoom-in-95 duration-300">
+              <h3 className="text-sm font-bold mb-4 flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-primary" />
+                Vlastní rozmezí datumů
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="customStartDate" className="text-xs font-bold ml-1 uppercase text-muted-foreground">Od:</Label>
+                  <Input
+                    id="customStartDate"
+                    type="date"
+                    value={customStartDate}
+                    onChange={(e) => setCustomStartDate(e.target.value)}
+                    className="bg-background border border-border rounded-lg focus:ring-2 focus:ring-primary/10"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="customEndDate" className="text-xs font-bold ml-1 uppercase text-muted-foreground">Do:</Label>
+                  <Input
+                    id="customEndDate"
+                    type="date"
+                    value={customEndDate}
+                    onChange={(e) => setCustomEndDate(e.target.value)}
+                    className="bg-background border border-border rounded-lg focus:ring-2 focus:ring-primary/10"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
 
         {/* Pending Job Requests Section */}
         {pendingJobs.length > 0 && (

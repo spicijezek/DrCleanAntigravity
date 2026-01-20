@@ -1,5 +1,5 @@
-import { StatsCard } from "@/components/ui/stats-card"
 import { useState, useEffect } from "react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { supabase } from "@/integrations/supabase/client"
 import { useAuth } from "@/contexts/AuthContext"
 import { useNavigate } from "react-router-dom"
@@ -91,10 +91,22 @@ export function DashboardStats({ blurNumbers = false }: DashboardStatsProps) {
       const paidJobs = allJobs?.filter(job => job.status === 'paid' && job.payment_received_date) || [];
       const totalRevenue = paidJobs.reduce((sum, job) => sum + (job.revenue || 0), 0) || 0;
 
-      const totalExpenses = paidJobs.reduce((sum, job) =>
-        sum + (job.expenses || 0) + (job.supplies_expense_total || 0) + (job.transport_expense_total || 0), 0) || 0;
+      // Fetch cleaner expenses for paid jobs to match Finance page calculation
+      const paidJobIds = paidJobs.map(job => job.id);
+      let totalCleanerExpenses = 0;
+      if (paidJobIds.length > 0) {
+        const { data: jobExpenses } = await supabase
+          .from('job_expenses')
+          .select('cleaner_expense')
+          .in('job_id', paidJobIds);
+        totalCleanerExpenses = jobExpenses?.reduce((sum, exp) => sum + (exp.cleaner_expense || 0), 0) || 0;
+      }
 
-      // Net Profit Margin
+      const totalSuppliesExpenses = paidJobs.reduce((sum, job) => sum + (job.supplies_expense_total || 0), 0) || 0;
+      const totalTransportExpenses = paidJobs.reduce((sum, job) => sum + (job.transport_expense_total || 0), 0) || 0;
+      const totalExpenses = totalSuppliesExpenses + totalTransportExpenses + totalCleanerExpenses;
+
+      // Net Profit Margin - matching Finance page calculation
       const netProfitMargin = totalRevenue > 0 ? ((totalRevenue - totalExpenses) / totalRevenue) * 100 : 0;
 
       // --- Clients ---
@@ -159,42 +171,23 @@ export function DashboardStats({ blurNumbers = false }: DashboardStatsProps) {
         return count;
       }, 0);
 
-      // --- Projected Revenue (30 Days) ---
-      // Sum revenue for EACH occurrence in the next 30 days
-      const projectedRevenue = (allJobs || []).reduce((sum, job) => {
-        if (job.status === 'scheduled') {
-          const revenuePerJob = job.revenue || 0;
-          let occurrencesInRange = 0;
-
-          const checkDate = (d: string | Date) => {
-            const dt = new Date(d);
-            return dt >= now && dt <= thirtyDaysFromNow;
-          };
-
-          if (job.scheduled_date && checkDate(job.scheduled_date)) {
-            occurrencesInRange += 1;
-          }
-          if (Array.isArray(job.scheduled_dates) && job.scheduled_dates.length > 0) {
-            const hasScheduledDateInArray = job.scheduled_date && job.scheduled_dates.includes(job.scheduled_date);
-            const additionalDatesInRange = job.scheduled_dates.filter((d: string) => {
-              if (d === job.scheduled_date && hasScheduledDateInArray) return false;
-              return checkDate(d);
-            }).length;
-            occurrencesInRange += additionalDatesInRange;
-          }
-
-          return sum + (revenuePerJob * occurrencesInRange);
-        }
-        return sum;
-      }, 0);
+      // --- Projected Revenue (30 Days) - Match Finance Page ---
+      // Based on last 30 days average revenue
+      const last30DaysPaidJobs = paidJobs?.filter(job =>
+        job.payment_received_date &&
+        new Date(job.payment_received_date) >= thirtyDaysAgo &&
+        new Date(job.payment_received_date) <= now
+      ) || [];
+      const last30DaysRevenue = last30DaysPaidJobs.reduce((sum, job) => sum + (job.revenue || 0), 0);
+      const projectedRevenue = last30DaysRevenue; // Simple projection: same as last 30 days
 
       // Estimated Profit uses current margin
       const projectedProfit = (projectedRevenue * (netProfitMargin / 100));
 
-      // --- Outstanding Balance ---
-      // Completed but not paid
+      // --- Outstanding Balance - Match Finance Page ---
+      // Scheduled or completed jobs not yet paid
       const outstandingBalance = (allJobs || [])
-        .filter(job => job.status === 'completed') // 'completed' implies done but not yet 'paid'
+        .filter(job => (job.status === 'scheduled' || job.status === 'completed') && !job.payment_received_date)
         .reduce((sum, job) => sum + (job.revenue || 0), 0);
 
       // --- Average Job Value ---
@@ -249,98 +242,98 @@ export function DashboardStats({ blurNumbers = false }: DashboardStatsProps) {
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       {/* Row 1 */}
-      <StatsCard
-        title="TOTAL REVENUE"
-        value={<span className={blurNumbers ? "filter blur-md" : ""}>{formatCurrency(stats.totalRevenue)}</span>}
-        change={stats.revenueChange}
-        changeType="positive"
-        icon={DollarSign}
-        className="bg-card/50 backdrop-blur-sm shadow-sm rounded-3xl overflow-hidden h-full border-0"
-        iconClassName="text-emerald-500 bg-emerald-500/10"
-        borderClass="border-l-emerald-500 border-l-4"
-      />
+      <Card className={`border border-border shadow-soft hover:shadow-medium transition-all duration-standard rounded-xl overflow-hidden ${blurNumbers ? 'blur-sm select-none' : ''}`}>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+          <DollarSign className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{formatCurrency(stats.totalRevenue)}</div>
+          <p className="text-xs text-muted-foreground mt-1">{stats.revenueChange}</p>
+        </CardContent>
+      </Card>
 
       <div className="cursor-pointer h-full" onClick={() => navigate('/clients')}>
-        <StatsCard
-          title="ACTIVE CLIENTS"
-          value={<span className={blurNumbers ? "filter blur-md" : ""}>{stats.totalClients.toString()}</span>}
-          change={stats.clientsChange}
-          changeType="positive"
-          icon={Users}
-          className="bg-card/50 backdrop-blur-sm shadow-sm rounded-3xl overflow-hidden h-full border-0"
-          iconClassName="text-blue-500 bg-blue-500/10"
-          borderClass="border-l-blue-500 border-l-4"
-        />
+        <Card className={`border border-border shadow-soft hover:shadow-medium transition-all duration-standard rounded-xl overflow-hidden ${blurNumbers ? 'blur-sm select-none' : ''}`}>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Active Clients</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.totalClients.toString()}</div>
+            <p className="text-xs text-muted-foreground mt-1">{stats.clientsChange}</p>
+          </CardContent>
+        </Card>
       </div>
 
       <div className="cursor-pointer h-full" onClick={() => navigate('/jobs')}>
-        <StatsCard
-          title="COMPLETED JOBS"
-          value={<span className={blurNumbers ? "filter blur-md" : ""}>{stats.completedJobs.toString()}</span>}
-          change="Lifetime completions"
-          changeType="neutral"
-          icon={CheckCircle}
-          className="bg-card/50 backdrop-blur-sm shadow-sm rounded-3xl overflow-hidden h-full border-0"
-          iconClassName="text-indigo-500 bg-indigo-500/10"
-          borderClass="border-l-indigo-500 border-l-4"
-        />
+        <Card className={`border border-border shadow-soft hover:shadow-medium transition-all duration-standard rounded-xl overflow-hidden ${blurNumbers ? 'blur-sm select-none' : ''}`}>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Completed Jobs</CardTitle>
+            <CheckCircle className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.completedJobs.toString()}</div>
+            <p className="text-xs text-muted-foreground mt-1">Lifetime completions</p>
+          </CardContent>
+        </Card>
       </div>
 
-      <StatsCard
-        title="SCHEDULED JOBS"
-        value={<span className={blurNumbers ? "filter blur-md" : ""}>{stats.scheduledJobs.toString()}</span>}
-        change="Upcoming occurrences"
-        changeType="neutral"
-        icon={Calendar}
-        className="bg-card/50 backdrop-blur-sm shadow-sm rounded-3xl overflow-hidden h-full border-0"
-        iconClassName="text-amber-500 bg-amber-500/10"
-        borderClass="border-l-amber-500 border-l-4"
-      />
+      <Card className={`border border-border shadow-soft hover:shadow-medium transition-all duration-standard rounded-xl overflow-hidden ${blurNumbers ? 'blur-sm select-none' : ''}`}>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Scheduled Jobs</CardTitle>
+          <Calendar className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{stats.scheduledJobs.toString()}</div>
+          <p className="text-xs text-muted-foreground mt-1">Upcoming occurrences</p>
+        </CardContent>
+      </Card>
 
       {/* Row 2 */}
-      <StatsCard
-        title="NET PROFIT MARGIN"
-        value={<span className={blurNumbers ? "filter blur-md" : ""}>{formatPercent(stats.netProfitMargin)}</span>}
-        change="After all expenses"
-        changeType="neutral"
-        icon={TrendingUp}
-        className="bg-card/50 backdrop-blur-sm shadow-sm rounded-3xl overflow-hidden h-full border-0"
-        iconClassName="text-blue-500 bg-blue-500/10"
-        borderClass="border-l-blue-500 border-l-4"
-      />
+      <Card className={`border border-border shadow-soft hover:shadow-medium transition-all duration-standard rounded-xl overflow-hidden ${blurNumbers ? 'blur-sm select-none' : ''}`}>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Net Profit Margin</CardTitle>
+          <TrendingUp className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{formatPercent(stats.netProfitMargin)}</div>
+          <p className="text-xs text-muted-foreground mt-1">After all expenses</p>
+        </CardContent>
+      </Card>
 
-      <StatsCard
-        title="PROJECTED REV (30D)"
-        value={<span className={blurNumbers ? "filter blur-md" : ""}>{formatCurrency(stats.projectedRevenue)}</span>}
-        change={`Est. Profit: ${formatCurrency(stats.projectedProfit)}`}
-        changeType="positive"
-        icon={ArrowUpRight}
-        className="bg-card/50 backdrop-blur-sm shadow-sm rounded-3xl overflow-hidden h-full border-0"
-        iconClassName="text-emerald-500 bg-emerald-500/10"
-        borderClass="border-l-emerald-500 border-l-4"
-      />
+      <Card className={`border border-border shadow-soft hover:shadow-medium transition-all duration-standard rounded-xl overflow-hidden ${blurNumbers ? 'blur-sm select-none' : ''}`}>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Projected Revenue (30d)</CardTitle>
+          <ArrowUpRight className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{formatCurrency(stats.projectedRevenue)}</div>
+          <p className="text-xs text-muted-foreground mt-1">Est. Profit: {formatCurrency(stats.projectedProfit)}</p>
+        </CardContent>
+      </Card>
 
-      <StatsCard
-        title="OUTSTANDING BAL"
-        value={<span className={blurNumbers ? "filter blur-md" : ""}>{formatCurrency(stats.outstandingBalance)}</span>}
-        change="Wait for payment"
-        changeType="negative"
-        icon={Clock}
-        className="bg-card/50 backdrop-blur-sm shadow-sm rounded-3xl overflow-hidden h-full border-0"
-        iconClassName="text-amber-500 bg-amber-500/10"
-        borderClass="border-l-amber-500 border-l-4"
-      />
+      <Card className={`border border-border shadow-soft hover:shadow-medium transition-all duration-standard rounded-xl overflow-hidden ${blurNumbers ? 'blur-sm select-none' : ''}`}>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Outstanding Balance</CardTitle>
+          <Clock className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{formatCurrency(stats.outstandingBalance)}</div>
+          <p className="text-xs text-muted-foreground mt-1">Wait for payment</p>
+        </CardContent>
+      </Card>
 
-      <StatsCard
-        title="AVERAGE JOB VALUE"
-        value={<span className={blurNumbers ? "filter blur-md" : ""}>{formatCurrency(stats.averageJobValue)}</span>}
-        change="Per completed job"
-        changeType="positive"
-        icon={Layers}
-        className="bg-card/50 backdrop-blur-sm shadow-sm rounded-3xl overflow-hidden h-full border-0"
-        iconClassName="text-purple-500 bg-purple-500/10"
-        borderClass="border-l-purple-500 border-l-4"
-      />
+      <Card className={`border border-border shadow-soft hover:shadow-medium transition-all duration-standard rounded-xl overflow-hidden ${blurNumbers ? 'blur-sm select-none' : ''}`}>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Average Job Value</CardTitle>
+          <Layers className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{formatCurrency(stats.averageJobValue)}</div>
+          <p className="text-xs text-muted-foreground mt-1">Per completed job</p>
+        </CardContent>
+      </Card>
     </div>
   )
 }

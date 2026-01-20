@@ -40,33 +40,33 @@ const Index = () => {
         <AdminPageHeader
           title="Dashboard"
           description={`Welcome back, ${userName || 'Admin'}. Here's what's happening today.`}
-          variant="luxurious"
+          variant="default"
           action={
             <div className="flex flex-wrap items-center gap-2 md:gap-3">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setNumbersBlurred(!numbersBlurred)}
-                className="flex-shrink-0 bg-white/10 backdrop-blur-md border-white/20 text-white hover:bg-white/20 transition-all rounded-xl"
+                className="flex items-center gap-2"
               >
                 {numbersBlurred ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                {numbersBlurred ? 'Show' : 'Hide'}
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => window.print()}
-                className="hidden sm:flex bg-white/10 backdrop-blur-md border-white/20 text-white hover:bg-white/20 transition-all rounded-xl"
+                className="hidden sm:flex items-center gap-2"
               >
-                <Download className="h-4 w-4 mr-2" />
+                <Download className="h-4 w-4" />
                 Export
               </Button>
               <Button
-                variant="gradient"
                 size="sm"
                 onClick={() => window.location.href = '/jobs'}
-                className="flex-shrink-0 shadow-lg shadow-purple-500/20 hover:shadow-purple-500/40 transition-all rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 border-0"
+                className="flex items-center gap-2"
               >
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus className="h-4 w-4" />
                 New Job
               </Button>
             </div>

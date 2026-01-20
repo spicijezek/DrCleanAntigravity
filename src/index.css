@@ -8,57 +8,127 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 215 28% 17%;
+    /* === Monday.com-Inspired Design System === */
+
+    /* Base Colors */
+    --background: 220 20% 98%;
+    --foreground: 220 13% 25%;
 
     --card: 0 0% 100%;
-    --card-foreground: 215 28% 17%;
+    --card-foreground: 220 13% 25%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 215 28% 17%;
+    --popover-foreground: 220 13% 25%;
 
-    /* Dr Clean Brand Colors */
-    --primary: 205 50% 16%; /* Dark blue #14293C */
+    /* Primary Blues (Professional, Trustworthy) */
+    --primary: 225 57% 45%;
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 205 50% 26%;
+    --primary-hover: 225 60% 35%;
+    --primary-light: 225 73% 93%;
 
-    --secondary: 215 28% 17%; /* Dark navy from brand */
-    --secondary-foreground: 0 0% 100%;
+    /* Secondary (Neutral Actions) */
+    --secondary: 220 15% 95%;
+    --secondary-foreground: 220 13% 25%;
+    --secondary-hover: 220 13% 91%;
 
-    --muted: 215 20% 96%;
-    --muted-foreground: 215 16% 47%;
+    /* Muted (Subtle Backgrounds) */
+    --muted: 220 15% 95%;
+    --muted-foreground: 220 9% 46%;
 
-    --accent: 205 50% 35%; /* Darker blue for hover */
+    /* Accent (Interactive Elements) */
+    --accent: 225 60% 55%;
     --accent-foreground: 0 0% 100%;
 
-    --success: 142 76% 36%;
+    /* Status Colors - Success (Emerald) */
+    --success: 152 69% 45%;
     --success-foreground: 0 0% 100%;
+    --success-light: 152 60% 96%;
+    --success-border: 152 55% 88%;
 
-    --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 100%;
+    /* Status Colors - Warning (Amber) */
+    --warning: 38 92% 55%;
+    --warning-foreground: 220 13% 25%;
+    --warning-light: 38 100% 96%;
+    --warning-border: 38 95% 88%;
 
-    --destructive: 0 84% 60%;
+    /* Status Colors - Error (Red) */
+    --destructive: 0 72% 55%;
     --destructive-foreground: 0 0% 100%;
+    --destructive-light: 0 85% 97%;
+    --destructive-border: 0 80% 92%;
 
-    --border: 215 20% 91%;
-    --input: 215 20% 91%;
-    --ring: 205 50% 16%;
+    /* Status Colors - Info (Indigo) */
+    --info: 231 48% 48%;
+    --info-foreground: 0 0% 100%;
+    --info-light: 231 100% 97%;
+    --info-border: 231 90% 92%;
 
-    /* Custom Design Tokens */
-    --gradient-primary: linear-gradient(135deg, hsl(205 50% 16%), hsl(205 50% 26%));
-    --gradient-secondary: linear-gradient(135deg, hsl(215 28% 17%), hsl(215 28% 25%));
-    --gradient-success: linear-gradient(135deg, hsl(142 76% 36%), hsl(142 76% 46%));
-    
-    --shadow-soft: 0 2px 10px -2px hsl(215 28% 17% / 0.1);
-    --shadow-medium: 0 8px 25px -8px hsl(215 28% 17% / 0.15);
-    --shadow-strong: 0 16px 40px -12px hsl(215 28% 17% / 0.25);
-    --shadow-primary: 0 8px 25px -8px hsl(205 50% 16% / 0.3);
+    /* Neutral Grays (Sophisticated Scale) */
+    --gray-50: 220 20% 98%;
+    --gray-100: 220 15% 95%;
+    --gray-200: 220 13% 91%;
+    --gray-300: 220 10% 80%;
+    --gray-400: 220 9% 60%;
+    --gray-500: 220 9% 46%;
+    --gray-600: 220 10% 35%;
+    --gray-700: 220 13% 25%;
+    --gray-800: 220 15% 18%;
+    --gray-900: 220 18% 12%;
 
-    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-bounce: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    /* Border & Input */
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 225 57% 45%;
 
+    /* Spacing System (8px base unit) */
+    --space-1: 0.25rem;
+    /* 4px */
+    --space-2: 0.5rem;
+    /* 8px */
+    --space-3: 0.75rem;
+    /* 12px */
+    --space-4: 1rem;
+    /* 16px */
+    --space-5: 1.25rem;
+    /* 20px */
+    --space-6: 1.5rem;
+    /* 24px */
+    --space-8: 2rem;
+    /* 32px */
+    --space-10: 2.5rem;
+    /* 40px */
+    --space-12: 3rem;
+    /* 48px */
+    --space-16: 4rem;
+    /* 64px */
+
+    /* Shadow System (Subtle Elevation) */
+    --shadow-subtle: 0 1px 2px rgba(0, 0, 0, 0.04);
+    --shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.06);
+    --shadow-medium: 0 4px 12px rgba(0, 0, 0, 0.08);
+    --shadow-strong: 0 8px 24px rgba(0, 0, 0, 0.12);
+    --shadow-primary: 0 2px 8px hsla(225, 57%, 45%, 0.15);
+
+    /* Transition Standards */
+    --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-standard: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* Border Radius Scale */
+    --radius-sm: 0.375rem;
+    /* 6px */
     --radius: 0.5rem;
+    /* 8px */
+    --radius-md: 0.75rem;
+    /* 12px */
+    --radius-lg: 1rem;
+    /* 16px */
+    --radius-xl: 1.25rem;
+    /* 20px */
+    --radius-2xl: 1.5rem;
+    /* 24px */
 
+    /* Sidebar (Preserved from original) */
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
     --sidebar-primary: 240 5.9% 10%;
@@ -70,46 +140,60 @@ All colors MUST be HSL.
   }
 
   .dark {
-    --background: 215 28% 8%;
-    --foreground: 215 20% 95%;
+    --background: 220 18% 12%;
+    --foreground: 220 15% 95%;
 
-    --card: 215 28% 10%;
-    --card-foreground: 215 20% 95%;
+    --card: 220 15% 18%;
+    --card-foreground: 220 15% 95%;
 
-    --popover: 215 28% 10%;
-    --popover-foreground: 215 20% 95%;
+    --popover: 220 15% 18%;
+    --popover-foreground: 220 15% 95%;
 
-    --primary: 205 50% 16%;
+    --primary: 225 57% 45%;
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 205 50% 26%;
+    --primary-hover: 225 60% 35%;
+    --primary-light: 225 60% 25%;
 
-    --secondary: 215 28% 15%;
-    --secondary-foreground: 215 20% 95%;
+    --secondary: 220 15% 25%;
+    --secondary-foreground: 220 15% 95%;
+    --secondary-hover: 220 15% 30%;
 
-    --muted: 215 28% 15%;
-    --muted-foreground: 215 20% 65%;
+    --muted: 220 15% 25%;
+    --muted-foreground: 220 9% 60%;
 
-    --accent: 205 50% 35%;
+    --accent: 225 60% 55%;
     --accent-foreground: 0 0% 100%;
 
-    --success: 142 76% 36%;
+    --success: 152 69% 45%;
     --success-foreground: 0 0% 100%;
+    --success-light: 152 69% 25%;
+    --success-border: 152 69% 35%;
 
-    --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 100%;
+    --warning: 38 92% 55%;
+    --warning-foreground: 220 18% 12%;
+    --warning-light: 38 92% 25%;
+    --warning-border: 38 92% 35%;
 
-    --destructive: 0 84% 60%;
+    --destructive: 0 72% 55%;
     --destructive-foreground: 0 0% 100%;
+    --destructive-light: 0 72% 25%;
+    --destructive-border: 0 72% 35%;
 
-    --border: 215 28% 15%;
-    --input: 215 28% 15%;
-    --ring: 205 50% 16%;
+    --info: 231 48% 48%;
+    --info-foreground: 0 0% 100%;
+    --info-light: 231 48% 25%;
+    --info-border: 231 48% 35%;
 
-    --shadow-soft: 0 2px 10px -2px hsl(0 0% 0% / 0.3);
-    --shadow-medium: 0 8px 25px -8px hsl(0 0% 0% / 0.4);
-    --shadow-strong: 0 16px 40px -12px hsl(0 0% 0% / 0.5);
-    --shadow-primary: 0 8px 25px -8px hsl(205 50% 16% / 0.4);
-    
+    --border: 220 15% 25%;
+    --input: 220 15% 25%;
+    --ring: 225 57% 45%;
+
+    --shadow-subtle: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.4);
+    --shadow-medium: 0 4px 12px rgba(0, 0, 0, 0.5);
+    --shadow-strong: 0 8px 24px rgba(0, 0, 0, 0.6);
+    --shadow-primary: 0 2px 8px hsla(225, 57%, 45%, 0.3);
+
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
@@ -132,18 +216,22 @@ All colors MUST be HSL.
 }
 
 @layer utilities {
+
   /* Minimal Scrollbar */
   .minimal-scrollbar::-webkit-scrollbar {
     width: 6px;
     height: 6px;
   }
+
   .minimal-scrollbar::-webkit-scrollbar-track {
     background: transparent;
   }
+
   .minimal-scrollbar::-webkit-scrollbar-thumb {
     background-color: hsla(215, 16%, 47%, 0.3);
     border-radius: 20px;
   }
+
   .minimal-scrollbar::-webkit-scrollbar-thumb:hover {
     background-color: hsla(215, 16%, 47%, 0.5);
   }
@@ -151,88 +239,148 @@ All colors MUST be HSL.
 
 /* Mobile optimization for iPhone 14 Pro and similar devices */
 @layer utilities {
+
   /* iPhone 14 Pro responsive breakpoints */
   @media screen and (max-width: 430px) {
+
     /* Typography scaling */
-    .text-3xl { font-size: 1.875rem !important; line-height: 2.25rem !important; }
-    .text-2xl { font-size: 1.5rem !important; line-height: 2rem !important; }
-    .text-xl { font-size: 1.125rem !important; line-height: 1.75rem !important; }
-    
-    /* Spacing adjustments */
-    .p-6 { padding: 1rem !important; }
-    .gap-6 { gap: 1rem !important; }
-    .space-y-6 > * + * { margin-top: 1rem !important; }
-    
-    /* Grid adjustments */
-    .md\:grid-cols-2 { grid-template-columns: repeat(1, minmax(0, 1fr)) !important; }
-    .lg\:grid-cols-3 { grid-template-columns: repeat(1, minmax(0, 1fr)) !important; }
-    .lg\:grid-cols-4 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
-    
-    /* Button optimizations */
-    .flex.gap-2.mt-2 { flex-direction: column !important; gap: 0.5rem !important; }
-    .flex.gap-2.mt-4 { flex-direction: column !important; gap: 0.5rem !important; }
-    .flex-1 { width: 100% !important; }
-    
-    /* Touch targets */
-    button { min-height: 44px !important; }
-    
-    /* Header adjustments */
-    .flex.items-center.justify-between { 
-      flex-direction: column !important; 
-      align-items: flex-start !important; 
-      gap: 1rem !important; 
+    .text-3xl {
+      font-size: 1.875rem !important;
+      line-height: 2.25rem !important;
     }
-    
+
+    .text-2xl {
+      font-size: 1.5rem !important;
+      line-height: 2rem !important;
+    }
+
+    .text-xl {
+      font-size: 1.125rem !important;
+      line-height: 1.75rem !important;
+    }
+
+    /* Spacing adjustments */
+    .p-6 {
+      padding: 1rem !important;
+    }
+
+    .gap-6 {
+      gap: 1rem !important;
+    }
+
+    .space-y-6>*+* {
+      margin-top: 1rem !important;
+    }
+
+    /* Grid adjustments */
+    .md\:grid-cols-2 {
+      grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
+    }
+
+    .lg\:grid-cols-3 {
+      grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
+    }
+
+    .lg\:grid-cols-4 {
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+
+    /* Button optimizations */
+    .flex.gap-2.mt-2 {
+      flex-direction: column !important;
+      gap: 0.5rem !important;
+    }
+
+    .flex.gap-2.mt-4 {
+      flex-direction: column !important;
+      gap: 0.5rem !important;
+    }
+
+    .flex-1 {
+      width: 100% !important;
+    }
+
+    /* Touch targets */
+    button {
+      min-height: 44px !important;
+    }
+
+    /* Header adjustments */
+    .flex.items-center.justify-between {
+      flex-direction: column !important;
+      align-items: flex-start !important;
+      gap: 1rem !important;
+    }
+
     /* Form field adjustments */
-    .w-44, .w-40, .w-36, .w-32 { width: 100% !important; }
-    
+    .w-44,
+    .w-40,
+    .w-36,
+    .w-32 {
+      width: 100% !important;
+    }
+
     /* Chart height */
-    .h-80 { height: 16rem !important; }
-    
+    .h-80 {
+      height: 16rem !important;
+    }
+
     /* Modal spacing */
-    .max-w-md.mx-auto { margin-left: 0.5rem !important; margin-right: 0.5rem !important; max-width: none !important; }
+    .max-w-md.mx-auto {
+      margin-left: 0.5rem !important;
+      margin-right: 0.5rem !important;
+      max-width: none !important;
+    }
 
     /* Improve mobile filter and select visibility */
     [data-radix-select-trigger] {
       font-size: 16px !important;
       min-height: 44px !important;
     }
-    
+
     [data-radix-select-value] {
       font-size: 16px !important;
       opacity: 1 !important;
     }
-    
+
     [data-placeholder] {
       font-size: 16px !important;
       opacity: 0.7 !important;
     }
-    
+
     /* Better filter container layout */
     .filter-container {
       flex-direction: column !important;
       align-items: stretch !important;
       gap: 0.5rem !important;
     }
-    
+
     /* Select content positioning */
     [data-radix-select-content] {
       max-width: calc(100vw - 2rem) !important;
       min-width: 200px !important;
     }
-    
+
     /* Period spent container positioning */
     .period-spent-container {
       margin-top: 1rem !important;
       margin-bottom: 1rem !important;
     }
   }
-  
+
   /* Landscape optimizations */
   @media screen and (max-height: 430px) and (orientation: landscape) {
-    .h-80 { height: 12rem !important; }
-    .p-6 { padding: 0.5rem !important; }
-    .gap-6 { gap: 0.5rem !important; }
+    .h-80 {
+      height: 12rem !important;
+    }
+
+    .p-6 {
+      padding: 0.5rem !important;
+    }
+
+    .gap-6 {
+      gap: 0.5rem !important;
+    }
   }
 }
 
@@ -241,6 +389,7 @@ All colors MUST be HSL.
   from {
     transform: rotate(0deg);
   }
+
   to {
     transform: rotate(360deg);
   }
@@ -255,15 +404,19 @@ All colors MUST be HSL.
   0% {
     transform: rotate(0deg) scale(1);
   }
+
   25% {
     transform: rotate(90deg) scale(0.8);
   }
+
   50% {
     transform: rotate(180deg) scale(1);
   }
+
   75% {
     transform: rotate(270deg) scale(0.8);
   }
+
   100% {
     transform: rotate(360deg) scale(1);
   }
@@ -275,9 +428,12 @@ All colors MUST be HSL.
 
 /* Pulse size animation (no rotation) */
 @keyframes pulse-size {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: scale(1);
   }
+
   50% {
     transform: scale(0.85);
   }
@@ -289,15 +445,20 @@ All colors MUST be HSL.
 
 /* Clock ticking animations */
 @keyframes clock-hour {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: rotate(0deg);
   }
+
   25% {
     transform: rotate(3deg);
   }
+
   50% {
     transform: rotate(0deg);
   }
+
   75% {
     transform: rotate(-3deg);
   }
@@ -307,6 +468,7 @@ All colors MUST be HSL.
   0% {
     transform: rotate(0deg);
   }
+
   100% {
     transform: rotate(360deg);
   }
@@ -322,24 +484,32 @@ All colors MUST be HSL.
 
 /* Bow wiggle animations */
 @keyframes bow-wiggle-left {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: rotate(0deg);
   }
+
   25% {
     transform: rotate(-8deg);
   }
+
   75% {
     transform: rotate(5deg);
   }
 }
 
 @keyframes bow-wiggle-right {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: rotate(0deg);
   }
+
   25% {
     transform: rotate(8deg);
   }
+
   75% {
     transform: rotate(-5deg);
   }
@@ -355,9 +525,12 @@ All colors MUST be HSL.
 
 /* Door swing animation */
 @keyframes door-swing {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: perspective(50px) rotateY(0deg);
   }
+
   50% {
     transform: perspective(50px) rotateY(-25deg);
   }
@@ -369,9 +542,12 @@ All colors MUST be HSL.
 
 /* Float animation */
 @keyframes float {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateY(0);
   }
+
   50% {
     transform: translateY(-6px);
   }
@@ -383,13 +559,19 @@ All colors MUST be HSL.
 
 /* Checkmark drawing animation */
 @keyframes check-draw {
-  0%, 10% {
+
+  0%,
+  10% {
     stroke-dashoffset: 10;
   }
-  50%, 60% {
+
+  50%,
+  60% {
     stroke-dashoffset: 0;
   }
-  90%, 100% {
+
+  90%,
+  100% {
     stroke-dashoffset: 10;
   }
 }
@@ -400,8 +582,15 @@ All colors MUST be HSL.
 
 /* Phone shake animation */
 @keyframes phone-shake {
-  0%, 100% { transform: rotate(-5deg); }
-  50% { transform: rotate(5deg); }
+
+  0%,
+  100% {
+    transform: rotate(-5deg);
+  }
+
+  50% {
+    transform: rotate(5deg);
+  }
 }
 
 .animate-phone-shake {
@@ -410,17 +599,22 @@ All colors MUST be HSL.
 
 /* Cleaning lady sweeping animation */
 @keyframes sweep {
-  0%, 100% { 
-    transform: rotate(-3deg) translateX(0); 
+
+  0%,
+  100% {
+    transform: rotate(-3deg) translateX(0);
   }
-  25% { 
-    transform: rotate(2deg) translateX(2px); 
+
+  25% {
+    transform: rotate(2deg) translateX(2px);
   }
-  50% { 
-    transform: rotate(-2deg) translateX(-2px); 
+
+  50% {
+    transform: rotate(-2deg) translateX(-2px);
   }
-  75% { 
-    transform: rotate(3deg) translateX(1px); 
+
+  75% {
+    transform: rotate(3deg) translateX(1px);
   }
 }
 
@@ -434,6 +628,7 @@ All colors MUST be HSL.
   from {
     transform: translate3d(0, 0, 0);
   }
+
   to {
     transform: translate3d(-33.3333%, 0, 0);
   }
@@ -446,24 +641,32 @@ All colors MUST be HSL.
 
 /* Floating decorative circles animation */
 @keyframes float-circle-1 {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translate(0, 0) scale(1);
   }
+
   33% {
     transform: translate(-5px, 8px) scale(1.05);
   }
+
   66% {
     transform: translate(5px, -5px) scale(0.95);
   }
 }
 
 @keyframes float-circle-2 {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translate(0, 0) scale(1);
   }
+
   33% {
     transform: translate(8px, -6px) scale(0.95);
   }
+
   66% {
     transform: translate(-6px, 6px) scale(1.08);
   }
@@ -483,6 +686,7 @@ All colors MUST be HSL.
     transform: translateY(-10px) rotate(0deg);
     opacity: 1;
   }
+
   100% {
     transform: translateY(100vh) rotate(720deg);
     opacity: 0;
@@ -495,31 +699,33 @@ All colors MUST be HSL.
 
 /* Date and time input icon positioning */
 @layer components {
+
   input[type="date"]::-webkit-calendar-picker-indicator,
   input[type="time"]::-webkit-calendar-picker-indicator {
     position: absolute;
     right: 0.75rem;
     cursor: pointer;
   }
-  
+
   /* Select dropdown arrow positioning */
   select {
     background-position: right 0.75rem center !important;
     padding-right: 2.5rem !important;
   }
-  
+
   /* Ensure consistent spacing on mobile */
   @media screen and (max-width: 430px) {
+
     input[type="date"],
     input[type="time"] {
       padding-right: 2.5rem !important;
     }
-    
+
     input[type="date"]::-webkit-calendar-picker-indicator,
     input[type="time"]::-webkit-calendar-picker-indicator {
       right: 0.5rem;
     }
-    
+
     select {
       background-position: right 0.25rem center !important;
       padding-right: 2.5rem !important;

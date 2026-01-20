@@ -155,12 +155,12 @@ export default function Team() {
         />
 
         <div className="space-y-6">
-          <div className="bg-card/50 backdrop-blur-xl p-6 rounded-[2rem] border border-white/10 shadow-xl space-y-6">
+          <div className="bg-card border border-border p-6 rounded-xl shadow-soft space-y-6">
             <div className="relative max-w-md">
               <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5" />
               <Input
                 placeholder="Hledat členy týmu..."
-                className="pl-12 h-12 bg-background shadow-inner border-0 rounded-2xl focus-visible:ring-primary/20 text-base"
+                className="pl-12 h-12 bg-background border border-border rounded-xl focus-visible:ring-2 focus-visible:ring-primary/10 text-base"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -169,7 +169,7 @@ export default function Team() {
 
           {/* Team Members Grid */}
           {filteredTeamMembers.length === 0 ? (
-            <div className="text-center py-24 bg-card/30 backdrop-blur-xl rounded-[2.5rem] border-2 border-dashed border-primary/10 max-w-2xl mx-auto shadow-inner">
+            <div className="text-center py-24 bg-card/30 backdrop-blur-xl rounded-xl border-2 border-dashed border-border max-w-2xl mx-auto">
               <div className="w-20 h-20 bg-primary/5 rounded-3xl flex items-center justify-center mx-auto mb-6">
                 <Calendar className="h-10 w-10 text-primary opacity-40" />
               </div>
@@ -177,7 +177,7 @@ export default function Team() {
               <p className="text-muted-foreground mb-8 max-w-sm mx-auto text-sm leading-relaxed">
                 Začněte přidáním prvního člena týmu do systému.
               </p>
-              <Button onClick={() => setShowAddForm(true)} className="rounded-2xl shadow-xl h-12 px-8 bg-primary hover:bg-primary/90 text-white font-bold transition-all hover:scale-105 active:scale-95">
+              <Button onClick={() => setShowAddForm(true)} className="rounded-xl h-12 px-8 font-semibold transition-all hover:shadow-medium">
                 <Plus className="h-5 w-5 mr-2" />
                 Přidat člena týmu
               </Button>
@@ -185,11 +185,11 @@ export default function Team() {
           ) : (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {filteredTeamMembers.map((member) => (
-                <Card key={member.id} className="bg-card/50 backdrop-blur-xl border-0 shadow-xl rounded-[2rem] overflow-hidden hover:shadow-2xl transition-all duration-500 group border border-white/10">
+                <Card key={member.id} className="border border-border shadow-soft hover:shadow-medium transition-all duration-standard rounded-xl overflow-hidden group">
                   <CardHeader className="p-6 pb-4">
                     <div className="flex items-center justify-between">
                       <div className="flex flex-col">
-                        <CardTitle className="text-lg font-bold tracking-tight group-hover:text-primary transition-colors">{member.name}</CardTitle>
+                        <CardTitle className="text-lg font-semibold tracking-tight group-hover:text-primary transition-colors">{member.name}</CardTitle>
                         {member.position && (
                           <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mt-1">{member.position}</p>
                         )}
@@ -197,7 +197,7 @@ export default function Team() {
                       <div className="flex items-center gap-2">
                         <Badge className={cn(
                           "rounded-lg px-2 py-0.5 text-[10px] uppercase font-bold border-0",
-                          member.is_active ? "bg-emerald-500 text-white" : "bg-slate-200 text-slate-600"
+                          member.is_active ? "bg-success text-success-foreground" : "bg-secondary text-secondary-foreground"
                         )}>
                           {member.is_active ? "Aktivní" : "Neaktivní"}
                         </Badge>
@@ -205,7 +205,7 @@ export default function Team() {
                     </div>
                   </CardHeader>
                   <CardContent className="p-6 pt-0 space-y-4">
-                    <div className="space-y-3 bg-muted/20 p-4 rounded-3xl border border-white/5 min-h-[120px]">
+                    <div className="space-y-3 bg-secondary/20 p-4 rounded-xl border border-border min-h-[120px]">
                       <div className="flex items-center gap-3 text-sm text-muted-foreground font-medium group-hover:text-foreground transition-colors text-xs">
                         <Mail className="h-3.5 w-3.5 text-primary/70" />
                         <span className="truncate">{member.email || 'E-mail neuveden'}</span>
@@ -227,7 +227,7 @@ export default function Team() {
                       </div>
                       <div className="flex justify-between items-center text-xs">
                         <span className="text-muted-foreground font-bold uppercase tracking-tight">Celkem vyplaceno:</span>
-                        <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-700 border-emerald-500/20 rounded-lg px-2 py-0.5 font-black">
+                        <Badge variant="secondary" className="bg-success-light text-success border border-success-border rounded-md px-2 py-0.5 font-semibold">
                           {member.calculated_total_earnings.toLocaleString('cs-CZ')} CZK
                         </Badge>
                       </div>
@@ -244,7 +244,7 @@ export default function Team() {
                         variant="outline"
                         size="sm"
                         onClick={() => setEditingMember(member)}
-                        className="flex-1 rounded-xl h-10 border-primary/20 hover:bg-primary/5 hover:text-primary transition-all font-bold"
+                        className="flex-1 rounded-lg border border-border hover:bg-secondary hover:border-gray-300 transition-all font-semibold"
                       >
                         <Edit className="h-4 w-4 mr-2" />
                         Upravit
@@ -253,7 +253,7 @@ export default function Team() {
                         variant="ghost"
                         size="sm"
                         onClick={() => handleDeleteTeamMember(member.id)}
-                        className="flex-1 rounded-xl h-10 hover:bg-red-50 hover:text-red-600 text-muted-foreground transition-all font-medium"
+                        className="flex-1 rounded-lg hover:bg-destructive-light hover:text-destructive text-muted-foreground transition-all font-medium"
                       >
                         <Trash2 className="h-4 w-4 mr-2" />
                         Smazat

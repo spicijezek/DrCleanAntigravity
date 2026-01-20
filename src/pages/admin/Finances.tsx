@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Layout } from '@/components/layout/Layout';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { LoadingOverlay } from '@/components/LoadingOverlay';
+import { cn } from '@/lib/utils';
 
 interface FinancialData {
   periodRevenue: number;
@@ -22,6 +23,9 @@ interface FinancialData {
   periodTransportExpenses: number;
   periodCashRevenue: number;
   periodBankRevenue: number;
+  marginPercentage: number;
+  projectedRevenue: number;
+  outstandingBalance: number;
   earningsDistribution: any[];
   chartData: any[];
 }
@@ -35,6 +39,9 @@ export default function Finances() {
     periodTransportExpenses: 0,
     periodCashRevenue: 0,
     periodBankRevenue: 0,
+    marginPercentage: 0,
+    projectedRevenue: 0,
+    outstandingBalance: 0,
     earningsDistribution: [],
     chartData: []
   });
@@ -42,6 +49,7 @@ export default function Finances() {
   const [numbersBlurred, setNumbersBlurred] = useState(true);
   const [periodFilter, setPeriodFilter] = useState('30');
   const [categoryFilter, setCategoryFilter] = useState('all');
+  const [clientTypeFilter, setClientTypeFilter] = useState('all');
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
   const [chartFilter, setChartFilter] = useState('months');
@@ -146,6 +154,11 @@ export default function Finances() {
         query = query.eq('category', categoryFilter as any);
       }
 
+      // Apply client type filter if not 'all'
+      if (clientTypeFilter !== 'all') {
+        query = query.eq('clients.client_type', clientTypeFilter);
+      }
+
       const { data: allJobs, error: jobsError } = await query;
 
       if (jobsError) throw jobsError;
@@ -206,17 +219,43 @@ export default function Finances() {
 
       // Override periodExpenses to be the sum of supplies + transport + cleaner expenses to keep math consistent
       const computedPeriodExpenses = periodSuppliesExpenses + periodTransportExpenses + periodCleanerExpenses;
+      const periodProfit = periodRevenue - computedPeriodExpenses;
+
+      // Calculate new KPIs
+      // 1. Margin Percentage
+      const marginPercentage = periodRevenue > 0 ? (periodProfit / periodRevenue) * 100 : 0;
+
+      // 2. Projected Revenue (based on last 30 days average)
+      const last30DaysJobs = allJobs?.filter(job => {
+        if (!job.payment_received_date) return false;
+        const paymentDate = new Date(job.payment_received_date);
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        return paymentDate >= thirtyDaysAgo;
+      }) || [];
+      const last30DaysRevenue = last30DaysJobs.reduce((sum, job) => sum + (job.revenue || 0), 0);
+      const projectedRevenue = last30DaysRevenue;
+
+      // 3. Outstanding Balance (scheduled/completed jobs not yet paid)
+      const outstandingJobs = allJobs?.filter(job =>
+        (job.status === 'scheduled' || job.status === 'completed') &&
+        !job.payment_received_date
+      ) || [];
+      const outstandingBalance = outstandingJobs.reduce((sum, job) => sum + (job.revenue || 0), 0);
 
       // Generate chart data is now handled separately
       setFinancialData(prev => ({
         ...prev,
         periodRevenue,
         periodExpenses: computedPeriodExpenses,
-        periodProfit: periodRevenue - computedPeriodExpenses,
+        periodProfit,
         periodSuppliesExpenses,
         periodTransportExpenses,
         periodCashRevenue,
         periodBankRevenue,
+        marginPercentage,
+        projectedRevenue,
+        outstandingBalance,
         earningsDistribution
       }));
     } catch (error: any) {
@@ -337,73 +376,102 @@ export default function Finances() {
           title="Finances"
           description="Track your revenue, expenses, and profit"
           action={
-            <div className="flex flex-col gap-2 w-full sm:w-auto">
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                <Select value={periodFilter} onValueChange={setPeriodFilter}>
-                  <SelectTrigger className="w-full sm:w-44 h-10 bg-card/50 backdrop-blur-sm border-0 shadow-sm rounded-xl">
-                    <span className="text-sm text-foreground">{getPeriodLabel(periodFilter)}</span>
-                  </SelectTrigger>
-                  <SelectContent className="select-content">
-                    <SelectItem value="7">Last 7 days</SelectItem>
-                    <SelectItem value="30">Last 30 days</SelectItem>
-                    <SelectItem value="90">Last 3 months</SelectItem>
-                    <SelectItem value="180">Last 6 months</SelectItem>
-                    <SelectItem value="365">Past 365 days</SelectItem>
-                    <SelectItem value="total">Total</SelectItem>
-                    <SelectItem value="custom">Custom Range</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                  <SelectTrigger className="w-full sm:w-48 h-10 bg-card/50 backdrop-blur-sm border-0 shadow-sm rounded-xl">
-                    <Filter className="h-4 w-4 mr-2" />
-                    <span className="text-sm text-foreground">
-                      {categoryFilter === 'all' ? 'All Categories' : categoryFilter.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                    </span>
-                  </SelectTrigger>
-                  <SelectContent className="select-content">
-                    <SelectItem value="all">All Categories</SelectItem>
-                    <SelectItem value="home_cleaning">Home Cleaning</SelectItem>
-                    <SelectItem value="commercial_cleaning">Commercial Cleaning</SelectItem>
-                    <SelectItem value="window_cleaning">Window Cleaning</SelectItem>
-                    <SelectItem value="post_construction_cleaning">Post-Construction Cleaning</SelectItem>
-                    <SelectItem value="upholstery_cleaning">Upholstery Cleaning</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setNumbersBlurred(!numbersBlurred)}
-                  className="w-full sm:w-auto h-10 bg-card/50 backdrop-blur-sm border-0 shadow-sm hover:bg-card/80 transition-all rounded-xl"
-                >
-                  {numbersBlurred ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-                </Button>
-              </div>
-              {periodFilter === 'custom' && (
-                <div className="flex flex-col sm:flex-row gap-2 animate-in fade-in slide-in-from-top-2 duration-300">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setNumbersBlurred(!numbersBlurred)}
+              className="flex items-center gap-2"
+            >
+              {numbersBlurred ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+              {numbersBlurred ? 'Show' : 'Hide'} Numbers
+            </Button>
+          }
+        />
+
+        {/* Comprehensive Filter Container */}
+        <div className="bg-card border border-border p-6 rounded-xl shadow-soft space-y-6">
+          <div className="filter-container flex flex-col lg:flex-row gap-4 items-start lg:items-center flex-wrap">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full lg:w-auto">
+              <span className="text-sm font-bold whitespace-nowrap">Category:</span>
+              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <SelectTrigger className="w-full sm:w-56">
+                  <SelectValue placeholder="All Categories" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Categories</SelectItem>
+                  <SelectItem value="home_cleaning">Home Cleaning</SelectItem>
+                  <SelectItem value="commercial_cleaning">Commercial Cleaning</SelectItem>
+                  <SelectItem value="window_cleaning">Window Cleaning</SelectItem>
+                  <SelectItem value="post_construction_cleaning">Post-Construction</SelectItem>
+                  <SelectItem value="upholstery_cleaning">Upholstery Cleaning</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full lg:w-auto">
+              <span className="text-sm font-bold whitespace-nowrap">Client Type:</span>
+              <Select value={clientTypeFilter} onValueChange={setClientTypeFilter}>
+                <SelectTrigger className="w-full sm:w-40">
+                  <SelectValue placeholder="All" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="person">Persons</SelectItem>
+                  <SelectItem value="company">Companies</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full lg:w-auto">
+              <span className="text-sm font-bold whitespace-nowrap">Time Period:</span>
+              <Select value={periodFilter} onValueChange={setPeriodFilter}>
+                <SelectTrigger className="w-full sm:w-48">
+                  <SelectValue placeholder="Select period" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="7">Last 7 days</SelectItem>
+                  <SelectItem value="30">Last 30 days</SelectItem>
+                  <SelectItem value="90">Last 3 months</SelectItem>
+                  <SelectItem value="180">Last 6 months</SelectItem>
+                  <SelectItem value="365">Past year</SelectItem>
+                  <SelectItem value="total">All time</SelectItem>
+                  <SelectItem value="custom">Custom Range</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          {periodFilter === 'custom' && (
+            <div className="bg-primary-light p-6 rounded-xl border border-border animate-in fade-in zoom-in-95 duration-300">
+              <h3 className="text-sm font-bold mb-4 flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-primary" />
+                Custom Date Range
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="customStartDate" className="text-xs font-bold ml-1 uppercase text-muted-foreground">From:</Label>
                   <Input
                     id="customStartDate"
                     type="date"
                     value={customStartDate}
                     onChange={(e) => setCustomStartDate(e.target.value)}
-                    className="w-full sm:w-36 h-10 bg-card/50 backdrop-blur-sm border-0 shadow-sm rounded-xl"
-                    placeholder="Start Date"
+                    className="bg-background border border-border rounded-lg focus:ring-2 focus:ring-primary/10"
                   />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="customEndDate" className="text-xs font-bold ml-1 uppercase text-muted-foreground">To:</Label>
                   <Input
                     id="customEndDate"
                     type="date"
                     value={customEndDate}
                     onChange={(e) => setCustomEndDate(e.target.value)}
-                    className="w-full sm:w-36 h-10 bg-card/50 backdrop-blur-sm border-0 shadow-sm rounded-xl"
-                    placeholder="End Date"
+                    className="bg-background border border-border rounded-lg focus:ring-2 focus:ring-primary/10"
                   />
                 </div>
-              )}
+              </div>
             </div>
-          }
-        />
+          )}
+        </div>
 
         <div className="grid gap-6 md:grid-cols-3 mt-4">
-          <Card className="bg-card/50 backdrop-blur-sm border-0 shadow-lg rounded-3xl overflow-hidden hover:shadow-xl transition-all duration-300">
+          <Card className="border border-border shadow-soft hover:shadow-medium transition-all duration-standard rounded-xl overflow-hidden">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Revenue (Selected Period)</CardTitle>
               <DollarSign className="h-4 w-4 text-muted-foreground" />
@@ -424,7 +492,7 @@ export default function Finances() {
             </CardContent>
           </Card>
 
-          <Card className="bg-card/50 backdrop-blur-sm border-0 shadow-lg rounded-3xl overflow-hidden hover:shadow-xl transition-all duration-300">
+          <Card className="border border-border shadow-soft hover:shadow-medium transition-all duration-standard rounded-xl overflow-hidden">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Expenses (Selected Period)</CardTitle>
               <TrendingDown className="h-4 w-4 text-muted-foreground" />
@@ -445,7 +513,7 @@ export default function Finances() {
             </CardContent>
           </Card>
 
-          <Card className="bg-card/50 backdrop-blur-sm border-0 shadow-lg rounded-3xl overflow-hidden hover:shadow-xl transition-all duration-300">
+          <Card className="border border-border shadow-soft hover:shadow-medium transition-all duration-standard rounded-xl overflow-hidden">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Net Profit (Selected Period)</CardTitle>
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
@@ -457,11 +525,59 @@ export default function Finances() {
               <p className="text-xs text-muted-foreground">Selected period</p>
             </CardContent>
           </Card>
+
+          {/* NEW KPI: Margin Percentage */}
+          <Card className="border border-border shadow-soft hover:shadow-medium transition-all duration-standard rounded-xl overflow-hidden">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Profit Margin</CardTitle>
+              <BarChart3 className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className={cn("text-2xl font-bold", numbersBlurred && "blur-sm select-none")}>
+                {financialData.marginPercentage.toFixed(1)}%
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Profitability ratio
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* NEW KPI: Projected Revenue */}
+          <Card className="border border-border shadow-soft hover:shadow-medium transition-all duration-standard rounded-xl overflow-hidden">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Projected Revenue (30d)</CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className={cn("text-2xl font-bold", numbersBlurred && "blur-sm select-none")}>
+                {financialData.projectedRevenue.toLocaleString('cs-CZ')} CZK
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Based on last 30 days
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* NEW KPI: Outstanding Balance */}
+          <Card className="border border-border shadow-soft hover:shadow-medium transition-all duration-standard rounded-xl overflow-hidden">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Outstanding Balance</CardTitle>
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className={cn("text-2xl font-bold text-warning", numbersBlurred && "blur-sm select-none")}>
+                {financialData.outstandingBalance.toLocaleString('cs-CZ')} CZK
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Unpaid jobs (scheduled/completed)
+              </p>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Revenue Chart and Earnings */}
         <div className="grid gap-6 md:grid-cols-3">
-          <Card className="md:col-span-2 bg-card/50 backdrop-blur-sm border-0 shadow-lg rounded-3xl overflow-hidden">
+          <Card className="md:col-span-2 border border-border shadow-soft rounded-xl overflow-hidden">
             <CardHeader>
               <div className="flex flex-col gap-3">
                 <CardTitle className="flex items-center gap-2">
@@ -541,7 +657,7 @@ export default function Finances() {
             </CardContent>
           </Card>
 
-          <Card className="bg-card/50 backdrop-blur-sm border-0 shadow-lg rounded-3xl overflow-hidden">
+          <Card className="border border-border shadow-soft rounded-xl overflow-hidden">
             <CardHeader>
               <CardTitle>Earnings Distribution</CardTitle>
             </CardHeader>

@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
-import { format } from 'date-fns';
+import { useState, useEffect, useMemo } from 'react';
+import { format, isValid, parseISO } from 'date-fns';
 import { cs } from 'date-fns/locale';
 import {
     Calendar as CalendarIcon, MapPin as MapPinIcon, User as UserIcon, Clock, Save, X, CheckCircle2,
     Trash2, XCircle, Users, Star, FileText, Download, Shield, Sparkles,
-    Banknote, Baby, Dog, HeartPulse, Flag, Mail, Phone, ChevronRight, Settings, Info
+    Banknote, Baby, Dog, HeartPulse, Flag, Mail, Phone, ChevronRight, Settings, Info, Play, DollarSign
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -62,10 +62,21 @@ interface Booking {
             sort_order?: number;
         }[];
     };
+    checklist_rooms?: {
+        id: string;
+        room_name: string;
+        is_completed: boolean;
+        completed_at: string | null;
+        sort_order?: number;
+    }[];
     job_earnings?: {
         amount: number;
         team_member_id: string;
     }[];
+    feedback?: {
+        rating: number;
+        comment: string | null;
+    } | null;
 }
 
 interface BookingDetailDialogProps {
@@ -78,78 +89,137 @@ interface BookingDetailDialogProps {
 
 export function BookingDetailDialog({ booking, isOpen, onClose, onUpdate, teamMembers }: BookingDetailDialogProps) {
     const { toast } = useToast();
-    const [activeTab, setActiveTab] = useState<'overview' | 'editor' | 'details'>('overview');
-    const [selectedTeamMembers, setSelectedTeamMembers] = useState<string[]>([]);
-    const [adminNotes, setAdminNotes] = useState('');
-    const [checklists, setChecklists] = useState<any[]>([]);
-    const [selectedChecklistId, setSelectedChecklistId] = useState('');
-    const [skipInvoice, setSkipInvoice] = useState(false);
-    const [editFormData, setEditFormData] = useState<any>(null);
+    const [isEditing, setIsEditing] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
 
+    // Core states
+    const [selectedTeamMembers, setSelectedTeamMembers] = useState<string[]>([]);
+    const [adminNotes, setAdminNotes] = useState('');
+    const [selectedChecklistId, setSelectedChecklistId] = useState('');
+    const [skipInvoice, setSkipInvoice] = useState(false);
+    const [checklists, setChecklists] = useState<any[]>([]);
+
+    // Form state for editing
+    const [editFormData, setEditFormData] = useState({
+        scheduled_date: '',
+        scheduled_time: '',
+        address: '',
+        price: 0,
+        manual_loyalty_points: 0,
+        team_reward: 0,
+        status: ''
+    });
+
+    // Initialize state when booking changes
     useEffect(() => {
-        if (booking) {
-            // Initialize team members from ids or fallback to relation data
-            const initialTeamMembers = booking.team_member_ids && booking.team_member_ids.length > 0
+        if (booking && isOpen) {
+            setIsEditing(false);
+
+            // Team Members
+            const initialTeamMembers = booking.team_member_ids?.length > 0
                 ? booking.team_member_ids
                 : booking.team_members?.map(tm => tm.id) || [];
-
             setSelectedTeamMembers(initialTeamMembers);
+
+            // Admin Notes
             setAdminNotes(booking.admin_notes || '');
+
+            // Checklist
             setSelectedChecklistId(booking.checklist_id || '');
+
+            // Invoice
             setSkipInvoice(booking.skip_invoice || false);
 
-            const scheduledDateTime = new Date(booking.scheduled_date);
+            // Fetch checklists for this client
+            fetchChecklists(booking.client_id);
+
+            // Populate form data defensively
+            const dateObj = new Date(booking.scheduled_date);
+            const isValidDate = isValid(dateObj);
+
             setEditFormData({
-                scheduled_date: format(scheduledDateTime, 'yyyy-MM-dd'),
-                scheduled_time: format(scheduledDateTime, 'HH:mm'),
-                address: booking.address,
-                status: booking.status,
-                booking_details: { ...booking.booking_details },
-                service_type: booking.service_type,
-                manual_loyalty_points: booking.booking_details?.manual_loyalty_points || 0
+                scheduled_date: isValidDate ? format(dateObj, 'yyyy-MM-dd') : '',
+                scheduled_time: isValidDate ? format(dateObj, 'HH:mm') : '',
+                address: booking.address || '',
+                price: booking.booking_details?.priceEstimate?.price ??
+                    booking.booking_details?.priceEstimate?.priceMin ?? 0,
+                manual_loyalty_points: booking.booking_details?.manual_loyalty_points ?? 0,
+                team_reward: booking.booking_details?.manual_team_reward ??
+                    booking.job_earnings?.reduce((sum, item) => sum + (item.amount || 0), 0) ?? 0,
+                status: booking.status || 'pending'
             });
-
-            fetchChecklists();
         }
-    }, [booking]);
+    }, [booking, isOpen]);
 
-    const fetchChecklists = async () => {
-        if (!booking) return;
+    const fetchChecklists = async (clientId: string) => {
         try {
             const { data } = await supabase
                 .from('client_checklists')
                 .select('*')
-                .eq('client_id', booking.client_id);
+                .eq('client_id', clientId);
             setChecklists(data || []);
         } catch (error) {
             console.error('Error fetching checklists:', error);
         }
     };
 
-    if (!booking || !editFormData) return null;
+    // Derived Data (Defensive)
+    const stats = useMemo(() => {
+        if (!booking) return { completed: 0, total: 0, percentage: 0, rooms: [] };
 
-    const isStarted = !!booking.started_at || booking.status === 'in_progress';
-    const isInProgress = booking.status === 'in_progress';
-    const isCompleted = booking.status === 'completed' || booking.status === 'paid';
+        // Try rooms from both potential sources
+        const rawRooms = booking.checklist?.rooms || booking.checklist_rooms || [];
+        const sortedRooms = [...rawRooms].sort((a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0));
+        const total = sortedRooms.length;
+        const completed = sortedRooms.filter(r => r.is_completed).length;
+        const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
 
-    const teamReward = booking.job_earnings?.reduce((sum, item) => sum + (item.amount || 0), 0) || 0;
+        return { completed, total, percentage, rooms: sortedRooms };
+    }, [booking]);
 
-    // Auto points (27%)
-    const price = editFormData.booking_details?.priceEstimate?.price || editFormData.booking_details?.priceEstimate?.priceMin || 0;
-    const autoPoints = Math.round(price * 0.27);
-    const effectivePoints = editFormData.manual_loyalty_points || autoPoints;
+    const pricing = useMemo(() => {
+        const p = isEditing ? editFormData.price : (booking?.booking_details?.priceEstimate?.price ?? booking?.booking_details?.priceEstimate?.priceMin ?? 0);
+        const autoPoints = Math.round(p * 0.27);
+        const effectivePoints = (isEditing ? editFormData.manual_loyalty_points : (booking?.booking_details?.manual_loyalty_points)) || autoPoints;
+
+        const baseTeamReward = booking?.job_earnings?.reduce((sum, item) => sum + (item.amount || 0), 0) || 0;
+        const teamReward = isEditing ? editFormData.team_reward : (booking?.booking_details?.manual_team_reward ?? baseTeamReward);
+
+        return { price: p, autoPoints, effectivePoints, teamReward };
+    }, [booking, isEditing, editFormData.price, editFormData.manual_loyalty_points, editFormData.team_reward]);
+
+    const displayTeamMembers = useMemo(() => {
+        if (!booking) return [];
+        // If team_members relation is present, use it
+        if (booking.team_members && booking.team_members.length > 0) return booking.team_members;
+        // Otherwise map team_member_ids using the full teamMembers list
+        if (booking.team_member_ids && booking.team_member_ids.length > 0) {
+            return teamMembers.filter(tm => booking.team_member_ids.includes(tm.id));
+        }
+        return [];
+    }, [booking, teamMembers]);
+
+    if (!booking) return null;
 
     const handleSave = async (quickStatus?: string) => {
         setIsSaving(true);
         try {
-            const [year, month, day] = editFormData.scheduled_date.split('-').map(Number);
-            const [hours, minutes] = editFormData.scheduled_time.split(':').map(Number);
-            const scheduledDateTime = new Date(year, month - 1, day, hours, minutes).toISOString();
+            // Reconstruct Date
+            let scheduledDateTime = booking.scheduled_date;
+            if (editFormData.scheduled_date && editFormData.scheduled_time) {
+                const [y, m, d] = editFormData.scheduled_date.split('-').map(Number);
+                const [hh, mm] = editFormData.scheduled_time.split(':').map(Number);
+                scheduledDateTime = new Date(y, m - 1, d, hh, mm).toISOString();
+            }
 
-            const finalDetails = {
-                ...editFormData.booking_details,
-                manual_loyalty_points: editFormData.manual_loyalty_points
+            const updatedDetails = {
+                ...booking.booking_details,
+                priceEstimate: {
+                    ...booking.booking_details?.priceEstimate,
+                    price: editFormData.price
+                },
+                manual_loyalty_points: editFormData.manual_loyalty_points,
+                manual_team_reward: editFormData.team_reward
             };
 
             const { error } = await supabase
@@ -158,17 +228,18 @@ export function BookingDetailDialog({ booking, isOpen, onClose, onUpdate, teamMe
                     scheduled_date: scheduledDateTime,
                     address: editFormData.address,
                     status: quickStatus || editFormData.status,
-                    booking_details: finalDetails,
+                    booking_details: updatedDetails,
                     team_member_ids: selectedTeamMembers,
                     admin_notes: adminNotes,
-                    checklist_id: selectedChecklistId || null,
+                    checklist_id: (selectedChecklistId && selectedChecklistId !== 'none_selection') ? selectedChecklistId : null,
                     skip_invoice: skipInvoice
                 })
                 .eq('id', booking.id);
 
             if (error) throw error;
-            toast({ title: 'Uloženo', description: 'Rezervace byla úspěšně aktualizována' });
-            if (activeTab === 'editor') setActiveTab('overview');
+
+            toast({ title: 'Uloženo', description: 'Změny byly úspěšně uloženy.' });
+            setIsEditing(false);
             onUpdate();
         } catch (error: any) {
             toast({ variant: 'destructive', title: 'Chyba', description: error.message });
@@ -177,363 +248,413 @@ export function BookingDetailDialog({ booking, isOpen, onClose, onUpdate, teamMe
         }
     };
 
+    const isStarted = !!booking.started_at || booking.status === 'in_progress';
+    const isCompleted = ['completed', 'paid'].includes(booking.status);
+
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="fixed left-[50%] top-[50%] translate-x-[-50%] translate-y-[-50%] w-[95vw] max-w-[1000px] h-[85vh] max-h-[85vh] p-0 border-0 bg-transparent shadow-2xl rounded-[3rem] overflow-hidden focus:outline-none data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-1/2">
-                <div className="relative h-full flex flex-col bg-white">
-
-                    {/* Header Strip */}
-                    <div className="flex items-center justify-between p-6 pb-4 border-b bg-slate-50/50">
-                        <div className="flex items-center gap-5">
-                            <div className="h-14 w-14 rounded-[1.5rem] bg-indigo-500 shadow-lg shadow-indigo-500/20 flex items-center justify-center text-white">
-                                <UserIcon className="h-7 w-7" />
-                            </div>
-                            <div>
-                                <h2 className="text-2xl font-black tracking-tight text-slate-900 leading-none mb-1">
-                                    {booking.clients?.name}
-                                </h2>
-                                <div className="flex items-center gap-3">
-                                    <Badge variant="outline" className="bg-white/80 border-slate-200 text-slate-500 font-bold uppercase tracking-widest text-[10px] px-2 py-0.5 rounded-lg shadow-sm">
-                                        ID: {booking.id.split('-')[0]}
-                                    </Badge>
-                                    <span className="text-sm font-bold text-slate-400">
-                                        {format(new Date(booking.created_at), 'd. M. yyyy', { locale: cs })}
-                                    </span>
-                                </div>
-                            </div>
+            <DialogContent className="max-w-5xl h-[85vh] p-0 border border-border bg-background shadow-soft rounded-xl overflow-hidden flex flex-col">
+                {/* Header Section */}
+                <div className="flex-shrink-0 flex items-center justify-between p-6 border-b border-border bg-muted/30">
+                    <div className="flex items-center gap-4">
+                        <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                            <UserIcon className="h-5 w-5" />
                         </div>
-                        <div className="flex items-center gap-2">
-                            <div className="flex bg-slate-100 p-1 rounded-2xl mr-4 shadow-inner">
-                                <button
-                                    type="button"
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        setActiveTab('overview');
-                                    }}
-                                    className={cn(
-                                        "flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all relative z-20",
-                                        activeTab === 'overview' ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600"
-                                    )}
-                                >
-                                    <Info className="h-4 w-4" /> Přehled
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        setActiveTab('editor');
-                                    }}
-                                    className={cn(
-                                        "flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all relative z-20",
-                                        activeTab === 'editor' ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600"
-                                    )}
-                                >
-                                    <Settings className="h-4 w-4" /> Správa
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        setActiveTab('details');
-                                    }}
-                                    className={cn(
-                                        "flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all relative z-20",
-                                        activeTab === 'details' ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600"
-                                    )}
-                                >
-                                    <FileText className="h-4 w-4" /> Detaily
-                                </button>
+                        <div>
+                            <h2 className="text-lg font-semibold text-foreground">
+                                {booking.clients?.name || 'Neznámý klient'}
+                            </h2>
+                            <div className="flex items-center gap-2 mt-0.5">
+                                <Badge variant="outline" className="text-[10px] px-2 py-0.5 font-bold">
+                                    ID: {booking.id.split('-')[0]}
+                                </Badge>
+                                <span className="text-xs text-muted-foreground">
+                                    Vytvořeno: {isValid(new Date(booking.created_at)) ? format(new Date(booking.created_at), 'd. M. yyyy', { locale: cs }) : '-'}
+                                </span>
                             </div>
-                            <Button variant="ghost" size="icon" onClick={onClose} className="h-10 w-10 rounded-full bg-white hover:bg-slate-100 shadow-sm border border-slate-100 transition-all active:scale-90">
-                                <X className="h-5 w-5 text-slate-400" />
-                            </Button>
                         </div>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto overflow-x-hidden p-8 pt-6 minimal-scrollbar">
-                        {activeTab === 'overview' && (
-                            <div className="grid grid-cols-12 gap-8 items-start">
-                                {/* Left Column: Live Progress & Service */}
-                                <div className="col-span-12 lg:col-span-7 space-y-8">
+                    <div className="flex items-center gap-3 pr-8">
+                        <Button
+                            variant={isEditing ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setIsEditing(!isEditing)}
+                            className={cn(
+                                "flex items-center gap-2 h-9 rounded-lg transition-all font-semibold",
+                                isEditing ? "shadow-inner" : "text-muted-foreground"
+                            )}
+                        >
+                            <Settings className={cn("h-4 w-4", isEditing && "animate-spin-slow")} />
+                            {isEditing ? "Zobrazit náhled" : "Upravit rezervaci"}
+                        </Button>
+                    </div>
+                </div>
 
-                                    {/* Quick Summary Cards */}
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="bg-indigo-50/50 rounded-[2rem] p-6 border border-indigo-100/50 space-y-3 shadow-sm">
-                                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400">Termín úklidu</p>
-                                            <div className="flex items-center gap-3">
-                                                <CalendarIcon className="h-5 w-5 text-indigo-500" />
-                                                <p className="text-lg font-black text-indigo-900 leading-none">
-                                                    {format(new Date(booking.scheduled_date), 'd. M. yyyy')}
-                                                </p>
+                {/* Main Content Area */}
+                <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                    <div className="grid grid-cols-12 gap-6 items-start">
+
+                        {/* LEFT COLUMN: Main Information */}
+                        <div className="col-span-12 lg:col-span-7 space-y-6">
+
+                            {/* Card: Termín a Adresa */}
+                            <div className="bg-card border border-border rounded-xl p-6 shadow-sm space-y-5">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <CalendarIcon className="h-4 w-4 text-primary" />
+                                        <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground/80">Termín a adresa</h3>
+                                    </div>
+                                    <Badge variant={isCompleted ? "success" : isStarted ? "warning" : "default"}>
+                                        {booking.status}
+                                    </Badge>
+                                </div>
+
+                                {isEditing ? (
+                                    <div className="grid grid-cols-2 gap-4 animate-in fade-in duration-300">
+                                        <div className="space-y-2">
+                                            <Label className="text-xs font-bold text-muted-foreground/70 ml-1">DATUM</Label>
+                                            <Input
+                                                type="date"
+                                                value={editFormData.scheduled_date}
+                                                onChange={e => setEditFormData({ ...editFormData, scheduled_date: e.target.value })}
+                                                className="h-11 rounded-lg border-border focus:ring-primary/20"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-xs font-bold text-muted-foreground/70 ml-1">ČAS</Label>
+                                            <Input
+                                                type="time"
+                                                value={editFormData.scheduled_time}
+                                                onChange={e => setEditFormData({ ...editFormData, scheduled_time: e.target.value })}
+                                                className="h-11 rounded-lg border-border focus:ring-primary/20"
+                                            />
+                                        </div>
+                                        <div className="col-span-2 space-y-2">
+                                            <Label className="text-xs font-bold text-muted-foreground/70 ml-1">STATUS REZERVACE</Label>
+                                            <Select
+                                                value={editFormData.status}
+                                                onValueChange={val => setEditFormData({ ...editFormData, status: val })}
+                                            >
+                                                <SelectTrigger className="h-11 rounded-lg border-border font-semibold">
+                                                    <SelectValue placeholder="Zvolte status" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="pending">Čeká na schválení</SelectItem>
+                                                    <SelectItem value="approved">Schváleno</SelectItem>
+                                                    <SelectItem value="in_progress">Probíhá</SelectItem>
+                                                    <SelectItem value="completed">Dokončeno</SelectItem>
+                                                    <SelectItem value="paid">Zaplaceno</SelectItem>
+                                                    <SelectItem value="cancelled">Zrušeno</SelectItem>
+                                                    <SelectItem value="declined">Zamítnuto</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="col-span-2 space-y-2">
+                                            <Label className="text-xs font-bold text-muted-foreground/70 ml-1">ADRESA ÚKLIDU</Label>
+                                            <Input
+                                                value={editFormData.address}
+                                                onChange={e => setEditFormData({ ...editFormData, address: e.target.value })}
+                                                className="h-11 rounded-lg border-border focus:ring-primary/20"
+                                            />
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        <div className="flex items-center gap-4 p-3 rounded-lg bg-muted/20 border border-border/50">
+                                            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                                                <CalendarIcon className="h-5 w-5" />
                                             </div>
-                                            <div className="flex items-center gap-3">
-                                                <Clock className="h-5 w-5 text-indigo-500" />
-                                                <p className="text-lg font-black text-indigo-900 leading-none">
-                                                    {format(new Date(booking.scheduled_date), 'HH:mm')}
+                                            <div>
+                                                <p className="text-sm font-bold text-foreground">
+                                                    {isValid(new Date(booking.scheduled_date)) ? format(new Date(booking.scheduled_date), 'EEEE, d. MMMM yyyy', { locale: cs }) : 'Neplatné datum'}
                                                 </p>
+                                                <p className="text-xs text-muted-foreground">Naplánovaný den</p>
                                             </div>
                                         </div>
-                                        <div className="bg-emerald-50/50 rounded-[2rem] p-6 border border-emerald-100/50 space-y-3 shadow-sm">
-                                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400">Finanční přehled</p>
-                                            <div className="flex items-center gap-3">
-                                                <Banknote className="h-5 w-5 text-emerald-500" />
-                                                <p className="text-xl font-black text-emerald-900 leading-none">
-                                                    {price} Kč
-                                                </p>
+                                        <div className="flex items-center gap-4 p-3 rounded-lg bg-muted/20 border border-border/50">
+                                            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                                                <Clock className="h-5 w-5" />
                                             </div>
-                                            <div className="flex items-center gap-2">
-                                                <Sparkles className="h-4 w-4 fill-amber-400 text-amber-400" />
-                                                <p className="text-sm font-black text-amber-700">
-                                                    {effectivePoints} věrnostních bodů
+                                            <div>
+                                                <div className="flex items-center gap-2">
+                                                    <p className="text-sm font-bold text-foreground">
+                                                        {isValid(new Date(booking.scheduled_date)) ? format(new Date(booking.scheduled_date), 'HH:mm') : '--:--'}
+                                                    </p>
+                                                    {isStarted && (
+                                                        <Badge variant="success" className="text-[10px] py-0 px-1.5 h-4">
+                                                            PŘÍJEZD: {booking.started_at ? format(new Date(booking.started_at), 'HH:mm') : 'OK'}
+                                                        </Badge>
+                                                    )}
+                                                </div>
+                                                <p className="text-xs text-muted-foreground">Čas zahájení</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-4 p-3 rounded-lg bg-muted/20 border border-border/50">
+                                            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                                                <MapPinIcon className="h-5 w-5" />
+                                            </div>
+                                            <div className="min-w-0">
+                                                <p className="text-sm font-bold text-foreground truncate">
+                                                    {booking.address}
                                                 </p>
+                                                <p className="text-xs text-muted-foreground">Místo úklidu</p>
                                             </div>
                                         </div>
                                     </div>
+                                )}
+                            </div>
 
-                                    {/* Live Progress Hub */}
-                                    {(isInProgress || isCompleted) && booking.checklist?.rooms && (
-                                        <div className="bg-slate-900 rounded-[2.5rem] p-8 text-white shadow-2xl relative overflow-hidden">
-                                            {/* Glow effect */}
-                                            <div className="absolute -top-24 -right-24 w-64 h-64 bg-emerald-500/20 rounded-full blur-[80px]" />
+                            {/* Card: Customer Info */}
+                            <div className="bg-card border border-border rounded-xl p-6 shadow-sm space-y-5">
+                                <div className="flex items-center gap-2">
+                                    <UserIcon className="h-4 w-4 text-primary" />
+                                    <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground/80">Informace o zákazníkovi</h3>
+                                </div>
 
-                                            <div className="flex items-center justify-between mb-8 relative z-10">
-                                                <div className="space-y-1">
-                                                    <h3 className="text-xl font-black tracking-tight leading-none uppercase">Průběh úklidu</h3>
-                                                    <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-[0.3em]">Živý přenos z aplikace</p>
-                                                </div>
-                                                {isInProgress && (
-                                                    <Badge className="bg-emerald-500 text-white font-black uppercase text-[10px] px-3 py-1 animate-pulse">
-                                                        Probíhá právě teď
-                                                    </Badge>
-                                                )}
-                                            </div>
-
-                                            <div className="space-y-3 overflow-y-auto max-h-[350px] pr-2 scrollbar-hide relative z-10">
-                                                {booking.checklist.rooms.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0)).map(room => (
-                                                    <div key={room.id} className={cn(
-                                                        "flex items-center justify-between p-4 rounded-2xl border transition-all duration-500",
-                                                        room.is_completed
-                                                            ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400 shadow-lg shadow-emerald-500/5 rotate-y-[-5deg]"
-                                                            : "bg-white/5 border-white/10 text-slate-400 opacity-60"
-                                                    )}>
-                                                        <div className="flex items-center gap-4">
-                                                            <div className={cn(
-                                                                "h-10 w-10 rounded-full flex items-center justify-center border-2 transition-transform duration-500",
-                                                                room.is_completed ? "border-emerald-500 bg-emerald-500/20 scale-110" : "border-slate-700 bg-slate-800"
-                                                            )}>
-                                                                {room.is_completed ? <CheckCircle2 className="h-5 w-5" /> : <Clock className="h-4 w-4 opacity-30" />}
-                                                            </div>
-                                                            <div className="space-y-0.5">
-                                                                <span className="text-base font-bold tracking-tight block leading-none">{room.room_name}</span>
-                                                                {room.is_completed && <span className="text-[10px] font-black uppercase opacity-60">Dokončeno</span>}
-                                                            </div>
-                                                        </div>
-                                                        {room.completed_at && (
-                                                            <div className="text-right">
-                                                                <span className="text-[10px] block opacity-40 font-bold uppercase mb-0.5">Timestamp</span>
-                                                                <span className="text-sm font-black tabular-nums">{format(new Date(room.completed_at), 'HH:mm')}</span>
-                                                            </div>
+                                <div className="grid grid-cols-1 gap-3">
+                                    <div className="p-3 bg-muted/20 rounded-lg border border-border/50 flex items-center gap-3">
+                                        <Mail className="h-4 w-4 text-muted-foreground" />
+                                        <div className="min-w-0">
+                                            <p className="text-[10px] font-bold text-muted-foreground/70 uppercase">E-mail</p>
+                                            <p className="text-sm font-semibold truncate">{booking.clients?.email || '-'}</p>
+                                        </div>
+                                    </div>
+                                    <div className="p-3 bg-muted/20 rounded-lg border border-border/50 flex items-center gap-3">
+                                        <Phone className="h-4 w-4 text-muted-foreground" />
+                                        <div>
+                                            <p className="text-[10px] font-bold text-muted-foreground/70 uppercase">Telefon</p>
+                                            <p className="text-sm font-semibold">{booking.clients?.phone || '-'}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                {booking.feedback && (
+                                    <div className="mt-4 pt-4 border-t border-border/50 animate-in fade-in slide-in-from-top-2">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <p className="text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest">Hodnocení zákazníka</p>
+                                            <div className="flex items-center gap-1">
+                                                {[1, 2, 3, 4, 5].map((star) => (
+                                                    <Star
+                                                        key={star}
+                                                        className={cn(
+                                                            "h-3.5 w-3.5",
+                                                            star <= booking.feedback!.rating
+                                                                ? "fill-amber-400 text-amber-400"
+                                                                : "text-muted-foreground/30"
                                                         )}
-                                                    </div>
+                                                    />
                                                 ))}
                                             </div>
-
-                                            {/* Summary Progress bar */}
-                                            <div className="mt-8 pt-6 border-t border-white/10 relative z-10">
-                                                <div className="flex justify-between items-center mb-2">
-                                                    <span className="text-[10px] font-black opacity-40 uppercase tracking-widest">Celkový postup</span>
-                                                    <span className="text-sm font-black">{Math.round((booking.checklist.rooms.filter(r => r.is_completed).length / booking.checklist.rooms.length) * 100)}%</span>
-                                                </div>
-                                                <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden shadow-inner border border-white/5">
-                                                    <div className="h-full bg-emerald-500 transition-all duration-1000 ease-out shadow-[0_0_15px_rgba(16,185,129,0.5)]"
-                                                        style={{ width: `${(booking.checklist.rooms.filter(r => r.is_completed).length / booking.checklist.rooms.length) * 100}%` }}
-                                                    />
-                                                </div>
-                                            </div>
                                         </div>
-                                    )}
-
-                                    {/* Preferences & Allergies Highlight */}
-                                    <div className="space-y-4">
-                                        <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Specifické požadavky</h3>
-                                        <div className="grid grid-cols-2 gap-4">
-                                            {booking.clients?.has_allergies && (
-                                                <div className="col-span-2 p-5 bg-red-50 border border-red-100 rounded-[2rem] flex items-start gap-5 animate-in slide-in-from-left-4 duration-500">
-                                                    <div className="h-12 w-12 rounded-2xl bg-white shadow-sm flex items-center justify-center text-red-500 shrink-0 border border-red-50">
-                                                        <HeartPulse className="h-6 w-6" />
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-[10px] font-black text-red-900 uppercase tracking-widest mb-1">Pozor: ALERGIE</p>
-                                                        <p className="text-sm font-bold text-red-900 leading-snug">
-                                                            {booking.clients.allergies_notes || 'Zákazník hlásí alergie, dbejte zvýšené opatrnosti.'}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            )}
-                                            {booking.clients?.special_instructions && (
-                                                <div className="col-span-2 p-5 bg-indigo-50 border border-indigo-100 rounded-[2rem] flex items-start gap-5">
-                                                    <div className="h-12 w-12 rounded-2xl bg-white shadow-sm flex items-center justify-center text-indigo-500 shrink-0 border border-indigo-50">
-                                                        <Star className="h-6 w-6" />
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-[10px] font-black text-indigo-900 uppercase tracking-widest mb-1">Osobní preference</p>
-                                                        <p className="text-sm font-bold text-indigo-900 italic leading-snug">
-                                                            "{booking.clients.special_instructions}"
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            )}
-                                            <div className="p-4 bg-slate-50 border rounded-[1.5rem] flex items-center gap-3">
-                                                <Baby className={cn("h-5 w-5", booking.clients?.has_children ? "text-blue-500" : "text-slate-300")} />
-                                                <span className={cn("text-xs font-bold", booking.clients?.has_children ? "text-slate-900" : "text-slate-400")}>Děti v domácnosti</span>
+                                        {booking.feedback.comment && (
+                                            <div className="p-3 bg-amber-50/50 border border-amber-100 rounded-lg text-xs italic text-amber-900 leading-relaxed">
+                                                "{booking.feedback.comment}"
                                             </div>
-                                            <div className="p-4 bg-slate-50 border rounded-[1.5rem] flex items-center gap-3">
-                                                <Dog className={cn("h-5 w-5", booking.clients?.has_pets ? "text-orange-500" : "text-slate-300")} />
-                                                <span className={cn("text-xs font-bold", booking.clients?.has_pets ? "text-slate-900" : "text-slate-400")}>S domácími mazlíčky</span>
-                                            </div>
-                                        </div>
+                                        )}
                                     </div>
-                                </div>
+                                )}
 
-                                {/* Right Column: Client Info & Internal Notes */}
-                                <div className="col-span-12 lg:col-span-5 space-y-8">
+                                <div className="space-y-4 pt-2">
+                                    <p className="text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest pl-1">Preference a omezení</p>
 
-                                    {/* Client Contact Hub */}
-                                    <div className="bg-white border-2 border-slate-50 rounded-[2.5rem] p-8 shadow-sm space-y-6">
-                                        <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Kontakt na klienta</h3>
-                                        <div className="space-y-4">
-                                            <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl group hover:bg-slate-100 transition-colors">
-                                                <div className="flex items-center gap-4">
-                                                    <div className="h-10 w-10 rounded-full bg-white flex items-center justify-center text-slate-400 shadow-sm border group-hover:text-indigo-500 transition-colors"><Mail className="h-5 w-5" /></div>
-                                                    <span className="text-sm font-bold truncate max-w-[180px]">{booking.clients?.email}</span>
+                                    <div className="grid grid-cols-1 gap-3">
+                                        {booking.clients?.has_allergies && (
+                                            <div className="p-3 bg-destructive/5 border border-destructive/10 rounded-lg flex items-start gap-3">
+                                                <HeartPulse className="h-4 w-4 text-destructive mt-0.5" />
+                                                <div>
+                                                    <p className="text-xs font-bold text-destructive">POZOR: ALERGIE</p>
+                                                    <p className="text-xs text-destructive/80 leading-relaxed">{booking.clients.allergies_notes}</p>
                                                 </div>
-                                                <ChevronRight className="h-4 w-4 text-slate-300" />
                                             </div>
-                                            <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl group hover:bg-slate-100 transition-colors">
-                                                <div className="flex items-center gap-4">
-                                                    <div className="h-10 w-10 rounded-full bg-white flex items-center justify-center text-slate-400 shadow-sm border group-hover:text-green-500 transition-colors"><Phone className="h-5 w-5" /></div>
-                                                    <span className="text-sm font-bold">{booking.clients?.phone}</span>
+                                        )}
+
+                                        {booking.clients?.special_instructions && (
+                                            <div className="p-3 bg-primary/5 border border-primary/10 rounded-lg flex items-start gap-3">
+                                                <Info className="h-4 w-4 text-primary mt-0.5" />
+                                                <div>
+                                                    <p className="text-xs font-bold text-primary">POZNÁMKA KLIENTA</p>
+                                                    <p className="text-xs italic text-muted-foreground leading-relaxed">"{booking.clients.special_instructions}"</p>
                                                 </div>
-                                                <ChevronRight className="h-4 w-4 text-slate-300" />
                                             </div>
-                                            <div className="flex items-start justify-between p-4 bg-slate-50 rounded-2xl group hover:bg-slate-100 transition-colors">
-                                                <div className="flex items-start gap-4">
-                                                    <div className="h-10 w-10 rounded-full bg-white flex items-center justify-center text-slate-400 shadow-sm border group-hover:text-amber-500 transition-colors shrink-0"><MapPinIcon className="h-5 w-5" /></div>
-                                                    <span className="text-sm font-bold leading-snug pt-2.5">{booking.address}</span>
-                                                </div>
-                                                <ChevronRight className="h-4 w-4 text-slate-300 mt-2.5" />
-                                            </div>
-                                        </div>
+                                        )}
                                     </div>
 
-                                    {/* Internal Team Info */}
-                                    <div className="space-y-4">
-                                        <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Interní informace</h3>
-                                        <div className="bg-slate-50/50 border border-slate-100 p-6 rounded-[2rem] space-y-6">
-                                            <div>
-                                                <p className="text-[10px] font-black uppercase text-slate-400 mb-3 tracking-widest">Přiřazený tým</p>
-                                                <div className="flex flex-wrap gap-2">
-                                                    {booking.team_members && booking.team_members.length > 0 ? (
-                                                        booking.team_members.map(tm => (
-                                                            <div key={tm.id} className="inline-flex items-center gap-2 bg-white px-3 py-2 rounded-xl border shadow-sm font-bold text-xs text-slate-700">
-                                                                <Users className="h-3.5 w-3.5 text-indigo-500" />
-                                                                {tm.name}
-                                                            </div>
-                                                        ))
-                                                    ) : <span className="text-xs font-bold text-slate-400 italic">Nepřiřazeno žádné personální obsazení</span>}
-                                                </div>
-                                            </div>
-
-                                            <div>
-                                                <p className="text-[10px] font-black uppercase text-slate-400 mb-3 tracking-widest">Odměna týmu</p>
-                                                <div className="bg-white p-4 rounded-2xl border flex items-center justify-between">
-                                                    <span className="text-2xl font-black text-slate-900">{teamReward} Kč</span>
-                                                    <Button variant="ghost" size="sm" className="h-8 text-[10px] font-black underline uppercase text-indigo-500">Změnit výpočet</Button>
-                                                </div>
-                                            </div>
-
-                                            <div>
-                                                <p className="text-[10px] font-black uppercase text-slate-400 mb-3 tracking-widest">Tým • Poznámky správce</p>
-                                                <div className="bg-amber-50/50 p-4 rounded-2xl border border-amber-100 italic text-sm text-amber-900/70 leading-relaxed shadow-sm">
-                                                    {booking.admin_notes || 'Bez interních poznámek...'}
-                                                </div>
-                                            </div>
-                                        </div>
+                                    <div className="flex gap-3 px-1">
+                                        <Badge variant="outline" className={cn("gap-1.5 py-1 px-3 rounded-full border-2", booking.clients?.has_children ? "text-blue-600 border-blue-100 bg-blue-50/50" : "opacity-30 grayscale")}>
+                                            <Baby className="h-3.5 w-3.5" /> Děti
+                                        </Badge>
+                                        <Badge variant="outline" className={cn("gap-1.5 py-1 px-3 rounded-full border-2", booking.clients?.has_pets ? "text-orange-600 border-orange-100 bg-orange-50/50" : "opacity-30 grayscale")}>
+                                            <Dog className="h-3.5 w-3.5" /> Mazlíčci
+                                        </Badge>
                                     </div>
-
                                 </div>
                             </div>
-                        )}
+                        </div>
 
-                        {activeTab === 'editor' && (
-                            <div className="grid grid-cols-12 gap-8 animate-in fade-in zoom-in-95 duration-500">
-                                <div className="col-span-12 lg:col-span-8 space-y-8">
-                                    <div className="bg-white border border-slate-100 rounded-[2.5rem] p-8 shadow-sm space-y-8">
-                                        <h3 className="text-xl font-black text-slate-900">Editor Rezervace</h3>
+                        {/* RIGHT COLUMN: Service & Management */}
+                        <div className="col-span-12 lg:col-span-5 space-y-6">
 
-                                        <div className="grid grid-cols-2 gap-6">
-                                            <div className="space-y-2">
-                                                <Label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Datum</Label>
-                                                <Input
-                                                    type="date"
-                                                    value={editFormData.scheduled_date}
-                                                    onChange={e => setEditFormData({ ...editFormData, scheduled_date: e.target.value })}
-                                                    className="h-14 rounded-2xl border-2 focus:border-indigo-500 font-bold"
-                                                />
+                            {/* Card: Live Progress Tracker (Matching BookingCard) */}
+                            {stats.total > 0 && (
+                                <div className="bg-card border border-border rounded-xl p-6 shadow-sm space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <Clock className="h-4 w-4 text-slate-400" />
+                                            <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Postup úklidu</h3>
+                                        </div>
+                                        <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">
+                                            {stats.completed} / {stats.total} Místností
+                                        </span>
+                                    </div>
+
+                                    <div className="h-2.5 w-full bg-slate-100 rounded-full overflow-hidden shadow-inner">
+                                        <div
+                                            className="h-full bg-gradient-to-r from-emerald-400 to-emerald-600 transition-all duration-1000 ease-out"
+                                            style={{ width: `${stats.percentage}%` }}
+                                        />
+                                    </div>
+
+                                    {/* List view of rooms */}
+                                    <div className="space-y-1.5 max-h-[220px] overflow-y-auto pr-2 mt-4 custom-scrollbar">
+                                        {stats.rooms.map(room => (
+                                            <div key={room.id} className="flex items-center justify-between p-2.5 rounded-lg border border-border/40 bg-muted/10 hover:bg-muted/20 transition-colors">
+                                                <div className="flex items-center gap-3">
+                                                    <div className={cn(
+                                                        "h-6 w-6 rounded-full flex items-center justify-center border transition-all",
+                                                        room.is_completed ? "bg-emerald-100 border-emerald-200 text-emerald-600" : "bg-slate-50 border-slate-100 text-slate-400"
+                                                    )}>
+                                                        {room.is_completed ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Clock className="h-3 w-3" />}
+                                                    </div>
+                                                    <span className={cn("text-xs font-medium", room.is_completed ? "text-foreground" : "text-muted-foreground")}>
+                                                        {room.room_name}
+                                                    </span>
+                                                </div>
+                                                {room.completed_at && (
+                                                    <span className="text-[10px] font-bold text-slate-400">{format(new Date(room.completed_at), 'HH:mm')}</span>
+                                                )}
                                             </div>
-                                            <div className="space-y-2">
-                                                <Label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Čas</Label>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Card: Finance Section */}
+                            <div className="bg-card border border-border rounded-xl p-6 shadow-sm space-y-5">
+                                <div className="flex items-center gap-2">
+                                    <Banknote className="h-4 w-4 text-success" />
+                                    <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground/80">Cena a věrnost</h3>
+                                </div>
+
+                                {isEditing ? (
+                                    <div className="space-y-4 animate-in fade-in">
+                                        <div className="space-y-2">
+                                            <Label className="text-xs font-bold text-muted-foreground/70 ml-1">CENA ÚKLIDU (Kč)</Label>
+                                            <Input
+                                                type="number"
+                                                value={editFormData.price}
+                                                onChange={e => setEditFormData({ ...editFormData, price: Number(e.target.value) })}
+                                                className="h-11 rounded-lg border-border"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-xs font-bold text-muted-foreground/70 ml-1">VĚRNOSTNÍ BODY (Override)</Label>
+                                            <div className="relative">
                                                 <Input
-                                                    type="time"
-                                                    value={editFormData.scheduled_time}
-                                                    onChange={e => setEditFormData({ ...editFormData, scheduled_time: e.target.value })}
-                                                    className="h-14 rounded-2xl border-2 focus:border-indigo-500 font-bold"
+                                                    type="number"
+                                                    value={editFormData.manual_loyalty_points || ''}
+                                                    placeholder={`Automaticky: ${pricing.autoPoints}`}
+                                                    onChange={e => setEditFormData({ ...editFormData, manual_loyalty_points: Number(e.target.value) })}
+                                                    className="h-11 rounded-lg border-border pr-12"
                                                 />
-                                            </div>
-                                            <div className="col-span-2 space-y-2">
-                                                <Label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Adresa úklidu</Label>
-                                                <Input
-                                                    value={editFormData.address}
-                                                    onChange={e => setEditFormData({ ...editFormData, address: e.target.value })}
-                                                    className="h-14 rounded-2xl border-2 focus:border-indigo-500 font-bold"
-                                                />
+                                                <Sparkles className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-amber-500" />
                                             </div>
                                         </div>
+                                        <div className="flex items-center space-x-3 pt-1">
+                                            <Checkbox
+                                                id="skip-inv"
+                                                checked={skipInvoice}
+                                                onCheckedChange={(c) => setSkipInvoice(!!c)}
+                                                className="h-5 w-5 rounded border-2 border-border"
+                                            />
+                                            <Label htmlFor="skip-inv" className="text-sm cursor-pointer font-medium text-foreground/80">
+                                                Přeskočit automatickou fakturaci
+                                            </Label>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-2 gap-6 items-end">
+                                        <div className="space-y-1">
+                                            <p className="text-[10px] font-bold text-muted-foreground/70 uppercase">Celková cena</p>
+                                            <p className="text-2xl font-black text-success tracking-tight">{pricing.price} Kč</p>
+                                        </div>
+                                        <div className="space-y-1 text-right">
+                                            <p className="text-[10px] font-bold text-muted-foreground/70 uppercase">Věrnostní body</p>
+                                            <div className="flex items-center justify-end gap-1.5">
+                                                <Sparkles className="h-4 w-4 text-amber-500" />
+                                                <p className="text-lg font-bold text-foreground">{pricing.effectivePoints}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
 
+                            {/* Card: Team Assignment */}
+                            <div className="bg-card border border-border rounded-xl p-6 shadow-sm space-y-5">
+                                <div className="flex items-center gap-2">
+                                    <Users className="h-4 w-4 text-primary" />
+                                    <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground/80">Přiřazený tým</h3>
+                                </div>
+
+                                {isEditing ? (
+                                    <div className="space-y-5 animate-in fade-in">
                                         <div className="space-y-3">
-                                            <Label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Výběr Týmu</Label>
-                                            <div className="grid grid-cols-3 gap-3">
+                                            <Label className="text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest pl-1">VÝBĚR CLEANERŮ</Label>
+                                            <div className="flex flex-wrap gap-2">
                                                 {teamMembers.map(m => (
                                                     <div
                                                         key={m.id}
                                                         onClick={() => {
-                                                            if (selectedTeamMembers.includes(m.id)) setSelectedTeamMembers(selectedTeamMembers.filter(id => id !== m.id))
-                                                            else setSelectedTeamMembers([...selectedTeamMembers, m.id])
+                                                            const current = [...selectedTeamMembers];
+                                                            if (current.includes(m.id)) {
+                                                                setSelectedTeamMembers(current.filter(id => id !== m.id));
+                                                            } else {
+                                                                setSelectedTeamMembers([...current, m.id]);
+                                                            }
                                                         }}
                                                         className={cn(
-                                                            "flex items-center gap-3 p-4 rounded-2xl border-2 cursor-pointer transition-all active:scale-95",
+                                                            "px-4 py-2 rounded-lg border-2 cursor-pointer transition-all text-xs font-bold uppercase tracking-tight",
                                                             selectedTeamMembers.includes(m.id)
-                                                                ? "bg-indigo-50 border-indigo-500 text-indigo-900 shadow-sm"
-                                                                : "bg-slate-50 border-transparent text-slate-500 opacity-60 grayscale hover:grayscale-0 hover:opacity-100"
+                                                                ? "bg-primary/5 border-primary text-primary shadow-sm"
+                                                                : "bg-muted/10 border-transparent text-muted-foreground hover:bg-muted/20"
                                                         )}
                                                     >
-                                                        <div className={cn("h-5 w-5 rounded-full flex items-center justify-center border-2", selectedTeamMembers.includes(m.id) ? "border-indigo-500 bg-white" : "border-slate-300")}>
-                                                            {selectedTeamMembers.includes(m.id) && <CheckCircle2 className="h-3 w-3 fill-indigo-500 text-white" />}
-                                                        </div>
-                                                        <span className="text-xs font-black uppercase tracking-tight">{m.name}</span>
+                                                        {m.name}
                                                     </div>
                                                 ))}
                                             </div>
                                         </div>
 
-                                        <div className="space-y-3">
-                                            <Label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Přiřazení Checklistu</Label>
+                                        <div className="space-y-2">
+                                            <Label className="text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest pl-1">ODMĚNA TÝMU (Kč)</Label>
+                                            <div className="relative">
+                                                <Input
+                                                    type="number"
+                                                    value={editFormData.team_reward}
+                                                    onChange={e => setEditFormData({ ...editFormData, team_reward: Number(e.target.value) })}
+                                                    className="h-11 rounded-lg border-border pr-12 font-bold"
+                                                />
+                                                <DollarSign className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-emerald-500" />
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <Label className="text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest pl-1">ŠABLONA CHECKLISTU</Label>
                                             <Select value={selectedChecklistId} onValueChange={setSelectedChecklistId}>
-                                                <SelectTrigger className="h-14 rounded-2xl border-2 font-bold focus:ring-0 focus:border-indigo-500">
-                                                    <SelectValue placeholder="Bez přiřazeného checklistu" />
+                                                <SelectTrigger className="h-11 rounded-lg border-border font-bold">
+                                                    <SelectValue placeholder="Beze šablony" />
                                                 </SelectTrigger>
-                                                <SelectContent className="rounded-2xl border-2 shadow-2xl">
-                                                    <SelectItem value="">Žádný checklist</SelectItem>
+                                                <SelectContent>
+                                                    <SelectItem value="none_selection">Žádný checklist</SelectItem>
                                                     {checklists.map(c => (
                                                         <SelectItem key={c.id} value={c.id}>
                                                             {c.street} {booking.clients?.email ? `(${booking.clients.email})` : ''}
@@ -542,148 +663,155 @@ export function BookingDetailDialog({ booking, isOpen, onClose, onUpdate, teamMe
                                                 </SelectContent>
                                             </Select>
                                         </div>
-
-                                        <div className="grid grid-cols-2 gap-6">
-                                            <div className="space-y-2">
-                                                <Label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Cena (Kč)</Label>
-                                                <Input
-                                                    type="number"
-                                                    value={editFormData.booking_details?.priceEstimate?.price || 0}
-                                                    onChange={e => {
-                                                        const newVal = Number(e.target.value);
-                                                        setEditFormData({
-                                                            ...editFormData,
-                                                            booking_details: {
-                                                                ...editFormData.booking_details,
-                                                                priceEstimate: { ...editFormData.booking_details.priceEstimate, price: newVal }
-                                                            }
-                                                        });
-                                                    }}
-                                                    className="h-14 rounded-2xl border-2 border-emerald-100 focus:border-emerald-500 font-black text-xl text-emerald-600"
-                                                />
-                                            </div>
-                                            <div className="space-y-2 text-right">
-                                                <Label className="text-xs font-black uppercase tracking-widest text-slate-400 mr-1">Věrnostní body (Override)</Label>
-                                                <div className="relative">
-                                                    <Input
-                                                        type="number"
-                                                        value={editFormData.manual_loyalty_points || ''}
-                                                        placeholder={`Auto: ${autoPoints}`}
-                                                        onChange={e => setEditFormData({ ...editFormData, manual_loyalty_points: Number(e.target.value) })}
-                                                        className="h-14 rounded-2xl border-2 border-amber-100 focus:border-amber-500 font-black text-xl text-amber-600 text-right pr-12"
-                                                    />
-                                                    <Sparkles className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-amber-300" />
-                                                </div>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-5">
+                                        <div className="space-y-3">
+                                            <p className="text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest pl-1">PŘIŘAZENÍ CLEANERŮ</p>
+                                            <div className="flex flex-wrap gap-2">
+                                                {displayTeamMembers.length > 0 ? (
+                                                    displayTeamMembers.map(tm => (
+                                                        <Badge key={tm.id} variant="secondary" className="gap-2 px-3 py-1.5 text-xs font-bold rounded-lg bg-secondary/50 border-transparent shadow-sm">
+                                                            <UserIcon className="h-3.5 w-3.5" />
+                                                            {tm.name}
+                                                        </Badge>
+                                                    ))
+                                                ) : (
+                                                    <span className="text-sm text-muted-foreground italic pl-1">Nikdo není přiřazen...</span>
+                                                )}
                                             </div>
                                         </div>
 
-                                        <div className="space-y-2">
-                                            <Label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Interní poznámka (Vidí úklidovec)</Label>
+                                        {(booking.checklist || selectedChecklistId) && (
+                                            <div className="pt-4 border-t border-border/40 space-y-2">
+                                                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest pl-1">AKTIVNÍ CHECKLIST</p>
+                                                <div className="flex items-center gap-3 p-3 bg-primary/5 rounded-lg border border-primary/10">
+                                                    <FileText className="h-4 w-4 text-primary" />
+                                                    <span className="text-xs font-bold text-foreground">
+                                                        {booking.checklist?.street || checklists.find(c => c.id === selectedChecklistId)?.street || 'Vlastní checklist'}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        <div className="pt-4 border-t border-border/40 flex justify-between items-center">
+                                            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Odměna týmu</p>
+                                            <p className="text-xl font-black text-foreground">{pricing.teamReward} Kč</p>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Card: Internal Notes */}
+                            <div className="bg-card border border-border rounded-xl p-6 shadow-sm space-y-4">
+                                <div className="flex items-center gap-2">
+                                    <FileText className="h-4 w-4 text-primary" />
+                                    <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground/80">Podrobnosti a poznámky</h3>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <div className="p-4 bg-muted/10 rounded-xl border border-border/50">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <p className="text-[10px] font-bold text-muted-foreground/70 uppercase">Služba</p>
+                                            <Badge variant="outline" className="font-bold border-2">{booking.service_type}</Badge>
+                                        </div>
+
+                                        <BookingDetailsDisplay
+                                            bookingDetails={booking.booking_details}
+                                            serviceType={booking.service_type}
+                                            showPrice={false}
+                                        />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label className="text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest pl-1">INTERNÍ POZNÁMKA</Label>
+                                        {isEditing ? (
                                             <Textarea
                                                 value={adminNotes}
                                                 onChange={e => setAdminNotes(e.target.value)}
                                                 rows={4}
-                                                className="rounded-[1.5rem] border-2 focus:border-indigo-500 font-medium resize-none"
-                                                placeholder="Specifické instrukce k tomuto úklidu..."
+                                                className="rounded-xl border-border resize-none text-sm font-medium focus:ring-primary/20"
+                                                placeholder="Viditelné pouze pro administrátory a cleanerům v aplikaci..."
                                             />
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="col-span-12 lg:col-span-4 space-y-6">
-                                    <div className="bg-slate-900 rounded-[2.5rem] p-8 text-white space-y-6 shadow-2xl sticky top-0">
-                                        <h4 className="text-sm font-black uppercase tracking-[0.3em] text-indigo-400">Akce CMS</h4>
-                                        <div className="space-y-4 pt-4 border-t border-white/10">
-                                            {booking.status === 'pending' && (
-                                                <div className="space-y-3">
-                                                    <Button
-                                                        onClick={() => handleSave('approved')}
-                                                        disabled={isSaving}
-                                                        className="w-full h-14 rounded-2xl bg-indigo-500 hover:bg-indigo-600 font-black uppercase tracking-widest text-xs shadow-[0_10px_20px_rgba(99,102,241,0.3)] transition-all active:scale-95"
-                                                    >
-                                                        {isSaving ? 'Schvaluji...' : 'Schválit a Uložit'}
-                                                    </Button>
-                                                    <Button
-                                                        variant="ghost"
-                                                        onClick={() => handleSave('declined')}
-                                                        disabled={isSaving}
-                                                        className="w-full h-14 rounded-2xl bg-white/5 hover:bg-red-500 hover:text-white font-black uppercase tracking-widest text-xs text-red-400 border border-white/5"
-                                                    >
-                                                        Zamítnout
-                                                    </Button>
-                                                </div>
-                                            )}
-
-                                            <Button
-                                                onClick={() => handleSave()}
-                                                disabled={isSaving}
-                                                variant="default"
-                                                className="w-full h-14 rounded-2xl bg-white text-slate-900 hover:bg-slate-100 font-black uppercase tracking-widest text-xs shadow-xl transition-all active:scale-95"
-                                            >
-                                                {isSaving ? 'Ukládám...' : 'Pouze uložit změny'}
-                                            </Button>
-
-                                            <div className="flex items-center space-x-3 p-4 bg-white/5 rounded-2xl border border-white/10 mt-4">
-                                                <Checkbox
-                                                    id="skip-invoice"
-                                                    checked={skipInvoice}
-                                                    onCheckedChange={(c) => setSkipInvoice(!!c)}
-                                                    className="border-white/50 data-[state=checked]:bg-indigo-500"
-                                                />
-                                                <Label htmlFor="skip-invoice" className="text-xs font-bold leading-tight cursor-pointer select-none">Přeskočit automatickou fakturaci (Paid in Cash / Other)</Label>
+                                        ) : (
+                                            <div className="text-sm text-foreground bg-muted/5 p-4 rounded-xl border border-dashed border-border/60 italic leading-relaxed text-muted-foreground">
+                                                {adminNotes || "Žádná interní poznámka nebyla přidána..."}
                                             </div>
-                                        </div>
-
-                                        <div className="pt-6 space-y-4">
-                                            <p className="text-[10px] font-black uppercase text-white/30 tracking-[0.2em] text-center">Historie akcí</p>
-                                            <div className="space-y-3">
-                                                <div className="flex items-center gap-3 text-xs opacity-60">
-                                                    <div className="h-2 w-2 rounded-full bg-indigo-500" />
-                                                    <span>Vytvořeno automaticky</span>
-                                                </div>
-                                                {isStarted && (
-                                                    <div className="flex items-center gap-3 text-xs text-emerald-400 font-bold">
-                                                        <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                                                        <span>Zasláno k provedení</span>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>
-                        )}
-
-                        {activeTab === 'details' && (
-                            <div className="bg-slate-50 border rounded-[3rem] p-12 min-h-[500px] animate-in slide-in-from-bottom-8 duration-700">
-                                <h3 className="text-2xl font-black text-slate-900 mb-8 border-b border-slate-200 pb-6 flex items-center gap-4">
-                                    <div className="h-10 w-10 rounded-xl bg-slate-900 flex items-center justify-center text-white"><Info className="h-5 w-5" /></div>
-                                    Podrobnosti Klientské Objednávky
-                                </h3>
-                                <BookingDetailsDisplay
-                                    bookingDetails={booking.booking_details}
-                                    serviceType={booking.service_type}
-                                    showPrice={true}
-                                />
-
-                                <div className="mt-12 p-8 bg-white rounded-[2rem] border border-slate-100 shadow-sm space-y-6">
-                                    <h4 className="font-black text-sm uppercase tracking-widest text-slate-400">Technické Metadata</h4>
-                                    <div className="grid grid-cols-2 gap-8 text-sm">
-                                        <div className="space-y-1">
-                                            <span className="block text-[10px] font-black opacity-30 uppercase">Právní subjekt</span>
-                                            <span className="font-bold">{booking.clients?.city || 'Fyzická osoba'}</span>
-                                        </div>
-                                        <div className="space-y-1">
-                                            <span className="block text-[10px] font-black opacity-30 uppercase">User context ID</span>
-                                            <span className="font-mono text-[10px] opacity-60">{booking.client_id}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
+                        </div>
                     </div>
+
+                    {/* Footer Actions (Sticky for visibility) */}
+                    {isEditing && (
+                        <div className="sticky bottom-0 bg-background/95 backdrop-blur-md border-t border-border p-6 -mx-6 -mb-6 flex flex-col gap-4 shadow-[0_-8px_20px_-10px_rgba(0,0,0,0.1)] z-30 animate-in slide-in-from-bottom-5">
+                            {booking.status === 'pending' && (
+                                <div className="grid grid-cols-2 gap-4">
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => handleSave('declined')}
+                                        disabled={isSaving}
+                                        className="h-12 rounded-xl text-destructive hover:bg-destructive/5 border-destructive/20 font-bold uppercase tracking-wide transition-all"
+                                    >
+                                        <XCircle className="h-4 w-4 mr-2" />
+                                        ZAMÍTNOUT
+                                    </Button>
+                                    <Button
+                                        variant="default"
+                                        onClick={() => handleSave('approved')}
+                                        disabled={isSaving}
+                                        className="h-12 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/20 font-bold uppercase tracking-wide transition-all"
+                                    >
+                                        {isSaving ? (
+                                            <div className="flex items-center gap-2">
+                                                <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                                Ukládám...
+                                            </div>
+                                        ) : (
+                                            <div className="flex items-center gap-2">
+                                                <CheckCircle2 className="h-4 w-4" />
+                                                SCHVÁLIT A ULOŽIT
+                                            </div>
+                                        )}
+                                    </Button>
+                                </div>
+                            )}
+
+                            <div className="flex items-center justify-between gap-4">
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setIsEditing(false)}
+                                    className="text-muted-foreground hover:bg-muted font-bold tracking-tight px-6"
+                                >
+                                    ZRUŠIT ZMĚNY
+                                </Button>
+                                {booking.status !== 'pending' && (
+                                    <Button
+                                        onClick={() => handleSave()}
+                                        disabled={isSaving}
+                                        className="h-12 px-12 rounded-xl bg-primary shadow-lg shadow-primary/20 font-bold uppercase tracking-wide transition-all"
+                                    >
+                                        {isSaving ? (
+                                            <div className="flex items-center gap-2">
+                                                <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                                AKTUALIZUJI...
+                                            </div>
+                                        ) : (
+                                            <div className="flex items-center gap-2">
+                                                <Save className="h-4 w-4" />
+                                                ULOŽIT ZMĚNY
+                                            </div>
+                                        )}
+                                    </Button>
+                                )}
+                            </div>
+                        </div>
+                    )}
                 </div>
             </DialogContent>
-        </Dialog>
+        </Dialog >
     );
 }
