@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { cn } from '@/lib/utils';
 
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -27,6 +28,9 @@ export default function ClientProfile() {
     newPassword: '',
     confirmPassword: ''
   });
+  const [isBasicInfoOpen, setIsBasicInfoOpen] = useState(false);
+  const [isPreferencesOpen, setIsPreferencesOpen] = useState(false);
+  const [isSecurityOpen, setIsSecurityOpen] = useState(false);
   const [profileData, setProfileData] = useState({
     name: '',
     email: '',
@@ -299,350 +303,377 @@ export default function ClientProfile() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column: Basic Info */}
         <div className="lg:col-span-2 space-y-6">
-          <Card className="border-0 shadow-sm overflow-hidden">
-            <CardHeader className="bg-gradient-to-r from-primary/10 to-transparent pb-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-xl bg-primary shadow-lg shadow-primary/20">
-                  <User className="h-6 w-6 text-primary-foreground" />
-                </div>
-                <div>
-                  <CardTitle className="text-xl">Základní Údaje</CardTitle>
-                  <CardDescription>Osobní a kontaktní informace</CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="pt-6 space-y-6">
-              {/* Client Type */}
-              <div className="space-y-3">
+          <Collapsible open={isBasicInfoOpen} onOpenChange={setIsBasicInfoOpen} className="w-full">
+            <Card className="border-0 shadow-sm overflow-hidden transition-all duration-300">
+              <CollapsibleTrigger asChild>
+                <CardHeader className="bg-gradient-to-r from-primary/10 to-transparent pb-6 cursor-pointer hover:bg-primary/5 transition-colors group">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 rounded-xl bg-primary shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform">
+                        <User className="h-6 w-6 text-primary-foreground" />
+                      </div>
+                      <div className="text-left">
+                        <CardTitle className="text-xl font-bold">Základní Údaje</CardTitle>
+                        <CardDescription>Osobní a kontaktní informace</CardDescription>
+                      </div>
+                    </div>
+                    <ChevronDown className={cn("h-5 w-5 text-muted-foreground transition-transform duration-300", isBasicInfoOpen && "rotate-180")} />
+                  </div>
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent className="pt-6 space-y-6">
+                  {/* Client Type */}
+                  <div className="space-y-3">
 
-                <div className="grid grid-cols-2 gap-3 p-1 bg-muted/50 rounded-xl">
-                  <Button
-                    type="button"
-                    variant={clientType === 'person' ? 'default' : 'ghost'}
-                    className={`h-10 rounded-lg transition-all duration-300 ${clientType === 'person' ? 'shadow-md' : 'text-muted-foreground hover:text-foreground'}`}
-                    onClick={() => setClientType('person')}
-                  >
-                    Osoba
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={clientType === 'company' ? 'default' : 'ghost'}
-                    className={`h-10 rounded-lg transition-all duration-300 ${clientType === 'company' ? 'shadow-md' : 'text-muted-foreground hover:text-foreground'}`}
-                    onClick={() => setClientType('company')}
-                  >
-                    Firma
-                  </Button>
-                </div>
-              </div>
+                    <div className="grid grid-cols-2 gap-3 p-1 bg-muted/50 rounded-xl">
+                      <Button
+                        type="button"
+                        variant={clientType === 'person' ? 'default' : 'ghost'}
+                        className={`h-10 rounded-lg transition-all duration-300 ${clientType === 'person' ? 'shadow-md' : 'text-muted-foreground hover:text-foreground'}`}
+                        onClick={() => setClientType('person')}
+                      >
+                        Osoba
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={clientType === 'company' ? 'default' : 'ghost'}
+                        className={`h-10 rounded-lg transition-all duration-300 ${clientType === 'company' ? 'shadow-md' : 'text-muted-foreground hover:text-foreground'}`}
+                        onClick={() => setClientType('company')}
+                      >
+                        Firma
+                      </Button>
+                    </div>
+                  </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                {clientType === 'company' && (
-                  <>
-                    <div className="space-y-2 relative">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    {clientType === 'company' && (
+                      <>
+                        <div className="space-y-2 relative">
+                          <Label className="flex items-center gap-2">
+                            <Building2 className="w-4 h-4 text-primary" />
+                            IČO *
+                          </Label>
+                          <Input
+                            required
+                            value={profileData.company_id}
+                            onChange={handleCompanyIdChange}
+                            placeholder="12345678"
+                            disabled={fetchingAres}
+                            className="bg-muted/30 border-muted-foreground/20 focus:border-primary/50 transition-colors"
+                          />
+                          {fetchingAres && (
+                            <span className="absolute right-3 top-9">
+                              <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                            </span>
+                          )}
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="flex items-center gap-2">
+                            <FileText className="w-4 h-4 text-primary" />
+                            DIČ
+                          </Label>
+                          <Input
+                            value={profileData.dic}
+                            onChange={(e) => setProfileData({ ...profileData, dic: e.target.value })}
+                            placeholder="CZ12345678"
+                            className="bg-muted/30 border-muted-foreground/20 focus:border-primary/50 transition-colors"
+                          />
+                        </div>
+                      </>
+                    )}
+
+                    <div className={`space-y-2 ${clientType === 'company' ? 'md:col-span-2' : ''}`}>
                       <Label className="flex items-center gap-2">
-                        <Building2 className="w-4 h-4 text-primary" />
-                        IČO *
+                        <User className="w-4 h-4 text-primary" />
+                        {clientType === 'company' ? 'Název firmy *' : 'Celé jméno *'}
                       </Label>
                       <Input
                         required
-                        value={profileData.company_id}
-                        onChange={handleCompanyIdChange}
-                        placeholder="12345678"
+                        value={profileData.name}
+                        onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
                         disabled={fetchingAres}
                         className="bg-muted/30 border-muted-foreground/20 focus:border-primary/50 transition-colors"
+                        placeholder={clientType === 'company' ? 'Název firmy' : 'Jan Novák'}
                       />
-                      {fetchingAres && (
-                        <span className="absolute right-3 top-9">
-                          <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
-                        </span>
-                      )}
                     </div>
+
                     <div className="space-y-2">
                       <Label className="flex items-center gap-2">
-                        <FileText className="w-4 h-4 text-primary" />
-                        DIČ
+                        <Mail className="w-4 h-4 text-primary" />
+                        Email *
                       </Label>
                       <Input
-                        value={profileData.dic}
-                        onChange={(e) => setProfileData({ ...profileData, dic: e.target.value })}
-                        placeholder="CZ12345678"
+                        required
+                        type="email"
+                        value={profileData.email}
+                        onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
                         className="bg-muted/30 border-muted-foreground/20 focus:border-primary/50 transition-colors"
                       />
                     </div>
-                  </>
-                )}
 
-                <div className={`space-y-2 ${clientType === 'company' ? 'md:col-span-2' : ''}`}>
-                  <Label className="flex items-center gap-2">
-                    <User className="w-4 h-4 text-primary" />
-                    {clientType === 'company' ? 'Název firmy *' : 'Celé jméno *'}
-                  </Label>
-                  <Input
-                    required
-                    value={profileData.name}
-                    onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
-                    disabled={fetchingAres}
-                    className="bg-muted/30 border-muted-foreground/20 focus:border-primary/50 transition-colors"
-                    placeholder={clientType === 'company' ? 'Název firmy' : 'Jan Novák'}
-                  />
-                </div>
+                    <div className="space-y-2">
+                      <Label className="flex items-center gap-2">
+                        <Phone className="w-4 h-4 text-primary" />
+                        Telefon *
+                      </Label>
+                      <Input
+                        required
+                        value={profileData.phone}
+                        onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
+                        placeholder="+420 123 456 789"
+                        className="bg-muted/30 border-muted-foreground/20 focus:border-primary/50 transition-colors"
+                      />
+                    </div>
 
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-2">
-                    <Mail className="w-4 h-4 text-primary" />
-                    Email *
-                  </Label>
-                  <Input
-                    required
-                    type="email"
-                    value={profileData.email}
-                    onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
-                    className="bg-muted/30 border-muted-foreground/20 focus:border-primary/50 transition-colors"
-                  />
-                </div>
+                    {clientType === 'person' && (
+                      <div className="space-y-2">
+                        <Label className="flex items-center gap-2">
+                          <Calendar className="w-4 h-4 text-primary" />
+                          Datum narození
+                        </Label>
+                        <DatePicker
+                          value={profileData.date_of_birth ? new Date(profileData.date_of_birth) : undefined}
+                          onChange={(date) => setProfileData({
+                            ...profileData,
+                            date_of_birth: date ? date.toISOString().split('T')[0] : ''
+                          })}
+                          placeholder=""
+                          disabledDates={(date) => date > new Date()}
+                        />
+                      </div>
+                    )}
 
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-2">
-                    <Phone className="w-4 h-4 text-primary" />
-                    Telefon *
-                  </Label>
-                  <Input
-                    required
-                    value={profileData.phone}
-                    onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
-                    placeholder="+420 123 456 789"
-                    className="bg-muted/30 border-muted-foreground/20 focus:border-primary/50 transition-colors"
-                  />
-                </div>
+                    <div className="space-y-2 md:col-span-2">
+                      <Label className="flex items-center gap-2">
+                        <MapPin className="w-4 h-4 text-primary" />
+                        Adresa *
+                      </Label>
+                      <Input
+                        required
+                        value={profileData.address}
+                        onChange={(e) => setProfileData({ ...profileData, address: e.target.value })}
+                        className="bg-muted/30 border-muted-foreground/20 focus:border-primary/50 transition-colors"
+                      />
+                    </div>
 
-                {clientType === 'person' && (
-                  <div className="space-y-2">
-                    <Label className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-primary" />
-                      Datum narození
-                    </Label>
-                    <DatePicker
-                      value={profileData.date_of_birth ? new Date(profileData.date_of_birth) : undefined}
-                      onChange={(date) => setProfileData({
-                        ...profileData,
-                        date_of_birth: date ? date.toISOString().split('T')[0] : ''
-                      })}
-                      placeholder=""
-                      disabledDates={(date) => date > new Date()}
-                    />
+                    <div className="space-y-2">
+                      <Label>Město *</Label>
+                      <Input
+                        required
+                        value={profileData.city}
+                        onChange={(e) => setProfileData({ ...profileData, city: e.target.value })}
+                        className="bg-muted/30 border-muted-foreground/20 focus:border-primary/50 transition-colors"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>PSČ *</Label>
+                      <Input
+                        required
+                        value={profileData.postal_code}
+                        onChange={(e) => setProfileData({ ...profileData, postal_code: e.target.value })}
+                        className="bg-muted/30 border-muted-foreground/20 focus:border-primary/50 transition-colors"
+                      />
+                    </div>
+
+                    {clientType === 'company' && (
+                      <div className="space-y-2 md:col-span-2">
+                        <Label>Kontaktní osoba *</Label>
+                        <Input
+                          required
+                          value={profileData.reliable_person}
+                          onChange={(e) => setProfileData({ ...profileData, reliable_person: e.target.value })}
+                          className="bg-muted/30 border-muted-foreground/20 focus:border-primary/50 transition-colors"
+                        />
+                      </div>
+                    )}
                   </div>
-                )}
 
-                <div className="space-y-2 md:col-span-2">
-                  <Label className="flex items-center gap-2">
-                    <MapPin className="w-4 h-4 text-primary" />
-                    Adresa *
-                  </Label>
-                  <Input
-                    required
-                    value={profileData.address}
-                    onChange={(e) => setProfileData({ ...profileData, address: e.target.value })}
-                    className="bg-muted/30 border-muted-foreground/20 focus:border-primary/50 transition-colors"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Město *</Label>
-                  <Input
-                    required
-                    value={profileData.city}
-                    onChange={(e) => setProfileData({ ...profileData, city: e.target.value })}
-                    className="bg-muted/30 border-muted-foreground/20 focus:border-primary/50 transition-colors"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>PSČ *</Label>
-                  <Input
-                    required
-                    value={profileData.postal_code}
-                    onChange={(e) => setProfileData({ ...profileData, postal_code: e.target.value })}
-                    className="bg-muted/30 border-muted-foreground/20 focus:border-primary/50 transition-colors"
-                  />
-                </div>
-
-                {clientType === 'company' && (
-                  <div className="space-y-2 md:col-span-2">
-                    <Label>Kontaktní osoba *</Label>
-                    <Input
-                      required
-                      value={profileData.reliable_person}
-                      onChange={(e) => setProfileData({ ...profileData, reliable_person: e.target.value })}
-                      className="bg-muted/30 border-muted-foreground/20 focus:border-primary/50 transition-colors"
-                    />
+                  <div className="pt-4">
+                    <Button className="w-full h-12 text-base shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all" onClick={handleSave} disabled={loading}>
+                      <Save className="h-4 w-4 mr-2" />
+                      {loading ? "Ukládám..." : "Uložit Změny"}
+                    </Button>
                   </div>
-                )}
-              </div>
-
-              <div className="pt-4">
-                <Button className="w-full h-12 text-base shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all" onClick={handleSave} disabled={loading}>
-                  <Save className="h-4 w-4 mr-2" />
-                  {loading ? "Ukládám..." : "Uložit Změny"}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+                </CardContent>
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
         </div>
 
         {/* Right Column: Preferences & Security */}
         <div className="space-y-6">
           {/* Dodatečné informace (only for persons) */}
           {clientType === 'person' && (
-            <Card className="border-0 shadow-sm overflow-hidden">
-              <CardHeader className="bg-gradient-to-r from-violet-500/10 to-transparent pb-6">
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 rounded-xl bg-violet-500 shadow-lg shadow-violet-500/20">
-                    <Info className="h-6 w-6 text-white" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-xl">Vaše Preference</CardTitle>
-                    <CardDescription>Detaily úklidu</CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="pt-6 space-y-6">
-                <div className="space-y-6">
-                  <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-muted/50">
-                    <div className="space-y-0.5">
-                      <Label className="text-base">Děti v domácnosti</Label>
-                      <p className="text-xs text-muted-foreground">Máte doma děti?</p>
+            <Collapsible open={isPreferencesOpen} onOpenChange={setIsPreferencesOpen} className="w-full">
+              <Card className="border-0 shadow-sm overflow-hidden transition-all duration-300">
+                <CollapsibleTrigger asChild>
+                  <CardHeader className="bg-gradient-to-r from-violet-500/10 to-transparent pb-6 cursor-pointer hover:bg-violet-500/5 transition-colors group">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2.5 rounded-xl bg-violet-500 shadow-lg shadow-violet-500/20 group-hover:scale-110 transition-transform">
+                          <Info className="h-6 w-6 text-white" />
+                        </div>
+                        <div className="text-left">
+                          <CardTitle className="text-xl font-bold">Vaše Preference</CardTitle>
+                          <CardDescription>Detaily úklidu</CardDescription>
+                        </div>
+                      </div>
+                      <ChevronDown className={cn("h-5 w-5 text-muted-foreground transition-transform duration-300", isPreferencesOpen && "rotate-180")} />
                     </div>
-                    <div className="grid grid-cols-2 gap-3 p-1 bg-muted/50 rounded-xl">
+                  </CardHeader>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <CardContent className="pt-6 space-y-6">
+                    <div className="space-y-6">
+                      <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-muted/50">
+                        <div className="space-y-0.5">
+                          <Label className="text-base">Děti v domácnosti</Label>
+                          <p className="text-xs text-muted-foreground">Máte doma děti?</p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3 p-1 bg-muted/50 rounded-xl">
+                          <Button
+                            type="button"
+                            variant={profileData.has_children ? 'default' : 'ghost'}
+                            className={`h-10 rounded-lg transition-all duration-300 ${profileData.has_children ? 'shadow-md' : 'text-muted-foreground hover:text-foreground'}`}
+                            onClick={() => setProfileData({ ...profileData, has_children: true })}
+                          >
+                            Ano
+                          </Button>
+                          <Button
+                            type="button"
+                            variant={!profileData.has_children ? 'default' : 'ghost'}
+                            className={`h-10 rounded-lg transition-all duration-300 ${!profileData.has_children ? 'shadow-md' : 'text-muted-foreground hover:text-foreground'}`}
+                            onClick={() => setProfileData({ ...profileData, has_children: false })}
+                          >
+                            Ne
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-muted/50">
+                        <div className="space-y-0.5">
+                          <Label className="text-base">Domácí mazlíčci</Label>
+                          <p className="text-xs text-muted-foreground">Máte doma zvířata?</p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3 p-1 bg-muted/50 rounded-xl">
+                          <Button
+                            type="button"
+                            variant={profileData.has_pets ? 'default' : 'ghost'}
+                            className={`h-10 rounded-lg transition-all duration-300 ${profileData.has_pets ? 'shadow-md' : 'text-muted-foreground hover:text-foreground'}`}
+                            onClick={() => setProfileData({ ...profileData, has_pets: true })}
+                          >
+                            Ano
+                          </Button>
+                          <Button
+                            type="button"
+                            variant={!profileData.has_pets ? 'default' : 'ghost'}
+                            className={`h-10 rounded-lg transition-all duration-300 ${!profileData.has_pets ? 'shadow-md' : 'text-muted-foreground hover:text-foreground'}`}
+                            onClick={() => setProfileData({ ...profileData, has_pets: false })}
+                          >
+                            Ne
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Alergie</Label>
+                        <Textarea
+                          value={profileData.allergies_notes}
+                          onChange={(e) => setProfileData({ ...profileData, allergies_notes: e.target.value })}
+                          placeholder="Máte nějaké alergie na čistící prostředky?"
+                          rows={2}
+                          className="bg-muted/30 border-muted-foreground/20 focus:border-violet-500/50 resize-none"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Specifické pokyny</Label>
+                        <Textarea
+                          value={profileData.special_instructions}
+                          onChange={(e) => setProfileData({ ...profileData, special_instructions: e.target.value })}
+                          placeholder="Klíče jsou u sousedů, prosím nepoužívat páru v ložnici..."
+                          rows={3}
+                          className="bg-muted/30 border-muted-foreground/20 focus:border-violet-500/50 resize-none"
+                        />
+                      </div>
+
                       <Button
-                        type="button"
-                        variant={profileData.has_children ? 'default' : 'ghost'}
-                        className={`h-10 rounded-lg transition-all duration-300 ${profileData.has_children ? 'shadow-md' : 'text-muted-foreground hover:text-foreground'}`}
-                        onClick={() => setProfileData({ ...profileData, has_children: true })}
+                        variant="outline"
+                        className="w-full border-primary/20 hover:bg-primary/5 hover:text-primary font-bold"
+                        onClick={handleSave}
+                        disabled={loading}
                       >
-                        Ano
-                      </Button>
-                      <Button
-                        type="button"
-                        variant={!profileData.has_children ? 'default' : 'ghost'}
-                        className={`h-10 rounded-lg transition-all duration-300 ${!profileData.has_children ? 'shadow-md' : 'text-muted-foreground hover:text-foreground'}`}
-                        onClick={() => setProfileData({ ...profileData, has_children: false })}
-                      >
-                        Ne
+                        <Save className="h-4 w-4 mr-2" />
+                        Uložit preference a pokyny
                       </Button>
                     </div>
-                  </div>
-
-                  <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-muted/50">
-                    <div className="space-y-0.5">
-                      <Label className="text-base">Domácí mazlíčci</Label>
-                      <p className="text-xs text-muted-foreground">Máte doma zvířata?</p>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3 p-1 bg-muted/50 rounded-xl">
-                      <Button
-                        type="button"
-                        variant={profileData.has_pets ? 'default' : 'ghost'}
-                        className={`h-10 rounded-lg transition-all duration-300 ${profileData.has_pets ? 'shadow-md' : 'text-muted-foreground hover:text-foreground'}`}
-                        onClick={() => setProfileData({ ...profileData, has_pets: true })}
-                      >
-                        Ano
-                      </Button>
-                      <Button
-                        type="button"
-                        variant={!profileData.has_pets ? 'default' : 'ghost'}
-                        className={`h-10 rounded-lg transition-all duration-300 ${!profileData.has_pets ? 'shadow-md' : 'text-muted-foreground hover:text-foreground'}`}
-                        onClick={() => setProfileData({ ...profileData, has_pets: false })}
-                      >
-                        Ne
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Alergie</Label>
-                    <Textarea
-                      value={profileData.allergies_notes}
-                      onChange={(e) => setProfileData({ ...profileData, allergies_notes: e.target.value })}
-                      placeholder="Máte nějaké alergie na čistící prostředky?"
-                      rows={2}
-                      className="bg-muted/30 border-muted-foreground/20 focus:border-violet-500/50 resize-none"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Specifické pokyny</Label>
-                    <Textarea
-                      value={profileData.special_instructions}
-                      onChange={(e) => setProfileData({ ...profileData, special_instructions: e.target.value })}
-                      placeholder="Klíče jsou u sousedů, prosím nepoužívat páru v ložnici..."
-                      rows={3}
-                      className="bg-muted/30 border-muted-foreground/20 focus:border-violet-500/50 resize-none"
-                    />
-                  </div>
-
-                  <Button
-                    variant="outline"
-                    className="w-full border-primary/20 hover:bg-primary/5 hover:text-primary font-bold"
-                    onClick={handleSave}
-                    disabled={loading}
-                  >
-                    <Save className="h-4 w-4 mr-2" />
-                    Uložit preference a pokyny
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+                  </CardContent>
+                </CollapsibleContent>
+              </Card>
+            </Collapsible>
           )}
 
           {/* Change Password */}
-          <Card className="border-0 shadow-sm overflow-hidden">
-            <CardHeader className="bg-gradient-to-r from-slate-500/10 to-transparent pb-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-xl bg-slate-800 shadow-lg shadow-slate-800/20">
-                  <Lock className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <CardTitle className="text-xl">Zabezpečení</CardTitle>
-                  <CardDescription>Změna hesla</CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="pt-6 space-y-4">
-              <div className="space-y-2">
-                <Input
-                  type="password"
-                  value={passwordData.currentPassword}
-                  onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
-                  placeholder="Současné heslo"
-                  className="bg-muted/30"
-                />
-              </div>
-              <div className="space-y-2">
-                <Input
-                  type="password"
-                  value={passwordData.newPassword}
-                  onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
-                  placeholder="Nové heslo (min. 6 znaků)"
-                  className="bg-muted/30"
-                />
-              </div>
-              <div className="space-y-2">
-                <Input
-                  type="password"
-                  value={passwordData.confirmPassword}
-                  onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
-                  placeholder="Potvrdit nové heslo"
-                  className="bg-muted/30"
-                />
-              </div>
-              <Button
-                className="w-full"
-                variant="secondary"
-                onClick={handlePasswordChange}
-                disabled={loading}
-              >
-                Změnit Heslo
-              </Button>
-            </CardContent>
-          </Card>
+          <Collapsible open={isSecurityOpen} onOpenChange={setIsSecurityOpen} className="w-full">
+            <Card className="border-0 shadow-sm overflow-hidden transition-all duration-300">
+              <CollapsibleTrigger asChild>
+                <CardHeader className="bg-gradient-to-r from-slate-500/10 to-transparent pb-6 cursor-pointer hover:bg-slate-500/5 transition-colors group">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 rounded-xl bg-slate-800 shadow-lg shadow-slate-800/20 group-hover:scale-110 transition-transform">
+                        <Lock className="h-6 w-6 text-white" />
+                      </div>
+                      <div className="text-left">
+                        <CardTitle className="text-xl font-bold">Zabezpečení</CardTitle>
+                        <CardDescription>Změna hesla</CardDescription>
+                      </div>
+                    </div>
+                    <ChevronDown className={cn("h-5 w-5 text-muted-foreground transition-transform duration-300", isSecurityOpen && "rotate-180")} />
+                  </div>
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent className="pt-6 space-y-4">
+                  <div className="space-y-2">
+                    <Input
+                      type="password"
+                      value={passwordData.currentPassword}
+                      onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+                      placeholder="Současné heslo"
+                      className="bg-muted/30"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Input
+                      type="password"
+                      value={passwordData.newPassword}
+                      onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                      placeholder="Nové heslo (min. 6 znaků)"
+                      className="bg-muted/30"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Input
+                      type="password"
+                      value={passwordData.confirmPassword}
+                      onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                      placeholder="Potvrdit nové heslo"
+                      className="bg-muted/30"
+                    />
+                  </div>
+                  <Button
+                    className="w-full"
+                    variant="secondary"
+                    onClick={handlePasswordChange}
+                    disabled={loading}
+                  >
+                    Změnit Heslo
+                  </Button>
+                </CardContent>
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
 
           <Button
             variant="outline"

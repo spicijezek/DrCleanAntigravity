@@ -35,18 +35,18 @@ export function ClientHeroHeader({
   iconClassName
 }: ClientHeroHeaderProps) {
   const isPrimary = variant === 'primary';
-  
+
   return (
     <div className={cn(
       "relative overflow-hidden rounded-2xl p-5",
-      isPrimary 
-        ? "bg-gradient-primary text-white" 
+      isPrimary
+        ? "bg-gradient-to-br from-primary via-primary/95 to-primary/90 text-white shadow-lg"
         : "bg-gradient-to-r from-primary/10 to-primary/5 dark:from-primary/20 dark:to-primary/10 border border-primary/20 dark:border-primary/30",
       className
     )}>
       {/* Background pattern */}
       <div className="absolute inset-0 bg-[url('/placeholder.svg')] opacity-5" />
-      
+
       {/* Animated decorative circles */}
       <div className={cn(
         "absolute -right-8 -top-8 h-28 w-28 rounded-full animate-float-circle-1",
@@ -56,7 +56,7 @@ export function ClientHeroHeader({
         "absolute -right-2 top-14 h-14 w-14 rounded-full animate-float-circle-2",
         isPrimary ? "bg-white/15" : "bg-primary/15 dark:bg-primary/25"
       )} />
-      
+
       <div className="relative z-10 space-y-4">
         {/* Header with icon */}
         <div className="flex items-center gap-3">
@@ -95,8 +95,8 @@ export function ClientHeroHeader({
                 key={index}
                 className={cn(
                   "backdrop-blur-sm rounded-xl p-3 space-y-1",
-                  isPrimary 
-                    ? "bg-white/10" 
+                  isPrimary
+                    ? "bg-white/10"
                     : "bg-white/60 dark:bg-black/20 border border-primary/20 dark:border-primary/30"
                 )}
               >

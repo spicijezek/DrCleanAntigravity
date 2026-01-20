@@ -22,20 +22,20 @@ export function ClientBottomNav() {
         {navItems.map((item, index) => {
           if ('type' in item && item.type === 'plus') {
             return (
-              <Link 
-                key="plus" 
+              <Link
+                key="plus"
                 to={item.path!}
                 className="flex items-center justify-center"
               >
-                <img 
-                  src={plusBadgeIcon} 
-                  alt="Nová objednávka" 
-                  className="h-12 w-12 object-contain animate-pulse-size" 
+                <img
+                  src={plusBadgeIcon}
+                  alt="Nová objednávka"
+                  className="h-12 w-12 object-contain animate-pulse-size opacity-80 mix-blend-multiply dark:mix-blend-normal"
                 />
               </Link>
             );
           }
-          
+
           // Animated clock icon for Historie
           if ('type' in item && item.type === 'clock') {
             const isActive = location.pathname === item.path;
@@ -45,8 +45,8 @@ export function ClientBottomNav() {
                 to={item.path!}
                 className={cn(
                   "flex flex-col items-center justify-center gap-1 text-xs transition-colors",
-                  isActive 
-                    ? "text-primary" 
+                  isActive
+                    ? "text-primary"
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
@@ -55,7 +55,7 @@ export function ClientBottomNav() {
               </Link>
             );
           }
-          
+
           // Animated checklist icon
           if ('type' in item && item.type === 'checklist') {
             const isActive = location.pathname === item.path;
@@ -65,8 +65,8 @@ export function ClientBottomNav() {
                 to={item.path!}
                 className={cn(
                   "flex flex-col items-center justify-center gap-1 text-xs transition-colors",
-                  isActive 
-                    ? "text-primary" 
+                  isActive
+                    ? "text-primary"
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
@@ -75,20 +75,20 @@ export function ClientBottomNav() {
               </Link>
             );
           }
-          
+
           // Regular icons (Home, Gift)
           if ('icon' in item && item.icon) {
             const Icon = item.icon;
             const isActive = location.pathname === item.path;
-            
+
             return (
               <Link
                 key={item.path}
                 to={item.path!}
                 className={cn(
                   "flex flex-col items-center justify-center gap-1 text-xs transition-colors",
-                  isActive 
-                    ? "text-primary" 
+                  isActive
+                    ? "text-primary"
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
@@ -97,7 +97,7 @@ export function ClientBottomNav() {
               </Link>
             );
           }
-          
+
           return null;
         })}
       </div>

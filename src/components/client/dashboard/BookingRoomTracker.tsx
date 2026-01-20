@@ -13,13 +13,14 @@ interface BookingRoomTrackerProps {
             sort_order?: number;
         }>;
     };
+    isStarted?: boolean;
 }
 
-export function BookingRoomTracker({ checklist }: BookingRoomTrackerProps) {
+export function BookingRoomTracker({ checklist, isStarted = false }: BookingRoomTrackerProps) {
     if (!checklist || !checklist.rooms || checklist.rooms.length === 0) return null;
 
     const sortedRooms = [...checklist.rooms].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
-    const completedCount = sortedRooms.filter(r => r.is_completed).length;
+    const completedCount = isStarted ? sortedRooms.filter(r => r.is_completed).length : 0;
 
     return (
         <div className="mt-4 pt-4 border-t border-border/50 animate-in slide-in-from-bottom-2 duration-500">
@@ -53,28 +54,31 @@ export function BookingRoomTracker({ checklist }: BookingRoomTrackerProps) {
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-4">
-                {sortedRooms.map(room => (
-                    <div key={room.id} className={cn(
-                        "flex items-center gap-1.5 p-1.5 rounded-lg border text-[10px] transition-all duration-300",
-                        room.is_completed
-                            ? "bg-green-50/40 border-green-100 text-green-700 dark:bg-green-900/10 dark:border-green-900/30 shadow-sm"
-                            : "bg-muted/5 border-transparent text-muted-foreground/60"
-                    )}>
-                        <div className={cn(
-                            "h-4 w-4 rounded-full flex items-center justify-center shrink-0 transition-colors duration-500",
-                            room.is_completed ? "bg-green-100 text-green-600 dark:bg-green-900/40" : "bg-muted/40"
+                {sortedRooms.map(room => {
+                    const roomCompleted = isStarted && room.is_completed;
+                    return (
+                        <div key={room.id} className={cn(
+                            "flex items-center gap-1.5 p-1.5 rounded-lg border text-[10px] transition-all duration-300",
+                            roomCompleted
+                                ? "bg-green-50/40 border-green-100 text-green-700 dark:bg-green-900/10 dark:border-green-900/30 shadow-sm"
+                                : "bg-muted/5 border-transparent text-muted-foreground/60"
                         )}>
-                            {room.is_completed ? (
-                                <CheckCircle2 className="h-2.5 w-2.5" />
-                            ) : (
-                                <Circle className="h-2 w-2 opacity-20" />
-                            )}
+                            <div className={cn(
+                                "h-4 w-4 rounded-full flex items-center justify-center shrink-0 transition-colors duration-500",
+                                roomCompleted ? "bg-green-100 text-green-600 dark:bg-green-900/40" : "bg-muted/40"
+                            )}>
+                                {roomCompleted ? (
+                                    <CheckCircle2 className="h-2.5 w-2.5" />
+                                ) : (
+                                    <Circle className="h-2 w-2 opacity-20" />
+                                )}
+                            </div>
+                            <span className="truncate font-semibold flex-1">
+                                {room.room_name}
+                            </span>
                         </div>
-                        <span className="truncate font-semibold flex-1">
-                            {room.room_name}
-                        </span>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
         </div>
     );

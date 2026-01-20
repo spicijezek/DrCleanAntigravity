@@ -1,4 +1,4 @@
-import drcleanIcon from '@/assets/drclean-icon.png';
+import drcleanIcon from '@/assets/drclean-icon-blue.png';
 
 interface LoadingOverlayProps {
     message?: string;

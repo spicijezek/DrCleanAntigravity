@@ -38,7 +38,7 @@ export function ServiceCard({
   useEffect(() => {
     if (isOpen && videoRef.current && mediaType === 'video') {
       videoRef.current.currentTime = 0;
-      videoRef.current.play().catch(() => {});
+      videoRef.current.play().catch(() => { });
     }
   }, [isOpen, mediaType]);
 
@@ -46,8 +46,8 @@ export function ServiceCard({
     <Collapsible open={isOpen} onOpenChange={onOpenChange}>
       <Card className={cn(
         "overflow-hidden transition-all duration-300 border-2",
-        isOpen 
-          ? "border-primary shadow-lg ring-2 ring-primary/20" 
+        isOpen
+          ? "border-primary shadow-lg ring-2 ring-primary/20"
           : "border-border hover:border-primary/50 hover:shadow-md"
       )}>
         <CollapsibleTrigger className="w-full text-left">
@@ -74,23 +74,23 @@ export function ServiceCard({
                     className="absolute inset-0 w-full h-full object-cover"
                   />
                 )}
-                
+
                 {/* Expand indicator */}
                 <div className="absolute top-3 right-3">
                   <div className={cn(
-                    "p-2 rounded-full bg-white/20 backdrop-blur-sm transition-transform duration-300",
+                    "p-2.5 rounded-full bg-black/40 backdrop-blur-md border border-white/20 transition-transform duration-300 shadow-lg",
                     isOpen && "rotate-180"
                   )}>
-                    <ChevronDown className="h-4 w-4 text-white" />
+                    <ChevronDown className="h-5 w-5 text-white stroke-[3]" />
                   </div>
                 </div>
               </div>
-              
+
               {/* Title container - connected to image but not overlaid */}
               <div className="px-4 py-3 bg-card border-t-0">
                 <div className="flex flex-col items-center text-center gap-2">
-                  <div className="p-2.5 rounded-xl bg-gradient-primary shadow-lg -mt-8 relative z-10">
-                    <Icon className="h-5 w-5 text-primary-foreground" />
+                  <div className="p-3.5 rounded-2xl bg-gradient-primary shadow-xl -mt-10 relative z-10 border-2 border-white/20">
+                    <Icon className="h-8 w-8 text-primary-foreground stroke-[2.5]" />
                   </div>
                   <div>
                     <h3 className="text-lg font-bold text-foreground">{title}</h3>
@@ -100,23 +100,23 @@ export function ServiceCard({
               </div>
             </div>
           )}
-          
+
           {/* Fallback header without media */}
           {!media && (
             <CardHeader className="pb-3">
               <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-xl bg-gradient-primary shadow-md">
-                  <Icon className="h-6 w-6 text-primary-foreground" />
+                <div className="p-3 rounded-xl bg-gradient-primary shadow-lg border-2 border-white/10">
+                  <Icon className="h-7 w-7 text-primary-foreground stroke-[2.5]" />
                 </div>
                 <div className="flex-1">
                   <h3 className="text-lg font-bold text-foreground">{title}</h3>
                   <p className="text-sm text-muted-foreground">{description}</p>
                 </div>
                 <div className={cn(
-                  "p-2 rounded-full bg-muted transition-transform duration-300",
+                  "p-2.5 rounded-full bg-muted border border-border shadow-sm transition-transform duration-300",
                   isOpen && "rotate-180"
                 )}>
-                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                  <ChevronDown className="h-5 w-5 text-primary stroke-[3]" />
                 </div>
               </div>
             </CardHeader>
@@ -137,10 +137,10 @@ export function ServiceCard({
                   }}
                   className="flex items-center gap-2 text-sm text-primary font-medium hover:underline"
                 >
-                  <Sparkles className="h-4 w-4" />
+                  <Sparkles className="h-5 w-5 stroke-[2.5]" />
                   {showDetails ? 'Skrýt informace' : 'Proč si vybrat tuto službu?'}
                   <ChevronDown className={cn(
-                    "h-4 w-4 transition-transform",
+                    "h-5 w-5 transition-transform stroke-[2.5]",
                     showDetails && "rotate-180"
                   )} />
                 </button>
@@ -150,15 +150,16 @@ export function ServiceCard({
                   <div className="grid gap-4 sm:grid-cols-2 animate-fade-in">
                     {/* Pain Points */}
                     {painPoints && painPoints.length > 0 && (
-                      <div className="p-4 rounded-xl bg-destructive/5 border border-destructive/20">
-                        <h4 className="text-sm font-semibold text-destructive mb-3">
+                      <div className="p-4 rounded-xl bg-destructive/10 border-2 border-destructive/30">
+                        <h4 className="text-sm font-semibold text-destructive mb-3 flex items-center gap-2">
+                          <span className="text-lg">⚠️</span>
                           Možná vás trápí...
                         </h4>
-                        <ul className="space-y-2">
+                        <ul className="space-y-2.5">
                           {painPoints.map((point, idx) => (
-                            <li key={idx} className="flex items-start gap-2 text-sm text-muted-foreground">
-                              <span className="text-destructive mt-0.5">•</span>
-                              {point}
+                            <li key={idx} className="flex items-start gap-2.5 text-sm text-foreground">
+                              <span className="text-destructive mt-0.5 text-lg font-bold flex-shrink-0">•</span>
+                              <span className="leading-relaxed">{point}</span>
                             </li>
                           ))}
                         </ul>
@@ -167,15 +168,16 @@ export function ServiceCard({
 
                     {/* Benefits */}
                     {benefits && benefits.length > 0 && (
-                      <div className="p-4 rounded-xl bg-success/5 border border-success/20">
-                        <h4 className="text-sm font-semibold text-success mb-3">
+                      <div className="p-4 rounded-xl bg-success/10 border-2 border-success/30">
+                        <h4 className="text-sm font-semibold text-success mb-3 flex items-center gap-2">
+                          <span className="text-lg">✨</span>
                           Co získáte
                         </h4>
-                        <ul className="space-y-2">
+                        <ul className="space-y-2.5">
                           {benefits.map((benefit, idx) => (
-                            <li key={idx} className="flex items-start gap-2 text-sm text-muted-foreground">
-                              <Check className="h-4 w-4 text-success mt-0.5 flex-shrink-0" />
-                              {benefit}
+                            <li key={idx} className="flex items-start gap-2.5 text-sm text-foreground">
+                              <Check className="h-5 w-5 text-success mt-0.5 flex-shrink-0 stroke-[3]" />
+                              <span className="leading-relaxed">{benefit}</span>
                             </li>
                           ))}
                         </ul>
