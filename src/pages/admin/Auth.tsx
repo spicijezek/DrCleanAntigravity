@@ -271,7 +271,7 @@ export default function Auth() {
             disabled={googleLoading}
           >
             {googleLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <img src={drcleanIcon} alt="Loading" className="h-4 w-4 animate-spin-pulse" />
             ) : (
               <>
                 <div className="bg-white p-1 rounded-md group-hover:scale-110 transition-transform">
