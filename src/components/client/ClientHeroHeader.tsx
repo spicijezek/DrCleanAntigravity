@@ -40,8 +40,8 @@ export function ClientHeroHeader({
     <div className={cn(
       "relative overflow-hidden rounded-2xl p-5",
       isPrimary
-        ? "bg-gradient-to-br from-primary via-primary/95 to-primary/90 text-white shadow-lg"
-        : "bg-gradient-to-r from-primary/10 to-primary/5 dark:from-primary/20 dark:to-primary/10 border border-primary/20 dark:border-primary/30",
+        ? "bg-[linear-gradient(135deg,hsl(var(--primary))_0%,hsl(var(--primary)_/_0.95)_40%,hsl(var(--primary)_/_0.85)_100%)] text-white shadow-xl"
+        : "bg-[linear-gradient(to_right,hsl(var(--primary)_/_0.08),hsl(var(--primary)_/_0.03))] dark:bg-[linear-gradient(to_right,hsl(var(--primary)_/_0.15),hsl(var(--primary)_/_0.08))] border border-primary/20 dark:border-primary/30",
       className
     )}>
       {/* Background pattern */}

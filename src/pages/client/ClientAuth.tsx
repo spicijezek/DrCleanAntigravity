@@ -392,9 +392,9 @@ export default function ClientAuth() {
         <div className="flex items-center justify-between mb-3">
           {stepLabels.map((label, index) => (
             <div key={index} className="flex flex-col items-center flex-1">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${step > index + 1 ? 'bg-white text-blue-900' :
-                  step === index + 1 ? 'bg-blue-500 text-white ring-4 ring-blue-500/20' :
-                    'bg-white/10 text-white/40'
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${step > index + 1 ? 'bg-white text-primary-foreground' :
+                step === index + 1 ? 'bg-primary text-white ring-4 ring-primary/20' :
+                  'bg-white/10 text-white/40'
                 }`}>
                 {step > index + 1 ? <Check className="w-4 h-4" /> : index + 1}
               </div>
@@ -407,7 +407,7 @@ export default function ClientAuth() {
         </div>
         <div className="h-1 bg-white/10 rounded-full overflow-hidden">
           <div
-            className="h-full bg-gradient-to-r from-blue-500 to-white transition-all duration-500"
+            className="h-full bg-gradient-to-r from-primary to-primary-light transition-all duration-500"
             style={{ width: `${(step / totalSteps) * 100}%` }}
           />
         </div>
@@ -419,14 +419,14 @@ export default function ClientAuth() {
     <form onSubmit={handleStep1Submit} className="space-y-5">
       {/* Client Type Selection */}
       <div className="space-y-3">
-        <Label className="text-blue-100/80 text-xs font-bold uppercase tracking-wider ml-1">Typ účtu</Label>
+        <Label className="text-primary/80 text-xs font-bold uppercase tracking-wider ml-1">Typ účtu</Label>
         <div className="grid grid-cols-2 gap-3 p-1 bg-white/5 rounded-xl border border-white/10">
           <Button
             type="button"
             variant={clientType === 'person' ? 'default' : 'ghost'}
             className={`h-12 rounded-lg transition-all duration-300 ${clientType === 'person'
-                ? 'bg-white text-blue-900 shadow-lg hover:bg-blue-50'
-                : 'text-white/70 hover:text-white hover:bg-white/5'
+              ? 'bg-white text-primary-foreground shadow-lg hover:bg-primary/10'
+              : 'text-white/70 hover:text-white hover:bg-white/5'
               }`}
             onClick={() => setClientType('person')}
           >
@@ -437,8 +437,8 @@ export default function ClientAuth() {
             type="button"
             variant={clientType === 'company' ? 'default' : 'ghost'}
             className={`h-12 rounded-lg transition-all duration-300 ${clientType === 'company'
-                ? 'bg-white text-blue-900 shadow-lg hover:bg-blue-50'
-                : 'text-white/70 hover:text-white hover:bg-white/5'
+              ? 'bg-white text-primary-foreground shadow-lg hover:bg-primary/10'
+              : 'text-white/70 hover:text-white hover:bg-white/5'
               }`}
             onClick={() => setClientType('company')}
           >
@@ -451,7 +451,7 @@ export default function ClientAuth() {
       {/* Company ID (IČO) - Only for companies */}
       {clientType === 'company' && (
         <div className="space-y-2.5">
-          <Label htmlFor="company_id" className="text-blue-100/80 text-xs font-bold uppercase tracking-wider ml-1">
+          <Label htmlFor="company_id" className="text-primary/80 text-xs font-bold uppercase tracking-wider ml-1">
             IČO *
           </Label>
           <div className="relative group">
@@ -476,7 +476,7 @@ export default function ClientAuth() {
 
       {/* Name */}
       <div className="space-y-2.5">
-        <Label htmlFor="name" className="text-blue-100/80 text-xs font-bold uppercase tracking-wider ml-1">
+        <Label htmlFor="name" className="text-primary/80 text-xs font-bold uppercase tracking-wider ml-1">
           {clientType === 'company' ? 'Název firmy *' : 'Celé jméno *'}
         </Label>
         <div className="relative group">
@@ -495,7 +495,7 @@ export default function ClientAuth() {
 
       {/* Email */}
       <div className="space-y-2.5">
-        <Label htmlFor="email" className="text-blue-100/80 text-xs font-bold uppercase tracking-wider ml-1">Email *</Label>
+        <Label htmlFor="email" className="text-primary/80 text-xs font-bold uppercase tracking-wider ml-1">Email *</Label>
         <div className="relative group">
           <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40 group-focus-within:text-white transition-colors" />
           <Input
@@ -512,7 +512,7 @@ export default function ClientAuth() {
 
       {/* Password */}
       <div className="space-y-2.5">
-        <Label htmlFor="password" className="text-blue-100/80 text-xs font-bold uppercase tracking-wider ml-1">Heslo *</Label>
+        <Label htmlFor="password" className="text-primary/80 text-xs font-bold uppercase tracking-wider ml-1">Heslo *</Label>
         <div className="relative group">
           <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40 group-focus-within:text-white transition-colors" />
           <Input
@@ -531,7 +531,7 @@ export default function ClientAuth() {
 
       <Button
         type="submit"
-        className="w-full h-14 bg-white text-blue-900 hover:bg-blue-50 font-bold rounded-[1.25rem] shadow-xl hover:shadow-2xl transition-all hover:scale-[1.02] active:scale-[0.98]"
+        className="w-full h-14 bg-white text-primary-foreground hover:bg-primary/10 font-bold rounded-[1.25rem] shadow-xl hover:shadow-2xl transition-all hover:scale-[1.02] active:scale-[0.98]"
         disabled={loading}
       >
         {loading ? "Odesílám..." : "Zaregistrovat se"}
@@ -543,7 +543,7 @@ export default function ClientAuth() {
   const renderStep2 = () => (
     <form onSubmit={handleVerifyCode} className="space-y-5">
       <div className="text-center space-y-2 mb-6">
-        <div className="mx-auto w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center">
+        <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
           <Mail className="w-8 h-8 text-white" />
         </div>
         <h3 className="text-xl font-bold text-white">Ověřte svůj email</h3>
@@ -554,7 +554,7 @@ export default function ClientAuth() {
       </div>
 
       <div className="space-y-2.5">
-        <Label htmlFor="code" className="text-blue-100/80 text-xs font-bold uppercase tracking-wider ml-1">
+        <Label htmlFor="code" className="text-primary/80 text-xs font-bold uppercase tracking-wider ml-1">
           Ověřovací kód
         </Label>
         <Input
@@ -580,7 +580,7 @@ export default function ClientAuth() {
         </Button>
         <Button
           type="submit"
-          className="flex-1 h-12 bg-white text-blue-900 hover:bg-blue-50 font-bold rounded-xl shadow-lg"
+          className="flex-1 h-12 bg-white text-primary-foreground hover:bg-primary/10 font-bold rounded-xl shadow-lg"
           disabled={loading || verificationCode.length !== 6}
         >
           {loading ? "Ověřuji..." : "Ověřit kód"}
@@ -611,7 +611,7 @@ export default function ClientAuth() {
       {/* DIČ - Only for companies */}
       {clientType === 'company' && (
         <div className="space-y-2.5">
-          <Label htmlFor="dic" className="text-blue-100/80 text-xs font-bold uppercase tracking-wider ml-1">
+          <Label htmlFor="dic" className="text-primary/80 text-xs font-bold uppercase tracking-wider ml-1">
             DIČ
           </Label>
           <div className="relative group">
@@ -630,7 +630,7 @@ export default function ClientAuth() {
 
       {/* Phone */}
       <div className="space-y-2.5">
-        <Label htmlFor="phone" className="text-blue-100/80 text-xs font-bold uppercase tracking-wider ml-1">Telefon *</Label>
+        <Label htmlFor="phone" className="text-primary/80 text-xs font-bold uppercase tracking-wider ml-1">Telefon *</Label>
         <div className="relative group">
           <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40 group-focus-within:text-white transition-colors" />
           <Input
@@ -647,7 +647,7 @@ export default function ClientAuth() {
 
       {/* Address */}
       <div className="space-y-2.5">
-        <Label htmlFor="address" className="text-blue-100/80 text-xs font-bold uppercase tracking-wider ml-1">Adresa *</Label>
+        <Label htmlFor="address" className="text-primary/80 text-xs font-bold uppercase tracking-wider ml-1">Adresa *</Label>
         <div className="relative group">
           <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40 group-focus-within:text-white transition-colors" />
           <Input
@@ -665,7 +665,7 @@ export default function ClientAuth() {
       {/* City and Postal Code */}
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-2.5">
-          <Label htmlFor="city" className="text-blue-100/80 text-xs font-bold uppercase tracking-wider ml-1">Město *</Label>
+          <Label htmlFor="city" className="text-primary/80 text-xs font-bold uppercase tracking-wider ml-1">Město *</Label>
           <Input
             id="city"
             value={formData.city}
@@ -677,7 +677,7 @@ export default function ClientAuth() {
           />
         </div>
         <div className="space-y-2.5">
-          <Label htmlFor="postal_code" className="text-blue-100/80 text-xs font-bold uppercase tracking-wider ml-1">PSČ *</Label>
+          <Label htmlFor="postal_code" className="text-primary/80 text-xs font-bold uppercase tracking-wider ml-1">PSČ *</Label>
           <Input
             id="postal_code"
             value={formData.postal_code}
@@ -693,7 +693,7 @@ export default function ClientAuth() {
       {/* Date of Birth - Only for persons */}
       {clientType === 'person' && (
         <div className="space-y-2.5">
-          <Label htmlFor="dob" className="text-blue-100/80 text-xs font-bold uppercase tracking-wider ml-1">
+          <Label htmlFor="dob" className="text-primary/80 text-xs font-bold uppercase tracking-wider ml-1">
             Datum narození
           </Label>
           <div className="relative">
@@ -713,7 +713,7 @@ export default function ClientAuth() {
       {/* Contact Person - Only for companies */}
       {clientType === 'company' && (
         <div className="space-y-2.5">
-          <Label htmlFor="reliable_person" className="text-blue-100/80 text-xs font-bold uppercase tracking-wider ml-1">
+          <Label htmlFor="reliable_person" className="text-primary/80 text-xs font-bold uppercase tracking-wider ml-1">
             Kontaktní osoba *
           </Label>
           <div className="relative group">
@@ -742,7 +742,7 @@ export default function ClientAuth() {
         </Button>
         <Button
           type="submit"
-          className="flex-1 h-12 bg-white text-blue-900 hover:bg-blue-50 font-bold rounded-xl shadow-lg"
+          className="flex-1 h-12 bg-white text-primary-foreground hover:bg-primary/10 font-bold rounded-xl shadow-lg"
         >
           Pokračovat
           <ArrowRight className="ml-2 h-4 w-4" />
@@ -763,7 +763,7 @@ export default function ClientAuth() {
 
           <div className="bg-white/5 border border-white/10 rounded-2xl p-6 space-y-3">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-blue-500/20 rounded-full flex items-center justify-center">
+              <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
                 <Building2 className="w-6 h-6 text-white" />
               </div>
               <div>
@@ -785,7 +785,7 @@ export default function ClientAuth() {
             </Button>
             <Button
               type="submit"
-              className="flex-1 h-12 bg-white text-blue-900 hover:bg-blue-50 font-bold rounded-xl shadow-lg"
+              className="flex-1 h-12 bg-white text-primary-foreground hover:bg-primary/10 font-bold rounded-xl shadow-lg"
             >
               Pokračovat
               <ArrowRight className="ml-2 h-4 w-4" />
@@ -805,7 +805,7 @@ export default function ClientAuth() {
 
         {/* Children */}
         <div className="space-y-2.5">
-          <Label className="text-blue-100/80 text-xs font-bold uppercase tracking-wider ml-1">
+          <Label className="text-primary/80 text-xs font-bold uppercase tracking-wider ml-1">
             Děti v domácnosti
           </Label>
           <div className="grid grid-cols-2 gap-3 p-1 bg-white/5 rounded-xl border border-white/10">
@@ -813,8 +813,8 @@ export default function ClientAuth() {
               type="button"
               variant={formData.has_children ? 'default' : 'ghost'}
               className={`h-10 rounded-lg transition-all ${formData.has_children
-                  ? 'bg-white text-blue-900 shadow-md'
-                  : 'text-white/70 hover:text-white hover:bg-white/5'
+                ? 'bg-white text-primary-foreground shadow-md'
+                : 'text-white/70 hover:text-white hover:bg-white/5'
                 }`}
               onClick={() => setFormData({ ...formData, has_children: true })}
             >
@@ -824,8 +824,8 @@ export default function ClientAuth() {
               type="button"
               variant={!formData.has_children ? 'default' : 'ghost'}
               className={`h-10 rounded-lg transition-all ${!formData.has_children
-                  ? 'bg-white text-blue-900 shadow-md'
-                  : 'text-white/70 hover:text-white hover:bg-white/5'
+                ? 'bg-white text-primary-foreground shadow-md'
+                : 'text-white/70 hover:text-white hover:bg-white/5'
                 }`}
               onClick={() => setFormData({ ...formData, has_children: false })}
             >
@@ -836,7 +836,7 @@ export default function ClientAuth() {
 
         {/* Pets */}
         <div className="space-y-2.5">
-          <Label className="text-blue-100/80 text-xs font-bold uppercase tracking-wider ml-1">
+          <Label className="text-primary/80 text-xs font-bold uppercase tracking-wider ml-1">
             Domácí mazlíčci
           </Label>
           <div className="grid grid-cols-2 gap-3 p-1 bg-white/5 rounded-xl border border-white/10">
@@ -844,8 +844,8 @@ export default function ClientAuth() {
               type="button"
               variant={formData.has_pets ? 'default' : 'ghost'}
               className={`h-10 rounded-lg transition-all ${formData.has_pets
-                  ? 'bg-white text-blue-900 shadow-md'
-                  : 'text-white/70 hover:text-white hover:bg-white/5'
+                ? 'bg-white text-primary-foreground shadow-md'
+                : 'text-white/70 hover:text-white hover:bg-white/5'
                 }`}
               onClick={() => setFormData({ ...formData, has_pets: true })}
             >
@@ -855,8 +855,8 @@ export default function ClientAuth() {
               type="button"
               variant={!formData.has_pets ? 'default' : 'ghost'}
               className={`h-10 rounded-lg transition-all ${!formData.has_pets
-                  ? 'bg-white text-blue-900 shadow-md'
-                  : 'text-white/70 hover:text-white hover:bg-white/5'
+                ? 'bg-white text-primary-foreground shadow-md'
+                : 'text-white/70 hover:text-white hover:bg-white/5'
                 }`}
               onClick={() => setFormData({ ...formData, has_pets: false })}
             >
@@ -867,7 +867,7 @@ export default function ClientAuth() {
 
         {/* Allergies */}
         <div className="space-y-2.5">
-          <Label htmlFor="allergies" className="text-blue-100/80 text-xs font-bold uppercase tracking-wider ml-1">
+          <Label htmlFor="allergies" className="text-primary/80 text-xs font-bold uppercase tracking-wider ml-1">
             Alergie
           </Label>
           <Textarea
@@ -882,7 +882,7 @@ export default function ClientAuth() {
 
         {/* Special Instructions */}
         <div className="space-y-2.5">
-          <Label htmlFor="instructions" className="text-blue-100/80 text-xs font-bold uppercase tracking-wider ml-1">
+          <Label htmlFor="instructions" className="text-primary/80 text-xs font-bold uppercase tracking-wider ml-1">
             Specifické pokyny
           </Label>
           <Textarea
@@ -907,7 +907,7 @@ export default function ClientAuth() {
           </Button>
           <Button
             type="submit"
-            className="flex-1 h-12 bg-white text-blue-900 hover:bg-blue-50 font-bold rounded-xl shadow-lg"
+            className="flex-1 h-12 bg-white text-primary-foreground hover:bg-primary/10 font-bold rounded-xl shadow-lg"
           >
             Pokračovat
             <ArrowRight className="ml-2 h-4 w-4" />
@@ -1032,7 +1032,7 @@ export default function ClientAuth() {
         </Button>
         <Button
           onClick={handleFinalSubmit}
-          className="flex-1 h-14 bg-gradient-to-r from-green-500 to-blue-500 text-white hover:from-green-600 hover:to-blue-600 font-bold rounded-xl shadow-xl hover:shadow-2xl transition-all hover:scale-[1.02]"
+          className="flex-1 h-14 bg-gradient-to-r from-green-500 to-primary text-white hover:from-green-600 hover:to-primary-hover font-bold rounded-xl shadow-xl hover:shadow-2xl transition-all hover:scale-[1.02]"
           disabled={loading}
         >
           {loading ? "Dokončuji..." : "Dokončit registraci"}
@@ -1049,18 +1049,18 @@ export default function ClientAuth() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-[url('https://images.unsplash.com/photo-1527515673516-9b552e6aeeb4?ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80')] bg-cover bg-center relative p-4 overflow-hidden">
       {/* Dynamic Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-900/80 via-slate-900/90 to-black/95 backdrop-blur-sm" />
+      <div className="absolute inset-0 bg-gradient-to-br from-slate-950/90 via-black/95 to-black" />
 
       {/* Animated blobs */}
-      <div className="absolute top-1/4 -left-20 w-80 h-80 bg-blue-500/20 rounded-full blur-[120px] animate-pulse" />
-      <div className="absolute bottom-1/4 -right-20 w-80 h-80 bg-indigo-500/20 rounded-full blur-[120px] animate-pulse delay-700" />
+      <div className="absolute top-1/4 -left-20 w-80 h-80 bg-primary/20 rounded-full blur-[120px] animate-pulse" />
+      <div className="absolute bottom-1/4 -right-20 w-80 h-80 bg-primary/20 rounded-full blur-[120px] animate-pulse delay-700" />
 
       <Card className="w-full max-w-md relative z-10 border-0 bg-white/10 backdrop-blur-2xl shadow-[0_32px_64px_-15px_rgba(0,0,0,0.5)] rounded-[2.5rem] text-white overflow-hidden animate-in fade-in zoom-in-95 duration-700">
         <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent pointer-events-none" />
 
         <CardHeader className="text-center space-y-6 pt-10 pb-8">
           <div className="mx-auto h-24 w-24 flex items-center justify-center transform hover:scale-105 transition-transform duration-500 group">
-            <div className="absolute inset-0 bg-blue-500/20 rounded-full blur-2xl group-hover:blur-3xl transition-all opacity-50" />
+            <div className="absolute inset-0 bg-primary/20 rounded-full blur-2xl group-hover:blur-3xl transition-all opacity-70" />
             <img
               src={drcleanIcon}
               alt="DrClean"
@@ -1071,7 +1071,7 @@ export default function ClientAuth() {
             <CardTitle className="text-4xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-b from-white to-white/60">
               DrClean
             </CardTitle>
-            <p className="text-blue-100/70 text-sm font-semibold">Klientský portál</p>
+            <p className="text-primary/70 text-sm font-semibold">Klientský portál</p>
           </div>
         </CardHeader>
 
@@ -1083,7 +1083,7 @@ export default function ClientAuth() {
             <>
               <form onSubmit={handleSignIn} className="space-y-5">
                 <div className="space-y-2.5">
-                  <Label htmlFor="signin-email" className="text-blue-100/80 text-xs font-bold uppercase tracking-wider ml-1">Email</Label>
+                  <Label htmlFor="signin-email" className="text-primary/80 text-xs font-bold uppercase tracking-wider ml-1">Email</Label>
                   <div className="relative group">
                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40 group-focus-within:text-white transition-colors" />
                     <Input
@@ -1098,7 +1098,7 @@ export default function ClientAuth() {
                   </div>
                 </div>
                 <div className="space-y-2.5">
-                  <Label htmlFor="signin-password" className="text-blue-100/80 text-xs font-bold uppercase tracking-wider ml-1">Heslo</Label>
+                  <Label htmlFor="signin-password" className="text-primary/80 text-xs font-bold uppercase tracking-wider ml-1">Heslo</Label>
                   <div className="relative group">
                     <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40 group-focus-within:text-white transition-colors" />
                     <Input
@@ -1114,7 +1114,7 @@ export default function ClientAuth() {
                 </div>
                 <Button
                   type="submit"
-                  className="w-full h-14 bg-white text-blue-900 hover:bg-blue-50 font-bold rounded-[1.25rem] shadow-xl hover:shadow-2xl transition-all hover:scale-[1.02] active:scale-[0.98]"
+                  className="w-full h-14 bg-white text-primary-foreground hover:bg-primary/10 font-bold rounded-[1.25rem] shadow-xl hover:shadow-2xl transition-all hover:scale-[1.02] active:scale-[0.98]"
                   disabled={loading}
                 >
                   {loading ? "Přihlašování..." : "Přihlásit se"}

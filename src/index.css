@@ -20,11 +20,11 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 220 13% 25%;
 
-    /* Primary Blues (Professional, Trustworthy) */
-    --primary: 225 57% 45%;
+    /* Primary Purples (Sophisticated, Premium) */
+    --primary: 262 52% 35%;
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 225 60% 35%;
-    --primary-light: 225 73% 93%;
+    --primary-hover: 262 55% 25%;
+    --primary-light: 262 45% 95%;
 
     /* Secondary (Neutral Actions) */
     --secondary: 220 15% 95%;
@@ -107,7 +107,7 @@ All colors MUST be HSL.
     --shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.06);
     --shadow-medium: 0 4px 12px rgba(0, 0, 0, 0.08);
     --shadow-strong: 0 8px 24px rgba(0, 0, 0, 0.12);
-    --shadow-primary: 0 2px 8px hsla(225, 57%, 45%, 0.15);
+    --shadow-primary: 0 4px 12px hsla(262, 52%, 35%, 0.15);
 
     /* Transition Standards */
     --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -149,10 +149,10 @@ All colors MUST be HSL.
     --popover: 220 15% 18%;
     --popover-foreground: 220 15% 95%;
 
-    --primary: 225 57% 45%;
+    --primary: 262 52% 40%;
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 225 60% 35%;
-    --primary-light: 225 60% 25%;
+    --primary-hover: 262 55% 30%;
+    --primary-light: 262 45% 20%;
 
     --secondary: 220 15% 25%;
     --secondary-foreground: 220 15% 95%;
@@ -192,7 +192,7 @@ All colors MUST be HSL.
     --shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.4);
     --shadow-medium: 0 4px 12px rgba(0, 0, 0, 0.5);
     --shadow-strong: 0 8px 24px rgba(0, 0, 0, 0.6);
-    --shadow-primary: 0 2px 8px hsla(225, 57%, 45%, 0.3);
+    --shadow-primary: 0 4px 12px hsla(262, 52%, 35%, 0.2);
 
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
@@ -212,6 +212,10 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+  }
+
+  .bg-gradient-primary {
+    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary) / 0.85) 100%);
   }
 }
 

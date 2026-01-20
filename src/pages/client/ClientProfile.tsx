@@ -508,10 +508,10 @@ export default function ClientProfile() {
             <Collapsible open={isPreferencesOpen} onOpenChange={setIsPreferencesOpen} className="w-full">
               <Card className="border-0 shadow-sm overflow-hidden transition-all duration-300">
                 <CollapsibleTrigger asChild>
-                  <CardHeader className="bg-gradient-to-r from-violet-500/10 to-transparent pb-6 cursor-pointer hover:bg-violet-500/5 transition-colors group">
+                  <CardHeader className="bg-gradient-to-r from-primary/10 to-transparent pb-6 cursor-pointer hover:bg-primary/5 transition-colors group">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="p-2.5 rounded-xl bg-violet-500 shadow-lg shadow-violet-500/20 group-hover:scale-110 transition-transform">
+                        <div className="p-2.5 rounded-xl bg-primary shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform">
                           <Info className="h-6 w-6 text-white" />
                         </div>
                         <div className="text-left">
@@ -583,7 +583,7 @@ export default function ClientProfile() {
                           onChange={(e) => setProfileData({ ...profileData, allergies_notes: e.target.value })}
                           placeholder="Máte nějaké alergie na čistící prostředky?"
                           rows={2}
-                          className="bg-muted/30 border-muted-foreground/20 focus:border-violet-500/50 resize-none"
+                          className="bg-muted/30 border-muted-foreground/20 focus:border-primary/50 resize-none"
                         />
                       </div>
 
@@ -594,7 +594,7 @@ export default function ClientProfile() {
                           onChange={(e) => setProfileData({ ...profileData, special_instructions: e.target.value })}
                           placeholder="Klíče jsou u sousedů, prosím nepoužívat páru v ložnici..."
                           rows={3}
-                          className="bg-muted/30 border-muted-foreground/20 focus:border-violet-500/50 resize-none"
+                          className="bg-muted/30 border-muted-foreground/20 focus:border-primary/50 resize-none"
                         />
                       </div>
 
