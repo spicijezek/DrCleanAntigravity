@@ -306,18 +306,16 @@ export default function ClientProfile() {
           <Collapsible open={isBasicInfoOpen} onOpenChange={setIsBasicInfoOpen} className="w-full">
             <Card className="border-0 shadow-sm overflow-hidden transition-all duration-300">
               <CollapsibleTrigger asChild>
-                <CardHeader className="bg-gradient-to-r from-primary/10 to-transparent pb-6 cursor-pointer hover:bg-primary/5 transition-colors group">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2.5 rounded-xl bg-primary shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform">
-                        <User className="h-6 w-6 text-primary-foreground" />
-                      </div>
-                      <div className="text-left">
-                        <CardTitle className="text-xl font-bold">Základní Údaje</CardTitle>
-                        <CardDescription>Osobní a kontaktní informace</CardDescription>
-                      </div>
+                <CardHeader className="bg-gradient-to-r from-primary/10 to-transparent pb-6 cursor-pointer hover:bg-primary/5 transition-colors group relative">
+                  <ChevronDown className={cn("absolute right-4 top-6 h-5 w-5 text-muted-foreground transition-transform duration-300", isBasicInfoOpen && "rotate-180")} />
+                  <div className="flex items-start gap-3 pr-8">
+                    <div className="p-2.5 rounded-xl bg-primary shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform shrink-0">
+                      <User className="h-6 w-6 text-primary-foreground" />
                     </div>
-                    <ChevronDown className={cn("h-5 w-5 text-muted-foreground transition-transform duration-300", isBasicInfoOpen && "rotate-180")} />
+                    <div className="flex-1 min-w-0">
+                      <CardTitle className="text-xl font-bold">Základní Údaje</CardTitle>
+                      <CardDescription>Osobní a kontaktní informace</CardDescription>
+                    </div>
                   </div>
                 </CardHeader>
               </CollapsibleTrigger>
@@ -508,18 +506,16 @@ export default function ClientProfile() {
             <Collapsible open={isPreferencesOpen} onOpenChange={setIsPreferencesOpen} className="w-full">
               <Card className="border-0 shadow-sm overflow-hidden transition-all duration-300">
                 <CollapsibleTrigger asChild>
-                  <CardHeader className="bg-gradient-to-r from-primary/10 to-transparent pb-6 cursor-pointer hover:bg-primary/5 transition-colors group">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2.5 rounded-xl bg-primary shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform">
-                          <Info className="h-6 w-6 text-white" />
-                        </div>
-                        <div className="text-left">
-                          <CardTitle className="text-xl font-bold">Vaše Preference</CardTitle>
-                          <CardDescription>Detaily úklidu</CardDescription>
-                        </div>
+                  <CardHeader className="bg-gradient-to-r from-primary/10 to-transparent pb-6 cursor-pointer hover:bg-primary/5 transition-colors group relative">
+                    <ChevronDown className={cn("absolute right-4 top-6 h-5 w-5 text-muted-foreground transition-transform duration-300", isPreferencesOpen && "rotate-180")} />
+                    <div className="flex items-start gap-3 pr-8">
+                      <div className="p-2.5 rounded-xl bg-primary shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform shrink-0">
+                        <Info className="h-6 w-6 text-primary-foreground" />
                       </div>
-                      <ChevronDown className={cn("h-5 w-5 text-muted-foreground transition-transform duration-300", isPreferencesOpen && "rotate-180")} />
+                      <div className="flex-1 min-w-0">
+                        <CardTitle className="text-xl font-bold">Vaše Preference</CardTitle>
+                        <CardDescription>Detaily úklidu</CardDescription>
+                      </div>
                     </div>
                   </CardHeader>
                 </CollapsibleTrigger>
@@ -599,8 +595,7 @@ export default function ClientProfile() {
                       </div>
 
                       <Button
-                        variant="outline"
-                        className="w-full border-primary/20 hover:bg-primary/5 hover:text-primary font-bold"
+                        className="w-full"
                         onClick={handleSave}
                         disabled={loading}
                       >
@@ -618,18 +613,16 @@ export default function ClientProfile() {
           <Collapsible open={isSecurityOpen} onOpenChange={setIsSecurityOpen} className="w-full">
             <Card className="border-0 shadow-sm overflow-hidden transition-all duration-300">
               <CollapsibleTrigger asChild>
-                <CardHeader className="bg-gradient-to-r from-slate-500/10 to-transparent pb-6 cursor-pointer hover:bg-slate-500/5 transition-colors group">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2.5 rounded-xl bg-slate-800 shadow-lg shadow-slate-800/20 group-hover:scale-110 transition-transform">
-                        <Lock className="h-6 w-6 text-white" />
-                      </div>
-                      <div className="text-left">
-                        <CardTitle className="text-xl font-bold">Zabezpečení</CardTitle>
-                        <CardDescription>Změna hesla</CardDescription>
-                      </div>
+                <CardHeader className="bg-gradient-to-r from-primary/10 to-transparent pb-6 cursor-pointer hover:bg-primary/5 transition-colors group relative">
+                  <ChevronDown className={cn("absolute right-4 top-6 h-5 w-5 text-muted-foreground transition-transform duration-300", isSecurityOpen && "rotate-180")} />
+                  <div className="flex items-start gap-3 pr-8">
+                    <div className="p-2.5 rounded-xl bg-primary shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform shrink-0">
+                      <Lock className="h-6 w-6 text-primary-foreground" />
                     </div>
-                    <ChevronDown className={cn("h-5 w-5 text-muted-foreground transition-transform duration-300", isSecurityOpen && "rotate-180")} />
+                    <div className="flex-1 min-w-0">
+                      <CardTitle className="text-xl font-bold">Zabezpečení</CardTitle>
+                      <CardDescription>Změna hesla</CardDescription>
+                    </div>
                   </div>
                 </CardHeader>
               </CollapsibleTrigger>
@@ -664,7 +657,6 @@ export default function ClientProfile() {
                   </div>
                   <Button
                     className="w-full"
-                    variant="secondary"
                     onClick={handlePasswordChange}
                     disabled={loading}
                   >
@@ -676,8 +668,7 @@ export default function ClientProfile() {
           </Collapsible>
 
           <Button
-            variant="outline"
-            className="w-full py-4 text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/20"
+            className="w-full py-4 font-bold"
             onClick={() => signOut()}
           >
             <LogOut className="h-4 w-4 mr-2" />

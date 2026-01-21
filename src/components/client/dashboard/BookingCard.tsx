@@ -72,7 +72,7 @@ export function BookingCard({ booking, onRatingSubmit, onDecline, currentLoyalty
 
     const statusConfig = {
         pending: { label: 'Čeká na schválení', color: 'bg-amber-50 text-amber-700 border-amber-100' },
-        approved: { label: 'Schváleno & Naplánováno', color: 'bg-indigo-50 text-indigo-700 border-indigo-100' },
+        approved: { label: 'Schváleno & Naplánováno', color: 'bg-primary/10 text-primary border-primary/20' },
         in_progress: { label: 'Probíhá', color: 'bg-emerald-50 text-emerald-700 border-emerald-100 animate-pulse' },
         completed: { label: 'Dokončeno', color: 'bg-emerald-50 text-emerald-700 border-emerald-100' },
         declined: { label: 'Zamítnuto', color: 'bg-red-50 text-red-700 border-red-100' }
@@ -154,7 +154,7 @@ export function BookingCard({ booking, onRatingSubmit, onDecline, currentLoyalty
                 "absolute left-0 top-0 bottom-0 w-2 transition-all duration-500 z-20",
                 isPending ? "bg-amber-400" :
                     (isStarted && !isCompleted) ? "bg-emerald-500 shadow-[2px_0_10px_rgba(16,185,129,0.3)] animate-pulse" :
-                        (isApproved) ? "bg-indigo-500 shadow-[2px_0_10px_rgba(99,102,241,0.3)]" :
+                        (isApproved) ? "bg-primary shadow-[2px_0_10px_hsl(var(--primary)_/_0.3)]" :
                             isCompleted ? "bg-emerald-500 shadow-[2px_0_10px_rgba(16,185,129,0.3)]" : "bg-red-500"
             )} />
 
@@ -206,12 +206,12 @@ export function BookingCard({ booking, onRatingSubmit, onDecline, currentLoyalty
 
                     {/* ALWAYS VISIBLE SUMMARY IF COLLAPSIBLE OR REGULAR CONTENT */}
                     <div className="space-y-4">
-                        <div className="flex items-start gap-4 p-4 rounded-2xl bg-gradient-to-br from-indigo-50/50 to-white dark:from-indigo-950/20 dark:to-slate-900/20 border border-indigo-100/50 dark:border-indigo-900/30 shadow-sm">
-                            <div className="h-10 w-10 rounded-full bg-white dark:bg-indigo-950 flex items-center justify-center shadow-sm shrink-0 text-indigo-600">
+                        <div className="flex items-start gap-4 p-4 rounded-2xl bg-gradient-to-br from-primary/5 to-white dark:from-primary/10 dark:to-slate-900/20 border border-primary/10 dark:border-primary/20 shadow-sm">
+                            <div className="h-10 w-10 rounded-full bg-white dark:bg-primary/20 flex items-center justify-center shadow-sm shrink-0 text-primary">
                                 <MapPinIcon className="h-5 w-5" />
                             </div>
                             <div className="min-w-0 flex-1">
-                                <p className="font-semibold text-[10px] text-indigo-900 dark:text-indigo-200 uppercase tracking-widest mb-0.5">Místo úklidu</p>
+                                <p className="font-semibold text-[10px] text-primary dark:text-primary uppercase tracking-widest mb-0.5">Místo úklidu</p>
                                 <p className="text-base font-medium break-words leading-snug">{booking.address}</p>
                             </div>
                         </div>

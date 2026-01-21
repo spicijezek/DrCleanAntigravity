@@ -120,8 +120,7 @@ export function ClientLayout({ children }: ClientLayoutProps) {
                     </SheetClose>
 
                     <Button
-                      variant="ghost"
-                      className="w-full justify-start text-muted-foreground hover:text-destructive hover:bg-destructive/10 gap-3"
+                      className="w-full justify-start gap-3 font-bold"
                       onClick={handleSignOut}
                     >
                       <LogOut className="h-5 w-5" />

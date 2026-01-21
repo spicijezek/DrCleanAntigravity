@@ -1,4 +1,4 @@
-import drcleanIcon from '@/assets/drclean-icon-blue.png';
+import drcleanIcon from '@/assets/drclean-icon-transparent.png';
 
 interface LoadingOverlayProps {
     message?: string;
@@ -12,7 +12,7 @@ export const LoadingOverlay = ({ message = "Načítání..." }: LoadingOverlayPr
                 <img
                     src={drcleanIcon}
                     alt="DrClean"
-                    className="h-20 w-20 object-contain animate-spin-pulse relative z-10"
+                    className="h-20 w-20 object-contain animate-spin-pulse relative z-10 brightness-[0.6]"
                 />
             </div>
             <p className="text-muted-foreground text-sm font-medium tracking-wide animate-pulse">{message}</p>

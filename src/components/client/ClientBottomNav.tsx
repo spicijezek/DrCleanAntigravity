@@ -1,7 +1,7 @@
 import { Home, Gift } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import plusBadgeIcon from '@/assets/plus-badge-icon.png';
+import plusIconTransparent from '@/assets/plus-icon-transparent.png';
 import { AnimatedClockIcon } from './AnimatedClockIcon';
 import { AnimatedChecklistIcon } from './AnimatedChecklistIcon';
 
@@ -28,9 +28,9 @@ export function ClientBottomNav() {
                 className="flex items-center justify-center"
               >
                 <img
-                  src={plusBadgeIcon}
+                  src={plusIconTransparent}
                   alt="Nová objednávka"
-                  className="h-12 w-12 object-contain animate-pulse-size opacity-80 mix-blend-multiply dark:mix-blend-normal"
+                  className="h-12 w-12 object-contain animate-breathe brightness-[0.6]"
                 />
               </Link>
             );

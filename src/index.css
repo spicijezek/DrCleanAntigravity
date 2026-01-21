@@ -20,11 +20,11 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 220 13% 25%;
 
-    /* Primary Purples (Sophisticated, Premium) */
-    --primary: 262 52% 35%;
+    /* Primary Soft Slate Blue (Subtle, Premium) */
+    --primary: 200 32% 27%;
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 262 55% 25%;
-    --primary-light: 262 45% 95%;
+    --primary-hover: 200 35% 22%;
+    --primary-light: 200 20% 95%;
 
     /* Secondary (Neutral Actions) */
     --secondary: 220 15% 95%;
@@ -107,7 +107,7 @@ All colors MUST be HSL.
     --shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.06);
     --shadow-medium: 0 4px 12px rgba(0, 0, 0, 0.08);
     --shadow-strong: 0 8px 24px rgba(0, 0, 0, 0.12);
-    --shadow-primary: 0 4px 12px hsla(262, 52%, 35%, 0.15);
+    --shadow-primary: 0 4px 12px hsla(200, 32%, 27%, 0.3);
 
     /* Transition Standards */
     --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -149,10 +149,10 @@ All colors MUST be HSL.
     --popover: 220 15% 18%;
     --popover-foreground: 220 15% 95%;
 
-    --primary: 262 52% 40%;
+    --primary: 200 32% 30%;
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 262 55% 30%;
-    --primary-light: 262 45% 20%;
+    --primary-hover: 200 35% 25%;
+    --primary-light: 200 15% 85%;
 
     --secondary: 220 15% 25%;
     --secondary-foreground: 220 15% 95%;
@@ -192,7 +192,7 @@ All colors MUST be HSL.
     --shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.4);
     --shadow-medium: 0 4px 12px rgba(0, 0, 0, 0.5);
     --shadow-strong: 0 8px 24px rgba(0, 0, 0, 0.6);
-    --shadow-primary: 0 4px 12px hsla(262, 52%, 35%, 0.2);
+    --shadow-primary: 0 4px 12px hsla(262, 65%, 12%, 0.25);
 
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
@@ -699,6 +699,22 @@ All colors MUST be HSL.
 
 .animate-confetti {
   animation: confetti 2.5s ease-out forwards;
+}
+
+@keyframes breathe {
+
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.15);
+  }
+}
+
+.animate-breathe {
+  animation: breathe 2s ease-in-out infinite;
 }
 
 /* Date and time input icon positioning */

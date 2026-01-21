@@ -37,6 +37,9 @@ export default function ClientBilling() {
   const [ratingComment, setRatingComment] = useState('');
   const [submittingRating, setSubmittingRating] = useState(false);
   const [submittedFeedback, setSubmittedFeedback] = useState<Set<string>>(new Set());
+
+  // Status filter state
+  const [selectedStatus, setSelectedStatus] = useState<string>('all');
   useEffect(() => {
     loadData();
   }, [user]);
@@ -209,6 +212,24 @@ export default function ClientBilling() {
         });
 
         setBookings(bookingsWithAll);
+
+        // Determine default filter status based on priority
+        const hasCompleted = bookingsWithAll.some(b => b.status === 'completed');
+        const hasInProgress = bookingsWithAll.some(b => b.status === 'in_progress');
+        const hasApproved = bookingsWithAll.some(b => b.status === 'approved');
+        const hasPending = bookingsWithAll.some(b => b.status === 'pending');
+        const hasPaid = bookingsWithAll.some(b => b.invoice?.status === 'paid');
+        const hasCancelled = bookingsWithAll.some(b => b.status === 'cancelled');
+        const hasDeclined = bookingsWithAll.some(b => b.status === 'declined');
+
+        if (hasCompleted) setSelectedStatus('completed');
+        else if (hasInProgress) setSelectedStatus('in_progress');
+        else if (hasApproved) setSelectedStatus('approved');
+        else if (hasPending) setSelectedStatus('pending');
+        else if (hasPaid) setSelectedStatus('paid');
+        else if (hasCancelled) setSelectedStatus('cancelled');
+        else if (hasDeclined) setSelectedStatus('declined');
+        else setSelectedStatus('all');
       }
     } catch (error) {
       console.error('Error loading data:', error);
@@ -361,6 +382,60 @@ export default function ClientBilling() {
     return `za ${diffDays} dnů`;
   };
 
+  // Status filter configuration
+  const statusFilters = [
+    { key: 'all', label: 'Vše' },
+    { key: 'pending', label: 'Čeká na schválení' },
+    { key: 'approved', label: 'Schváleno' },
+    { key: 'in_progress', label: 'Probíhá' },
+    { key: 'completed', label: 'Dokončeno' },
+    { key: 'paid', label: 'Zaplaceno' },
+    { key: 'cancelled', label: 'Zrušeno' },
+    { key: 'declined', label: 'Zamítnuto' }
+  ];
+
+  // Filter bookings based on selected status
+  const getFilteredBookings = () => {
+    let filtered = bookings;
+
+    switch (selectedStatus) {
+      case 'pending':
+        filtered = bookings.filter(b => b.status === 'pending');
+        break;
+      case 'approved':
+        filtered = bookings.filter(b => b.status === 'approved');
+        break;
+      case 'in_progress':
+        filtered = bookings.filter(b => b.status === 'in_progress');
+        break;
+      case 'completed':
+        filtered = bookings.filter(b => b.status === 'completed');
+        break;
+      case 'paid':
+        filtered = bookings.filter(b => b.invoice?.status === 'paid');
+        break;
+      case 'cancelled':
+        filtered = bookings.filter(b => b.status === 'cancelled');
+        break;
+      case 'declined':
+        filtered = bookings.filter(b => b.status === 'declined');
+        break;
+      default:
+        filtered = bookings;
+    }
+
+    // Sort completed and paid bookings by scheduled date
+    if (selectedStatus === 'completed' || selectedStatus === 'paid') {
+      filtered = [...filtered].sort((a, b) =>
+        new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime()
+      );
+    }
+
+    return filtered;
+  };
+
+  const filteredBookings = getFilteredBookings();
+
   if (loading) {
     return <LoadingOverlay message="Načítám historii úklidů..." />;
   }
@@ -396,9 +471,32 @@ export default function ClientBilling() {
       ]}
     />
 
+    {/* Status Filter Slider */}
+    <div className="-mx-4 px-4 mb-6">
+      <div className="relative">
+        <div className="flex gap-2 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-2">
+          {statusFilters.map((filter) => (
+            <button
+              key={filter.key}
+              onClick={() => setSelectedStatus(filter.key)}
+              className={`
+                snap-start shrink-0 px-5 py-2.5 rounded-full font-bold text-sm transition-all duration-300
+                ${selectedStatus === filter.key
+                  ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20 scale-105'
+                  : 'bg-muted/50 text-muted-foreground hover:bg-muted hover:scale-105'
+                }
+              `}
+            >
+              {filter.label}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+
     {/* Invoices List */}
     <div className="space-y-6">
-      {bookings.length === 0 ? (
+      {filteredBookings.length === 0 ? (
         <Card className="rounded-[2.5rem] border-0 shadow-lg bg-card">
           <CardContent className="py-20 text-center space-y-4">
             <div className="p-6 rounded-full bg-muted/50 w-fit mx-auto shadow-inner text-muted-foreground/30">
@@ -413,7 +511,7 @@ export default function ClientBilling() {
           </CardContent>
         </Card>
       ) : (
-        bookings.map(booking => (
+        filteredBookings.map(booking => (
           <BookingCard
             key={booking.id}
             booking={booking}
