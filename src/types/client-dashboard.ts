@@ -37,6 +37,8 @@ export interface Booking {
     has_pets: boolean;
     has_children: boolean;
     special_instructions: string | null;
+    company_id?: string | null;
+    dic?: string | null;
   } | null;
   checklist?: {
     id: string;
@@ -58,6 +60,19 @@ export interface Booking {
     pdf_path: string | null;
     variable_symbol: string | null;
     date_due: string | null;
+    client_name?: string | null;
+    client_vat?: string | null;
+    client_dic?: string | null;
+    client_address?: string | null;
+    client_email?: string | null;
+    client_phone?: string | null;
+    date_created?: string | null;
+    date_performance?: string | null;
+    notes?: string | null;
+    subtotal?: number | null;
+    vat_amount?: number | null;
+    payment_method?: string | null;
+    date_paid?: string | null;
   } | null;
   company_info?: {
     bank_account: string | null;

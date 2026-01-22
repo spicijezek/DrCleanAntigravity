@@ -10,7 +10,8 @@ import {
     Phone,
     Clock,
     Sparkles,
-    Play
+    Play,
+    Trash2
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -125,14 +126,24 @@ export function BookingCard({ booking, onViewDetail, onDelete, onCreateInvoice }
                         <Badge variant={isPending ? 'warning' : isCompleted ? 'success' : isDeclined ? 'destructive' : 'default'} className="uppercase tracking-wide">
                             {currentStatus.label}
                         </Badge>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => onViewDetail(booking)}
-                            className="flex items-center gap-2"
-                        >
-                            <Eye className="h-4 w-4" /> Detail
-                        </Button>
+                        <div className="flex items-center gap-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => onViewDetail(booking)}
+                                className="flex items-center gap-2"
+                            >
+                                <Eye className="h-4 w-4" /> Detail
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => onDelete(booking.id)}
+                                className="flex items-center gap-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                            >
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
+                        </div>
                     </div>
                 </div>
 
@@ -203,23 +214,51 @@ export function BookingCard({ booking, onViewDetail, onDelete, onCreateInvoice }
 
                 {/* Footer: Progress Tracker */}
                 {totalRooms > 0 && (
-                    <div className="pt-2">
+                    <div className="pt-2 space-y-3">
                         <div className="space-y-2">
                             <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest">
                                 <span className="flex items-center gap-1.5 text-slate-400">
-                                    <Clock className="h-3 w-3" /> Postup
+                                    <Clock className="h-3 w-3" /> Postup úklidu
                                 </span>
                                 <span className="text-emerald-600">
-                                    {completedRooms} / {totalRooms}
+                                    {completedRooms} / {totalRooms} ({Math.round((completedRooms / totalRooms) * 100)}%)
                                 </span>
                             </div>
-                            <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden shadow-inner">
+                            <div className="h-2 w-full bg-slate-100 dark:bg-slate-900 rounded-full overflow-hidden shadow-inner">
                                 <div
                                     className="h-full bg-gradient-to-r from-emerald-400 to-emerald-600 transition-all duration-1000 ease-out"
                                     style={{ width: `${(completedRooms / totalRooms) * 100}%` }}
                                 />
                             </div>
                         </div>
+
+                        {/* Room Completion Details with Timestamps */}
+                        {completedRooms > 0 && (
+                            <div className="grid grid-cols-1 gap-1.5 pl-1.5 border-l-2 border-emerald-100 dark:border-emerald-900/30">
+                                {booking.checklist_rooms
+                                    ?.filter(r => r.is_completed)
+                                    .sort((a, b) => {
+                                        if (!a.completed_at || !b.completed_at) return 0;
+                                        return new Date(b.completed_at).getTime() - new Date(a.completed_at).getTime();
+                                    })
+                                    .slice(0, 3) // Show last 3 completed
+                                    .map(room => (
+                                        <div key={room.id} className="flex items-center justify-between text-[10px]">
+                                            <span className="text-muted-foreground truncate flex-1 pr-2">
+                                                {room.room_name}
+                                            </span>
+                                            <Badge variant="outline" className="h-4 px-1.5 text-[9px] bg-emerald-50 text-emerald-700 border-emerald-100 whitespace-nowrap">
+                                                {room.completed_at ? format(new Date(room.completed_at), 'HH:mm') : 'Hotovo'}
+                                            </Badge>
+                                        </div>
+                                    ))}
+                                {completedRooms > 3 && (
+                                    <p className="text-[9px] text-muted-foreground italic pl-1">
+                                        + dalších {completedRooms - 3} místností...
+                                    </p>
+                                )}
+                            </div>
+                        )}
                     </div>
                 )}
             </div>

@@ -205,34 +205,48 @@ export default function CleanerDashboard() {
             });
           }
 
-          // Fetch checklist using the assigned checklist_id
+          // Fetch checklist and booking-specific rooms
           let checklistWithRooms = null;
           if (booking.checklist_id) {
             const {
               data: checklist
             } = await supabase.from('client_checklists').select('id, street, city, postal_code, special_requirements').eq('id', booking.checklist_id).maybeSingle();
             if (checklist) {
-              // Fetch rooms for this checklist
+              // Fetch booking-specific rooms (not template rooms!)
               const {
                 data: rooms
-              } = await supabase.from('checklist_rooms').select('id, room_name, sort_order, is_completed, completed_at, completed_by').eq('checklist_id', checklist.id).order('sort_order', {
+              } = await supabase.from('booking_rooms').select('id, room_name, sort_order, is_completed, completed_at, completed_by').eq('booking_id', booking.id).order('sort_order', {
                 ascending: true
               });
               if (rooms) {
-                // Fetch tasks for each room
+                // Note: booking_rooms don't have tasks - tasks are in the template
+                // For now, we'll fetch tasks from the template for display purposes
                 const roomsWithTasks = await Promise.all(rooms.map(async room => {
-                  const {
-                    data: tasks
-                  } = await supabase.from('checklist_tasks').select('id, task_text, notes, added_by_role, sort_order').eq('room_id', room.id).order('sort_order', {
-                    ascending: true
-                  });
+                  // Fetch template room to get tasks
+                  const { data: templateRoom } = await supabase
+                    .from('checklist_rooms')
+                    .select('id')
+                    .eq('checklist_id', checklist.id)
+                    .eq('room_name', room.room_name)
+                    .maybeSingle();
+
+                  let tasks: any[] = [];
+                  if (templateRoom) {
+                    const { data: taskData } = await supabase
+                      .from('checklist_tasks')
+                      .select('id, task_text, notes, added_by_role, sort_order')
+                      .eq('room_id', templateRoom.id)
+                      .order('sort_order', { ascending: true });
+                    tasks = taskData || [];
+                  }
+
                   return {
                     id: room.id,
                     room_name: room.room_name,
                     is_completed: room.is_completed,
                     completed_at: room.completed_at,
                     completed_by: room.completed_by,
-                    tasks: tasks || []
+                    tasks
                   };
                 }));
                 checklistWithRooms = {
@@ -294,9 +308,10 @@ export default function CleanerDashboard() {
     if (!roomToComplete || !user) return;
     setCompletingRoom(true);
     try {
+      // Mark room complete in booking_rooms (not checklist_rooms!)
       const {
         error
-      } = await supabase.from('checklist_rooms').update({
+      } = await supabase.from('booking_rooms').update({
         is_completed: true,
         completed_by: user.id,
         completed_at: new Date().toISOString()

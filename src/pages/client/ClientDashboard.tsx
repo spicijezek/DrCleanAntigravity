@@ -43,14 +43,23 @@ export default function ClientDashboard() {
       // 1. Pending, Approved, In Progress are always active
       if (b.status !== 'completed') return true;
 
-      // 2. Completed: If overdue, always show
-      if (b.invoice?.status === 'overdue') return true;
+      // 2. Completed with skip_invoice: show only if not viewed (moves to history immediately)
+      if (b.skip_invoice && !b.client_viewed_at) return true;
 
-      // 3. Completed: If paid OR skipped, show only if NOT yet viewed
-      if ((b.invoice?.status === 'paid' || b.skip_invoice) && !b.client_viewed_at) return true;
+      // 3. Completed with invoice assigned:
+      if (b.invoice) {
+        // If overdue, always show
+        if (b.invoice.status === 'overdue') return true;
 
-      // 4. Completed: If no invoice assigned yet (and not skipped), show until feedback is given
-      if (!b.invoice && !b.skip_invoice && !b.feedback) return true;
+        // If unpaid (pending), stay on dashboard
+        if (b.invoice.status === 'pending') return true;
+
+        // If paid, show only if not viewed (brief moment before moving to history)
+        if (b.invoice.status === 'paid' && !b.client_viewed_at) return true;
+      }
+
+      // 4. Completed without invoice yet (and not skipped): show until invoice is assigned
+      if (!b.invoice && !b.skip_invoice) return true;
 
       return false;
     });

@@ -126,10 +126,11 @@ export const useClientDashboardData = () => {
                         .maybeSingle();
 
                     if (linkedChecklist) {
+                        // Fetch booking-specific rooms (not template rooms!)
                         const { data: rooms } = await supabase
-                            .from('checklist_rooms')
+                            .from('booking_rooms')
                             .select('id, room_name, is_completed, completed_at, sort_order')
-                            .eq('checklist_id', linkedChecklist.id)
+                            .eq('booking_id', booking.id)
                             .order('sort_order', { ascending: true });
 
                         if (rooms) {

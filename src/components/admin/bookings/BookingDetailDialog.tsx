@@ -222,6 +222,9 @@ export function BookingDetailDialog({ booking, isOpen, onClose, onUpdate, teamMe
                 manual_team_reward: editFormData.team_reward
             };
 
+            const newChecklistId = (selectedChecklistId && selectedChecklistId !== 'none_selection') ? selectedChecklistId : null;
+            const checklistChanged = newChecklistId !== booking.checklist_id;
+
             const { error } = await supabase
                 .from('bookings')
                 .update({
@@ -231,12 +234,26 @@ export function BookingDetailDialog({ booking, isOpen, onClose, onUpdate, teamMe
                     booking_details: updatedDetails,
                     team_member_ids: selectedTeamMembers,
                     admin_notes: adminNotes,
-                    checklist_id: (selectedChecklistId && selectedChecklistId !== 'none_selection') ? selectedChecklistId : null,
+                    checklist_id: newChecklistId,
                     skip_invoice: skipInvoice
                 })
                 .eq('id', booking.id);
 
             if (error) throw error;
+
+            // Handle booking_rooms snapshots when checklist changes
+            // Only update snapshots if the booking is NOT completed
+            if (checklistChanged && !isCompleted) {
+                if (newChecklistId) {
+                    // Create fresh room snapshots from the new checklist
+                    const { createBookingRoomSnapshots } = await import('@/utils/bookingRoomUtils');
+                    await createBookingRoomSnapshots(booking.id, newChecklistId);
+                } else {
+                    // Checklist removed - delete room snapshots
+                    const { deleteBookingRoomSnapshots } = await import('@/utils/bookingRoomUtils');
+                    await deleteBookingRoomSnapshots(booking.id);
+                }
+            }
 
             toast({ title: 'Uloženo', description: 'Změny byly úspěšně uloženy.' });
             setIsEditing(false);

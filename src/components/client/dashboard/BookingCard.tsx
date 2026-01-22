@@ -301,8 +301,8 @@ export function BookingCard({ booking, onRatingSubmit, onDecline, currentLoyalty
                                     </div>
                                 ) : null}
 
-                                {/* Rating Section - Always visible if completed, no feedback yet, and not declined */}
-                                {isCompleted && !booking.feedback && !isDeclinedRating && (
+                                {/* Rating Section - Only show if NOT in history view OR no feedback yet */}
+                                {isCompleted && !booking.feedback && !isDeclinedRating && !isCollapsible && (
                                     <div className="animate-in fade-in slide-in-from-top-2 duration-700">
                                         <BookingFeedback
                                             bookingId={booking.id}
@@ -315,14 +315,14 @@ export function BookingCard({ booking, onRatingSubmit, onDecline, currentLoyalty
                                     </div>
                                 )}
 
-                                {isCompleted && booking.feedback && !booking.feedback.declined && (
+                                {isCompleted && booking.feedback && !booking.feedback.declined && !isCollapsible && (
                                     <div className="p-5 rounded-2xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/50 space-y-2 shadow-sm animate-in fade-in slide-in-from-top-2 duration-700 text-center">
-                                        <div className="flex justify-center gap-1 mb-2">
-                                            {[1, 2, 3, 4, 5].map((star) => (
+                                        <div className="flex justify-center gap-0.5 mb-2">
+                                            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((star) => (
                                                 <Star
                                                     key={star}
                                                     className={cn(
-                                                        "h-5 w-5",
+                                                        "h-4 w-4",
                                                         star <= booking.feedback!.rating
                                                             ? "fill-amber-400 text-amber-400"
                                                             : "fill-transparent text-amber-200"
@@ -388,23 +388,24 @@ export function BookingCard({ booking, onRatingSubmit, onDecline, currentLoyalty
                                 )}
 
                                 {/* 2. Room Tracker (Moved between Price and Loyalty) */}
-                                {(isStarted || isApproved) && !isCompleted && !isDeclined && booking.checklist?.rooms && booking.checklist.rooms.length > 0 && (
+                                {(isStarted || isApproved || isCompleted) && !isDeclined && booking.checklist?.rooms && booking.checklist.rooms.length > 0 && (
                                     <BookingRoomTracker
                                         checklist={booking.checklist}
                                         isStarted={isStarted}
-                                        startedAt={booking.started_at}
                                     />
                                 )}
 
-                                {/* 3. Loyalty Points container - Renamed and Added Tracker */}
+                                {/* 3. Loyalty Points container - Dynamic text based on payment status */}
                                 {singlePointsMax > 0 && (
-                                    <div className="p-4 rounded-2xl bg-amber-50/50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-900/50 flex flex-col gap-3">
+                                    <div className="p-4 rounded-2xl bg-amber-50/50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-900/50 flex flex-col gap-3 transition-all duration-300">
                                         <div className="flex items-center gap-3">
                                             <div className="h-10 w-10 rounded-xl bg-white dark:bg-slate-800 flex items-center justify-center shadow-sm text-amber-600 border border-amber-100">
                                                 <Sparkles className="h-5 w-5" />
                                             </div>
                                             <div>
-                                                <p className="text-[10px] font-bold text-amber-800 dark:text-amber-300 uppercase tracking-widest">ZA TENTO ÚKLID ZÍSKÁTE</p>
+                                                <p className="text-[10px] font-bold text-amber-800 dark:text-amber-300 uppercase tracking-widest">
+                                                    {booking.invoice?.status === 'paid' ? 'ZA TENTO JSTE ZÍSKALI' : 'ZA TENTO ÚKLID ZÍSKÁTE'}
+                                                </p>
                                                 <div className="text-lg font-bold text-amber-900 dark:text-amber-100 flex items-baseline gap-1">
                                                     {isRange ? (
                                                         <span>{singlePointsMin} - {singlePointsMax}</span>
@@ -416,6 +417,7 @@ export function BookingCard({ booking, onRatingSubmit, onDecline, currentLoyalty
                                             </div>
                                         </div>
 
+                                        {/* Show prize tracker always if current credits are available */}
                                         {currentLoyaltyPoints !== undefined && (
                                             <LoyaltyTracker currentCredits={currentLoyaltyPoints} />
                                         )}

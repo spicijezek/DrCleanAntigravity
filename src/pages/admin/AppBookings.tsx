@@ -8,6 +8,7 @@ import { BookingCard } from '@/components/admin/bookings/BookingCard';
 import { BookingDetailDialog } from '@/components/admin/bookings/BookingDetailDialog';
 import { CreateBookingDialog } from '@/components/admin/CreateBookingDialog';
 import { Button } from '@/components/ui/button';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import {
   Plus, Search, Calendar
 } from 'lucide-react';
@@ -27,6 +28,7 @@ export default function AppBookings() {
   const [selectedBooking, setSelectedBooking] = useState<any>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [bookingToDelete, setBookingToDelete] = useState<string | null>(null);
 
   const [filter, setFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -42,8 +44,8 @@ export default function AppBookings() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, () => {
         loadBookings();
       })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'checklist_rooms' }, () => {
-        // Find if any currently loaded booking is affected by this checklist room change
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'booking_rooms' }, () => {
+        // Update when any booking room changes (live progress)
         loadBookings();
       })
       .subscribe();
@@ -93,12 +95,16 @@ export default function AppBookings() {
 
           if (checklist) {
             const { data: rooms } = await supabase
-              .from('checklist_rooms')
+              .from('booking_rooms')
               .select('id, room_name, is_completed, completed_at')
-              .eq('checklist_id', b.checklist_id)
+              .eq('booking_id', b.id)
               .order('sort_order', { ascending: true });
 
-            return { ...b, checklist: { ...checklist, rooms: rooms || [] } };
+            return {
+              ...b,
+              checklist: { ...checklist, rooms: rooms || [] },
+              checklist_rooms: rooms || [] // For BookingCard property
+            };
           }
         }
         return b;
@@ -135,15 +141,21 @@ export default function AppBookings() {
     }
   };
 
-  const handleDelete = async (bookingId: string) => {
-    if (!confirm('Opravdu chcete smazat tuto rezervaci?')) return;
+  const handleDeleteClick = (bookingId: string) => {
+    setBookingToDelete(bookingId);
+  };
+
+  const confirmDelete = async () => {
+    if (!bookingToDelete) return;
     try {
-      const { error } = await supabase.from('bookings').delete().eq('id', bookingId);
+      const { error } = await supabase.from('bookings').delete().eq('id', bookingToDelete);
       if (error) throw error;
       toast({ title: 'Smazáno', description: 'Rezervace byla úspěšně smazána' });
+      setBookingToDelete(null);
       loadBookings();
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Chyba při mazání', description: error.message });
+      setBookingToDelete(null);
     }
   };
 
@@ -367,7 +379,7 @@ export default function AppBookings() {
                 key={booking.id}
                 booking={booking}
                 onViewDetail={handleViewDetail}
-                onDelete={handleDelete}
+                onDelete={handleDeleteClick}
                 onCreateInvoice={handleCreateInvoice}
               />
             ))
@@ -394,6 +406,23 @@ export default function AppBookings() {
             clients={clients}
           />
         )}
+
+        <AlertDialog open={!!bookingToDelete} onOpenChange={(open) => !open && setBookingToDelete(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Smazat rezervaci?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Tato akce je nevratná. Rezervace a všechna související data budou trvale odstraněna.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Zrušit</AlertDialogCancel>
+              <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                Smazat
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </Layout>
   );

@@ -10,48 +10,58 @@ interface BookingTimelineProps {
 export function BookingTimeline({ booking }: BookingTimelineProps) {
     const isPending = booking.status === 'pending';
     const isApproved = booking.status === 'approved';
+    const isInProgress = booking.status === 'in_progress';
     const isCompleted = booking.status === 'completed';
-    const hasStarted = !!booking.started_at;
+    const hasStarted = !!booking.started_at || isInProgress;
+
+    // Determine if a step should be active based on status hierarchy
+    // 1: Client submits -> Pending or higher
+    // 2: Admin approves -> Approved or higher
+    // 3: Cleaner starts -> In Progress or higher (or hasStarted)
+    // 4: Cleaner finishes -> Completed
+
+    const isStep1Active = ['pending', 'approved', 'in_progress', 'completed'].includes(booking.status);
+    const isStep2Active = ['approved', 'in_progress', 'completed'].includes(booking.status);
+    const isStep3Active = ['in_progress', 'completed'].includes(booking.status) || hasStarted;
+    const isStep4Active = ['completed'].includes(booking.status);
 
     const getProgressHeight = () => {
-        if (isPending) return '0%';
-        if (isApproved && !hasStarted) return '33%';
-        if (isApproved && hasStarted) return '66%';
-        if (isCompleted) return '100%';
+        if (isStep4Active) return '100%';
+        if (isStep3Active) return '66%';
+        if (isStep2Active) return '33%';
+        if (isStep1Active) return '0%';
         return '0%';
     };
-
-    const currentStep = isCompleted ? 4 : (isApproved && hasStarted) ? 3 : (isApproved) ? 2 : 1;
 
     const steps = [
         {
             id: 1,
             label: 'Objednávka přijata',
             subtext: isPending ? 'Čekáme na schválení adminem' : '',
-            active: isPending || isApproved || isCompleted,
+            active: isStep1Active,
             current: isPending
         },
         {
             id: 2,
             label: 'Schváleno & Naplánováno',
-            subtext: isApproved && !hasStarted && !isCompleted
+            subtext: isApproved && !hasStarted
                 ? `Plánovaný termín: ${format(new Date(booking.scheduled_date), 'PPP', { locale: cs })}`
                 : '',
-            active: isApproved || isCompleted,
-            current: isApproved && !hasStarted && !isCompleted
+            active: isStep2Active,
+            current: isApproved && !hasStarted
         },
         {
             id: 3,
             label: 'Úklid byl zahájen',
-            subtext: isApproved && hasStarted && !isCompleted ? 'Právě probíhá úklid...' : '',
-            active: (isApproved && hasStarted) || isCompleted,
-            current: isApproved && hasStarted && !isCompleted
+            subtext: isInProgress ? 'Právě probíhá úklid...' : '',
+            active: isStep3Active,
+            current: isInProgress
         },
         {
             id: 4,
             label: 'Dokončeno',
             subtext: isCompleted ? 'Děkujeme za Vaši důvěru!' : '',
-            active: isCompleted,
+            active: isStep4Active,
             current: isCompleted
         }
     ];
@@ -70,8 +80,8 @@ export function BookingTimeline({ booking }: BookingTimelineProps) {
                     {steps.map((step) => (
                         <div key={step.id} className="flex items-start gap-3 group">
                             <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center transition-all duration-300 ${step.active
-                                    ? 'bg-primary text-primary-foreground shadow-md shadow-primary/20 scale-100'
-                                    : 'bg-muted-foreground/20 text-muted-foreground scale-90 opacity-70'
+                                ? 'bg-primary text-primary-foreground shadow-md shadow-primary/20 scale-100'
+                                : 'bg-muted-foreground/20 text-muted-foreground scale-90 opacity-70'
                                 }`}>
                                 {step.current ? (
                                     <span className="animate-pulse inline-block w-2 h-2 rounded-full bg-primary-foreground" />

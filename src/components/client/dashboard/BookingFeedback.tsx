@@ -37,8 +37,8 @@ export function BookingFeedback({ bookingId, onSubmit, onDecline }: BookingFeedb
             <div className="rounded-xl bg-gradient-to-br from-primary/5 via-primary/5 to-transparent p-5 text-center space-y-4 border border-primary/10">
                 <h4 className="font-semibold text-lg text-primary">Jak jste byli spokojeni s úklidem?</h4>
 
-                <div className="flex justify-center gap-2">
-                    {[1, 2, 3, 4, 5].map((star) => (
+                <div className="flex justify-center gap-1">
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((star) => (
                         <button
                             key={star}
                             onClick={() => {
@@ -49,7 +49,7 @@ export function BookingFeedback({ bookingId, onSubmit, onDecline }: BookingFeedb
                         >
                             <Star
                                 className={cn(
-                                    "h-8 w-8 transition-all duration-300",
+                                    "h-7 w-7 transition-all duration-300",
                                     star <= rating
                                         ? "fill-yellow-400 text-yellow-400 drop-shadow-sm"
                                         : "fill-transparent text-muted-foreground/30 hover:text-yellow-400/70"
