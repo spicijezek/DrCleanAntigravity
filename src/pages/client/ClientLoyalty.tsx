@@ -4,11 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Gift, Share2, CheckCircle2, Phone, Flame, UtensilsCrossed, Sparkles, Trophy, Target } from 'lucide-react';
+import { Gift, Share2, CheckCircle2, Phone, Flame, UtensilsCrossed, Sparkles, Trophy, Target, History as HistoryIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { cs } from 'date-fns/locale';
 import { LoadingOverlay } from '@/components/LoadingOverlay';
 import { ClientHeroHeader } from '@/components/client/ClientHeroHeader';
+import { cn } from '@/lib/utils';
 
 interface LoyaltyData {
   current_credits: number;
@@ -21,6 +22,14 @@ interface Transaction {
   amount: number;
   type: 'earned' | 'redeemed';
   description: string;
+  created_at: string;
+}
+
+interface Redemption {
+  id: string;
+  prize_name: string;
+  points_cost: number;
+  status: 'pending' | 'fulfilled' | 'cancelled';
   created_at: string;
 }
 
@@ -106,7 +115,9 @@ export default function ClientLoyalty() {
   const { user } = useAuth();
   const [loyaltyData, setLoyaltyData] = useState<LoyaltyData | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [redemptions, setRedemptions] = useState<Redemption[]>([]);
   const [loading, setLoading] = useState(true);
+  const [redeeming, setRedeeming] = useState<string | null>(null);
   const [showCelebration, setShowCelebration] = useState(false);
 
   const currentPoints = loyaltyData?.current_credits || 0;
@@ -140,44 +151,58 @@ export default function ClientLoyalty() {
         .maybeSingle();
 
       if (client) {
-        // Get all paid invoices from the client's completed bookings
-        const { data: paidBookings } = await supabase
-          .from('bookings')
-          .select(`
-            id,
-            invoices!invoices_booking_id_fkey (
-              id,
-              total,
-              status
-            )
-          `)
-          .eq('client_id', client.id);
+        // 1. Fetch current credits
+        const { data: creditData } = await supabase
+          .from('loyalty_credits')
+          .select('current_credits, total_earned, total_spent')
+          .eq('client_id', client.id)
+          .maybeSingle();
 
-        // Calculate total spent from paid invoices
-        let totalSpentCZK = 0;
-        if (paidBookings) {
-          paidBookings.forEach(booking => {
-            const invoices = booking.invoices as any;
-            if (Array.isArray(invoices)) {
-              invoices.forEach((inv: any) => {
-                if (inv.status === 'paid') {
-                  totalSpentCZK += Number(inv.total) || 0;
-                }
-              });
-            } else if (invoices && invoices.status === 'paid') {
-              totalSpentCZK += Number(invoices.total) || 0;
-            }
+        if (creditData) {
+          setLoyaltyData(creditData);
+        } else {
+          // Fallback/Calculation if no persisted record yet (migration phase)
+          const { data: paidBookings } = await supabase
+            .from('bookings')
+            .select(`
+              id,
+              invoices!invoices_booking_id_fkey (
+                id,
+                total,
+                status
+              )
+            `)
+            .eq('client_id', client.id);
+
+          let totalSpentCZK = 0;
+          if (paidBookings) {
+            paidBookings.forEach(booking => {
+              const invoices = booking.invoices as any;
+              if (Array.isArray(invoices)) {
+                invoices.forEach((inv: any) => {
+                  if (inv.status === 'paid') totalSpentCZK += Number(inv.total) || 0;
+                });
+              } else if (invoices && invoices.status === 'paid') {
+                totalSpentCZK += Number(invoices.total) || 0;
+              }
+            });
+          }
+          const calculatedPoints = Math.round(totalSpentCZK * 0.27);
+          setLoyaltyData({
+            current_credits: calculatedPoints,
+            total_earned: calculatedPoints,
+            total_spent: totalSpentCZK
+          });
+
+          // Optionally initialize the record here
+          await supabase.from('loyalty_credits').insert({
+            client_id: client.id,
+            current_credits: calculatedPoints,
+            total_earned: calculatedPoints
           });
         }
 
-        const calculatedPoints = Math.round(totalSpentCZK * 0.27);
-
-        setLoyaltyData({
-          current_credits: calculatedPoints,
-          total_earned: calculatedPoints,
-          total_spent: totalSpentCZK
-        });
-
+        // 2. Fetch Transactions
         const { data: trans } = await supabase
           .from('loyalty_transactions')
           .select('*')
@@ -187,6 +212,17 @@ export default function ClientLoyalty() {
 
         if (trans) {
           setTransactions(trans as Transaction[]);
+        }
+
+        // 3. Fetch Redemptions
+        const { data: redemp } = await supabase
+          .from('loyalty_redemptions')
+          .select('*')
+          .eq('client_id', client.id)
+          .order('created_at', { ascending: false });
+
+        if (redemp) {
+          setRedemptions(redemp as Redemption[]);
         }
       }
     } catch (error) {
@@ -208,6 +244,68 @@ export default function ClientLoyalty() {
     // Use animatedPoints for the progress bar calculation to animate it
     if (animatedPoints >= next.amount) return 100;
     return Math.min(100, ((animatedPoints - prevAmount) / (next.amount - prevAmount)) * 100);
+  };
+
+  const handleRedeem = async (milestone: typeof milestones[0]) => {
+    if (!user || currentPoints < milestone.amount) return;
+
+    const confirmRedeem = window.confirm(`Opravdu si přejete vybrat odměnu: ${milestone.reward} za ${milestone.amount} bodů?`);
+    if (!confirmRedeem) return;
+
+    setRedeeming(milestone.reward);
+    try {
+      const { data: client } = await supabase
+        .from('clients')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!client) throw new Error('Client not found');
+
+      // Create redemption record
+      const { error: redempError } = await supabase
+        .from('loyalty_redemptions')
+        .insert({
+          client_id: client.id,
+          prize_name: milestone.reward,
+          points_cost: milestone.amount,
+          status: 'pending'
+        });
+
+      if (redempError) throw redempError;
+
+      // Create transaction record
+      const { error: transError } = await supabase
+        .from('loyalty_transactions')
+        .insert({
+          client_id: client.id,
+          amount: milestone.amount,
+          type: 'redeemed',
+          description: `Výběr odměny: ${milestone.reward}`
+        });
+
+      if (transError) throw transError;
+
+      // Update balance
+      const { error: creditError } = await supabase
+        .from('loyalty_credits')
+        .update({ current_credits: currentPoints - milestone.amount })
+        .eq('client_id', client.id);
+
+      if (creditError) throw creditError;
+
+      setShowCelebration(true);
+      setTimeout(() => setShowCelebration(false), 3000);
+
+      // Reload data
+      loadLoyaltyData();
+
+    } catch (error: any) {
+      console.error('Error redeeming prize:', error);
+      alert('Chyba při výběru odměny: ' + error.message);
+    } finally {
+      setRedeeming(null);
+    }
   };
 
   const handleShare = () => {
@@ -252,35 +350,29 @@ export default function ClientLoyalty() {
         <div className="bg-gradient-to-r from-primary/5 to-primary/10 dark:from-primary/10 dark:to-primary/15 p-4 space-y-4">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-primary/10 dark:bg-primary/20">
-              <Target className="h-5 w-5 text-primary" />
+              <Gift className="h-5 w-5 text-primary" />
             </div>
             <div className="flex-1">
-              <h3 className="font-semibold text-foreground">Další odměna</h3>
-              <p className="text-sm text-muted-foreground">{nextMilestone.reward}</p>
+              <h3 className="font-semibold text-foreground">Vaše body a odměny</h3>
+              <p className="text-sm text-muted-foreground">Sbírejte body a vyberte si svou odměnu</p>
             </div>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-3 pt-2">
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Získáno</span>
-              <span className="font-medium text-primary">
-                {currentPoints.toLocaleString('cs-CZ')} / {nextMilestone.amount.toLocaleString('cs-CZ')} b.
+              <span className="text-muted-foreground font-medium">Aktuální stav</span>
+              <span className="font-bold text-primary">
+                {currentPoints.toLocaleString('cs-CZ')} b.
               </span>
             </div>
-            <div className="relative">
-              <div className="h-3 w-full bg-primary/20 dark:bg-primary/30 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-primary to-primary/80 rounded-full transition-all duration-500"
-                  style={{ width: `${getMilestoneProgress()}%` }}
-                />
-              </div>
+            <div className="relative h-3 w-full bg-primary/20 dark:bg-primary/30 rounded-full overflow-hidden">
               <div
-                className="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-primary border-2 border-white shadow-md transition-all"
-                style={{ left: `calc(${Math.min(getMilestoneProgress(), 100)}% - 8px)` }}
+                className="h-full bg-gradient-to-r from-primary to-primary/80 rounded-full transition-all duration-1000 ease-out"
+                style={{ width: `${Math.min(100, (currentPoints / milestones[milestones.length - 1].amount) * 100)}%` }}
               />
             </div>
-            <p className="text-xs text-muted-foreground text-right">
-              Zbývá {Math.max(0, nextMilestone.amount - currentPoints).toLocaleString('cs-CZ')} b.
+            <p className="text-[10px] text-muted-foreground text-center uppercase tracking-widest font-bold opacity-60">
+              Čím více bodů, tím hodnotnější odměny
             </p>
           </div>
         </div>
@@ -322,20 +414,24 @@ export default function ClientLoyalty() {
                       {milestone.amount.toLocaleString('cs-CZ')} b.
                     </div>
                   </div>
-                  {achieved && (
-                    <div className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
-                      <CheckCircle2 className="h-5 w-5" />
-                      <span className="text-sm font-medium">Splněno</span>
-                    </div>
-                  )}
-                  {isNext && (
-                    <Badge className="bg-primary/10 text-primary dark:bg-primary/20 border-0">
-                      Další cíl
+
+                  {achieved ? (
+                    <Button
+                      size="sm"
+                      className="bg-primary hover:bg-primary/90 shadow-sm font-bold"
+                      onClick={() => handleRedeem(milestone)}
+                      disabled={redeeming === milestone.reward}
+                    >
+                      {redeeming === milestone.reward ? 'Zpracovávám...' : 'Vybrat odměnu'}
+                    </Button>
+                  ) : (
+                    <Badge variant="outline" className="opacity-50 font-bold">
+                      Zbývá {(milestone.amount - currentPoints).toLocaleString('cs-CZ')} b.
                     </Badge>
                   )}
                 </div>
                 {achieved && (
-                  <div className="absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-primary/10 dark:from-primary/20 to-transparent" />
+                  <div className="absolute inset-y-0 right-0 w-1 bg-primary" />
                 )}
               </div>
             );
@@ -364,29 +460,68 @@ export default function ClientLoyalty() {
         </div>
       </Card>
 
-      {/* Transaction History */}
-      {transactions.length > 0 && (
-        <div className="space-y-3">
-          <h2 className="text-lg font-semibold">Historie bodů</h2>
-          <Card>
-            <CardContent className="p-0 divide-y">
-              {transactions.map((trans) => (
-                <div key={trans.id} className="flex items-center justify-between p-4">
-                  <div className="flex-1">
-                    <div className="font-medium text-sm">{trans.description}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {format(new Date(trans.created_at), 'PPp', { locale: cs })}
+      {/* Transaction & Redemption History */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        {/* Points History */}
+        {transactions.length > 0 && (
+          <div className="space-y-3">
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <HistoryIcon className="h-5 w-5 text-primary" />
+              Historie bodů
+            </h2>
+            <Card>
+              <CardContent className="p-0 divide-y max-h-[400px] overflow-y-auto">
+                {transactions.map((trans) => (
+                  <div key={trans.id} className="flex items-center justify-between p-4 bg-card/50">
+                    <div className="flex-1 min-w-0 mr-3">
+                      <div className="font-bold text-xs truncate">{trans.description}</div>
+                      <div className="text-[10px] text-muted-foreground">
+                        {format(new Date(trans.created_at), 'Pp', { locale: cs })}
+                      </div>
+                    </div>
+                    <div className={`text-sm font-black shrink-0 ${trans.type === 'earned' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                      {trans.type === 'earned' ? '+' : '-'}{trans.amount} b.
                     </div>
                   </div>
-                  <div className={`text-lg font-bold ${trans.type === 'earned' ? 'text-green-600' : 'text-red-600'}`}>
-                    {trans.type === 'earned' ? '+' : '-'}{trans.amount} b.
+                ))}
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Redemptions History */}
+        {redemptions.length > 0 && (
+          <div className="space-y-3">
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <Gift className="h-5 w-5 text-primary" />
+              Vaše odměny
+            </h2>
+            <Card>
+              <CardContent className="p-0 divide-y max-h-[400px] overflow-y-auto">
+                {redemptions.map((red) => (
+                  <div key={red.id} className="flex items-center justify-between p-4 bg-card/50">
+                    <div className="flex-1 min-w-0 mr-3">
+                      <div className="font-bold text-xs truncate">{red.prize_name}</div>
+                      <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold opacity-60">
+                        {red.points_cost} b. • {format(new Date(red.created_at), 'd.M.yyyy', { locale: cs })}
+                      </div>
+                    </div>
+                    <Badge className={cn(
+                      "text-[10px] font-bold border-0 h-6 px-2",
+                      red.status === 'pending' ? "bg-amber-100 text-amber-700" :
+                        red.status === 'fulfilled' ? "bg-emerald-100 text-emerald-700" :
+                          "bg-rose-100 text-rose-700"
+                    )}>
+                      {red.status === 'pending' ? 'Čeká' :
+                        red.status === 'fulfilled' ? 'Vyřízeno' : 'Zrušeno'}
+                    </Badge>
                   </div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        </div>
-      )}
+                ))}
+              </CardContent>
+            </Card>
+          </div>
+        )}
+      </div>
 
       {/* Support Section */}
       <div className="rounded-xl bg-card border border-border p-4 space-y-3">

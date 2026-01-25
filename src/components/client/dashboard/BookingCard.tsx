@@ -27,6 +27,7 @@ import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { downloadFile } from '@/utils/downloadUtils';
 
 interface BookingCardProps {
     booking: Booking;
@@ -34,9 +35,10 @@ interface BookingCardProps {
     onDecline?: (bookingId: string) => Promise<void>;
     currentLoyaltyPoints?: number;
     isCollapsible?: boolean;
+    onDownload?: (invoice: any, companyInfo: any) => Promise<void>;
 }
 
-export function BookingCard({ booking, onRatingSubmit, onDecline, currentLoyaltyPoints, isCollapsible = false }: BookingCardProps) {
+export function BookingCard({ booking, onRatingSubmit, onDecline, currentLoyaltyPoints, isCollapsible = false, onDownload }: BookingCardProps) {
     const navigate = useNavigate();
     const details = booking.booking_details;
     const isCompleted = booking.status === 'completed';
@@ -80,72 +82,31 @@ export function BookingCard({ booking, onRatingSubmit, onDecline, currentLoyalty
 
     // Override label if started but status is still approved
     let displayStatus = statusConfig[booking.status as keyof typeof statusConfig] || statusConfig.pending;
-    if (isStarted && !isCompleted && !isDeclined) {
+
+    // Sync with invoice "paid" status
+    const isPaid = booking.invoice?.status === 'paid';
+    if (isPaid) {
+        displayStatus = { label: 'Zaplaceno', color: 'bg-green-50 text-green-700 border-green-100' };
+    } else if (isStarted && !isCompleted && !isDeclined) {
         displayStatus = statusConfig.in_progress;
     }
 
     // Internal state for history view toggle
     const [isOpen, setIsOpen] = useState(!isCollapsible);
-    const [downloading, setDownloading] = useState(false);
-    const [invoiceItems, setInvoiceItems] = useState<any[]>([]);
-    const [loadingItems, setLoadingItems] = useState(false);
-    const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
     const [isDeclinedRating, setIsDeclinedRating] = useState(false);
 
     const handleDownload = async () => {
+        if (onDownload && booking.invoice) {
+            await onDownload(booking.invoice, booking.company_info);
+            return;
+        }
+
         if (!booking.invoice?.id) {
             toast.error("Faktura není k dispozici");
             return;
         }
 
-        setLoadingItems(true);
-        try {
-            const { data: items, error: itemsError } = await supabase
-                .from('invoice_items')
-                .select('*')
-                .eq('invoice_id', booking.invoice.id)
-                .order('sort_order');
-
-            if (itemsError) throw itemsError;
-
-            setInvoiceItems(items || []);
-            setIsGeneratingPDF(true);
-            toast.info("Generuji fakturu ke stažení...");
-
-            // Small delay to ensure hidden preview is added to DOM
-            // Increased to 800ms for mobile reliability
-            setTimeout(async () => {
-                try {
-                    const elementId = 'hidden-client-invoice-preview';
-                    const element = document.getElementById(elementId);
-
-                    if (!element) {
-                        console.error("Target element for client PDF generation not found:", elementId);
-                        throw new Error("Generační element nenalezen");
-                    }
-
-                    // Preserve diacritics but remove illegal filename characters
-                    const sanitizeFilename = (text: string) => text.replace(/[\\/:*?"<>|]/g, '_').trim();
-                    const safeClientName = sanitizeFilename(booking.invoice!.client_name || 'klient');
-                    const safeVarSymbol = sanitizeFilename(booking.invoice!.variable_symbol || booking.invoice!.invoice_number);
-                    const fileName = `${safeClientName}_${safeVarSymbol}.pdf`;
-
-                    const success = await downloadPDF(elementId, fileName);
-                    if (!success) throw new Error("Generování PDF selhalo");
-                } catch (e) {
-                    console.error("Client download failed inside timeout:", e);
-                    toast.error("Nepodařilo se stáhnout PDF");
-                } finally {
-                    setIsGeneratingPDF(false);
-                }
-            }, 800);
-
-        } catch (error) {
-            console.error('Error fetching invoice items:', error);
-            toast.error('Nepodařilo se načíst položky faktury');
-        } finally {
-            setLoadingItems(false);
-        }
+        toast.error("Stahování není v tomto kontextu dostupné");
     };
 
     return (
@@ -197,6 +158,12 @@ export function BookingCard({ booking, onRatingSubmit, onDecline, currentLoyalty
                         </div>
                         <div className="flex flex-col items-end gap-2">
                             <div className="flex items-center gap-2">
+                                {booking.feedback && !booking.feedback.declined && (
+                                    <Badge variant="secondary" className="px-2.5 py-1 text-[11px] font-bold rounded-full border shadow-sm bg-amber-50 text-amber-700 border-amber-100 flex items-center gap-1">
+                                        <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+                                        {booking.feedback.rating}/10
+                                    </Badge>
+                                )}
                                 <Badge variant="secondary" className={cn("px-3 py-1 text-[11px] font-bold rounded-full border shadow-sm whitespace-normal text-center h-auto capitalize", displayStatus.color)}>
                                     {displayStatus.label}
                                 </Badge>
@@ -217,7 +184,8 @@ export function BookingCard({ booking, onRatingSubmit, onDecline, currentLoyalty
                         </div>
 
                         {/* PROMOTED ACTIONS (Rating / Payment / Skip Status) - Right under address */}
-                        {(isCompleted || booking.invoice || booking.skip_invoice) && (
+                        {/* Only show Payment Info here if NOT paid. If paid, it goes into detail collapsible */}
+                        {(isCompleted || booking.invoice || booking.skip_invoice) && !isPaid && (
                             <div className="space-y-4">
                                 {(booking.invoice) ? (
                                     <div className="p-5 rounded-2xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/50 space-y-4 shadow-sm animate-in fade-in slide-in-from-top-2 duration-700">
@@ -256,13 +224,12 @@ export function BookingCard({ booking, onRatingSubmit, onDecline, currentLoyalty
                                             {(booking.invoice.pdf_path || booking.invoice.id) && (
                                                 <div className="pt-2 animate-in fade-in zoom-in duration-500 flex justify-center">
                                                     <Button
-                                                        variant="outline"
-                                                        className="w-full sm:w-auto border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800"
-                                                        onClick={() => handleDownload()}
-                                                        disabled={loadingItems || isGeneratingPDF || downloading}
+                                                        variant="default"
+                                                        className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90 font-bold rounded-xl shadow-lg shadow-primary/20 transition-all active:scale-[0.98]"
+                                                        onClick={handleDownload}
                                                     >
                                                         <Download className="h-4 w-4 mr-2" />
-                                                        {loadingItems || isGeneratingPDF || downloading ? 'Připravuji...' : 'Stáhnout fakturu'}
+                                                        Stáhnout fakturu
                                                     </Button>
                                                 </div>
                                             )}
@@ -315,27 +282,6 @@ export function BookingCard({ booking, onRatingSubmit, onDecline, currentLoyalty
                                     </div>
                                 )}
 
-                                {isCompleted && booking.feedback && !booking.feedback.declined && !isCollapsible && (
-                                    <div className="p-5 rounded-2xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/50 space-y-2 shadow-sm animate-in fade-in slide-in-from-top-2 duration-700 text-center">
-                                        <div className="flex justify-center gap-0.5 mb-2">
-                                            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((star) => (
-                                                <Star
-                                                    key={star}
-                                                    className={cn(
-                                                        "h-4 w-4",
-                                                        star <= booking.feedback!.rating
-                                                            ? "fill-amber-400 text-amber-400"
-                                                            : "fill-transparent text-amber-200"
-                                                    )}
-                                                />
-                                            ))}
-                                        </div>
-                                        <p className="font-bold text-amber-900 dark:text-amber-100">Děkujeme za Vaše hodnocení!</p>
-                                        {booking.feedback.comment && (
-                                            <p className="text-sm text-amber-800 dark:text-amber-200/70 italic">"{booking.feedback.comment}"</p>
-                                        )}
-                                    </div>
-                                )}
                             </div>
                         )}
 
@@ -354,6 +300,73 @@ export function BookingCard({ booking, onRatingSubmit, onDecline, currentLoyalty
                     </div>
 
                     <CollapsibleContent className="space-y-6 pt-2 animate-in fade-in slide-in-from-top-4 duration-500">
+                        {/* Move Payment Info here if PAID */}
+                        {isPaid && booking.invoice && (
+                            <div className="p-5 rounded-2xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/50 space-y-4 shadow-sm animate-in fade-in slide-in-from-top-2 duration-700">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <Banknote className="h-5 w-5 text-green-600" />
+                                        <span className="text-sm font-bold uppercase tracking-wider">Platební údaje</span>
+                                    </div>
+                                    <Badge variant="secondary" className="px-3 py-1 text-[11px] font-bold rounded-full border shadow-sm bg-green-100 text-green-800 border-green-200">
+                                        Zaplaceno
+                                    </Badge>
+                                </div>
+                                <div className="space-y-2.5 text-sm">
+                                    {booking.company_info?.bank_account && (
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-muted-foreground">Číslo účtu:</span>
+                                            <span className="font-bold tabular-nums">{booking.company_info.bank_account}/{booking.company_info.bank_code}</span>
+                                        </div>
+                                    )}
+                                    {booking.invoice.variable_symbol && (
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-muted-foreground">Variabilní symbol:</span>
+                                            <span className="font-bold tabular-nums">{booking.invoice.variable_symbol}</span>
+                                        </div>
+                                    )}
+                                    <div className="flex justify-between items-center border-t border-amber-200/30 pt-3 mt-3">
+                                        <span className="text-muted-foreground font-medium">Celkem uhrazeno:</span>
+                                        <span className="font-black text-2xl text-emerald-900 dark:text-emerald-100">{(booking.invoice.total || 0).toLocaleString('cs-CZ')} Kč</span>
+                                    </div>
+
+                                    {(booking.invoice.pdf_path || booking.invoice.id) && (
+                                        <div className="pt-2 animate-in fade-in zoom-in duration-500 flex justify-center">
+                                            <Button
+                                                variant="default"
+                                                className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90 font-bold rounded-xl shadow-lg shadow-primary/20 transition-all active:scale-[0.98]"
+                                                onClick={handleDownload}
+                                            >
+                                                <Download className="h-4 w-4 mr-2" />
+                                                Stáhnout fakturu
+                                            </Button>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {isCompleted && booking.feedback && !booking.feedback.declined && (
+                            <div className="p-5 rounded-2xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/50 space-y-2 shadow-sm animate-in fade-in slide-in-from-top-2 duration-700 text-center">
+                                <div className="flex justify-center gap-0.5 mb-2">
+                                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((star) => (
+                                        <Star
+                                            key={star}
+                                            className={cn(
+                                                "h-4 w-4",
+                                                star <= booking.feedback!.rating
+                                                    ? "fill-amber-400 text-amber-400"
+                                                    : "fill-transparent text-amber-200"
+                                            )}
+                                        />
+                                    ))}
+                                </div>
+                                <p className="font-bold text-amber-900 dark:text-amber-100">Děkujeme za Vaše hodnocení!</p>
+                                {booking.feedback.comment && (
+                                    <p className="text-sm text-amber-800 dark:text-amber-200/70 italic">"{booking.feedback.comment}"</p>
+                                )}
+                            </div>
+                        )}
                         {/* Timeline for started/approved bookings (always above price) */}
                         {(isStarted || isApproved) && !isCompleted && !isDeclined && (
                             <div className="pt-2">
@@ -516,34 +529,7 @@ export function BookingCard({ booking, onRatingSubmit, onDecline, currentLoyalty
                     </CollapsibleContent>
                 </CardContent>
             </Collapsible>
-            {/* Hidden Generation Container for background download - Viewport resident but invisible for mobile stability */}
-            <div style={{ position: 'fixed', left: 0, top: 0, width: '794px', zIndex: -9999, opacity: 0, pointerEvents: 'none' }}>
-                {isGeneratingPDF && booking.invoice && (
-                    <div id="hidden-client-invoice-preview" className="bg-white" style={{ position: 'relative' }}>
-                        <InvoicePreview
-                            companyInfo={booking.company_info}
-                            invoiceNumber={booking.invoice.invoice_number}
-                            clientName={booking.invoice.client_name}
-                            clientVat={booking.invoice.client_vat || booking.client?.company_id}
-                            clientDic={booking.invoice.client_dic || booking.client?.dic}
-                            clientAddress={booking.invoice.client_address || ""}
-                            clientEmail={booking.invoice.client_email || ""}
-                            clientPhone={booking.invoice.client_phone || ""}
-                            dateCreated={booking.invoice.date_created}
-                            performanceDates={booking.invoice.date_performance ? [{ id: '1', startDate: booking.invoice.date_performance }] : [{ id: '1', startDate: booking.scheduled_date }]}
-                            dateDue={booking.invoice.date_due}
-                            variableSymbol={booking.invoice.variable_symbol}
-                            items={invoiceItems}
-                            notes={booking.invoice.notes || ""}
-                            subtotal={Number(booking.invoice.subtotal || 0)}
-                            vatAmount={Number(booking.invoice.vat_amount || 0)}
-                            total={Number(booking.invoice.total || 0)}
-                            paymentMethod={booking.invoice.payment_method as any || "bank_transfer"}
-                            datePaid={booking.invoice.date_paid || undefined}
-                        />
-                    </div>
-                )}
-            </div>
+            {/* Removed local hidden generation container - now managed centrally by parent page */}
         </Card>
     );
 }

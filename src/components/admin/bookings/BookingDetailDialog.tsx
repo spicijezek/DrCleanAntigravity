@@ -18,6 +18,8 @@ import { BookingDetailsDisplay } from '@/components/bookings/BookingDetailsDispl
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { useInvoiceDownload } from '@/hooks/useInvoiceDownload';
+import { HiddenInvoiceContainer } from '@/components/invoices/HiddenInvoiceContainer';
 
 interface Booking {
     id: string;
@@ -77,6 +79,14 @@ interface Booking {
         rating: number;
         comment: string | null;
     } | null;
+    invoices?: {
+        id: string;
+        invoice_number: string;
+        status: string;
+        pdf_path: string | null;
+        total: number;
+        variable_symbol: string | null;
+    }[];
 }
 
 interface BookingDetailDialogProps {
@@ -91,6 +101,8 @@ export function BookingDetailDialog({ booking, isOpen, onClose, onUpdate, teamMe
     const { toast } = useToast();
     const [isEditing, setIsEditing] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+    const [companyInfo, setCompanyInfo] = useState<any>(null);
+    const { downloadInvoice, generatingInvoiceId, invoiceItems: hookItems, previewInvoice: hookInvoice } = useInvoiceDownload();
 
     // Core states
     const [selectedTeamMembers, setSelectedTeamMembers] = useState<string[]>([]);
@@ -98,6 +110,10 @@ export function BookingDetailDialog({ booking, isOpen, onClose, onUpdate, teamMe
     const [selectedChecklistId, setSelectedChecklistId] = useState('');
     const [skipInvoice, setSkipInvoice] = useState(false);
     const [checklists, setChecklists] = useState<any[]>([]);
+    const [associatedInvoice, setAssociatedInvoice] = useState<any>(null);
+    const [fetchingInvoice, setFetchingInvoice] = useState(false);
+
+    const invoice = associatedInvoice;
 
     // Form state for editing
     const [editFormData, setEditFormData] = useState({
@@ -132,8 +148,14 @@ export function BookingDetailDialog({ booking, isOpen, onClose, onUpdate, teamMe
 
             // Fetch checklists for this client
             fetchChecklists(booking.client_id);
+            fetchCompanyInfo();
 
-            // Populate form data defensively
+            // Fetch Invoice if missing but invoice_id exists
+            if (!booking.invoices?.length && booking.invoice_id) {
+                fetchInvoice(booking.invoice_id);
+            } else {
+                setAssociatedInvoice(booking.invoices?.[0] || null);
+            }
             const dateObj = new Date(booking.scheduled_date);
             const isValidDate = isValid(dateObj);
 
@@ -151,6 +173,22 @@ export function BookingDetailDialog({ booking, isOpen, onClose, onUpdate, teamMe
         }
     }, [booking, isOpen]);
 
+    const fetchInvoice = async (invoiceId: string) => {
+        setFetchingInvoice(true);
+        try {
+            const { data, error } = await supabase
+                .from('invoices')
+                .select('*')
+                .eq('id', invoiceId)
+                .maybeSingle();
+            if (data) setAssociatedInvoice(data);
+        } catch (error) {
+            console.error('Error fetching invoice:', error);
+        } finally {
+            setFetchingInvoice(false);
+        }
+    };
+
     const fetchChecklists = async (clientId: string) => {
         try {
             const { data } = await supabase
@@ -160,6 +198,22 @@ export function BookingDetailDialog({ booking, isOpen, onClose, onUpdate, teamMe
             setChecklists(data || []);
         } catch (error) {
             console.error('Error fetching checklists:', error);
+        }
+    };
+
+    const fetchCompanyInfo = async () => {
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+            const { data } = await supabase
+                .from("company_info")
+                .select("*")
+                .eq("user_id", user.id)
+                .maybeSingle();
+
+            if (data) setCompanyInfo(data);
+        } catch (error) {
+            console.error('Error fetching company info:', error);
         }
     };
 
@@ -615,6 +669,41 @@ export function BookingDetailDialog({ booking, isOpen, onClose, onUpdate, teamMe
                                 )}
                             </div>
 
+                            {/* Card: Fakturace Section */}
+                            {invoice && (
+                                <div className="bg-card border border-border rounded-xl p-6 shadow-sm space-y-5 animate-in fade-in slide-in-from-top-2">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <FileText className="h-4 w-4 text-emerald-600" />
+                                            <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground/80">Fakturace</h3>
+                                        </div>
+                                        <Badge variant={invoice.status === 'paid' ? 'success' : 'default'} className="font-bold">
+                                            {invoice.status === 'paid' ? 'Zaplaceno' : invoice.status === 'overdue' ? 'Po splatnosti' : 'K úhradě'}
+                                        </Badge>
+                                    </div>
+
+                                    <div className="flex items-center justify-between p-4 rounded-lg bg-muted/20 border border-border/50">
+                                        <div className="space-y-1">
+                                            <p className="text-[10px] font-bold text-muted-foreground/70 uppercase">Číslo faktury</p>
+                                            <p className="text-lg font-bold text-foreground">{invoice.invoice_number}</p>
+                                        </div>
+                                        <div className="space-y-1 text-right">
+                                            <p className="text-[10px] font-bold text-muted-foreground/70 uppercase">Celková částka</p>
+                                            <p className="text-lg font-bold text-foreground">{(invoice.total || 0).toLocaleString('cs-CZ')} Kč</p>
+                                        </div>
+                                    </div>
+
+                                    <Button
+                                        onClick={() => downloadInvoice(invoice, companyInfo)}
+                                        disabled={generatingInvoiceId === invoice.id}
+                                        className="w-full h-11 bg-primary text-white rounded-xl shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all font-bold group"
+                                    >
+                                        <Download className={cn("h-4 w-4 mr-2 group-hover:scale-110 transition-transform", generatingInvoiceId === invoice.id && "animate-bounce")} />
+                                        {generatingInvoiceId === invoice.id ? "Generuji PDF..." : "Stáhnout fakturu"}
+                                    </Button>
+                                </div>
+                            )}
+
                             {/* Card: Team Assignment */}
                             <div className="bg-card border border-border rounded-xl p-6 shadow-sm space-y-5">
                                 <div className="flex items-center gap-2">
@@ -761,74 +850,82 @@ export function BookingDetailDialog({ booking, isOpen, onClose, onUpdate, teamMe
                         </div>
                     </div>
 
-                    {/* Footer Actions (Sticky for visibility) */}
-                    {isEditing && (
-                        <div className="sticky bottom-0 bg-background/95 backdrop-blur-md border-t border-border p-6 -mx-6 -mb-6 flex flex-col gap-4 shadow-[0_-8px_20px_-10px_rgba(0,0,0,0.1)] z-30 animate-in slide-in-from-bottom-5">
-                            {booking.status === 'pending' && (
-                                <div className="grid grid-cols-2 gap-4">
-                                    <Button
-                                        variant="outline"
-                                        onClick={() => handleSave('declined')}
-                                        disabled={isSaving}
-                                        className="h-12 rounded-xl text-destructive hover:bg-destructive/5 border-destructive/20 font-bold uppercase tracking-wide transition-all"
-                                    >
-                                        <XCircle className="h-4 w-4 mr-2" />
-                                        ZAMÍTNOUT
-                                    </Button>
-                                    <Button
-                                        variant="default"
-                                        onClick={() => handleSave('approved')}
-                                        disabled={isSaving}
-                                        className="h-12 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/20 font-bold uppercase tracking-wide transition-all"
-                                    >
-                                        {isSaving ? (
-                                            <div className="flex items-center gap-2">
-                                                <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                                Ukládám...
-                                            </div>
-                                        ) : (
-                                            <div className="flex items-center gap-2">
-                                                <CheckCircle2 className="h-4 w-4" />
-                                                SCHVÁLIT A ULOŽIT
-                                            </div>
-                                        )}
-                                    </Button>
-                                </div>
-                            )}
-
-                            <div className="flex items-center justify-between gap-4">
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => setIsEditing(false)}
-                                    className="text-muted-foreground hover:bg-muted font-bold tracking-tight px-6"
-                                >
-                                    ZRUŠIT ZMĚNY
-                                </Button>
-                                {booking.status !== 'pending' && (
-                                    <Button
-                                        onClick={() => handleSave()}
-                                        disabled={isSaving}
-                                        className="h-12 px-12 rounded-xl bg-primary shadow-lg shadow-primary/20 font-bold uppercase tracking-wide transition-all"
-                                    >
-                                        {isSaving ? (
-                                            <div className="flex items-center gap-2">
-                                                <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                                AKTUALIZUJI...
-                                            </div>
-                                        ) : (
-                                            <div className="flex items-center gap-2">
-                                                <Save className="h-4 w-4" />
-                                                ULOŽIT ZMĚNY
-                                            </div>
-                                        )}
-                                    </Button>
-                                )}
-                            </div>
-                        </div>
-                    )}
+                    <HiddenInvoiceContainer
+                        generatingInvoiceId={generatingInvoiceId}
+                        previewInvoice={hookInvoice}
+                        companyInfo={companyInfo}
+                        invoiceItems={hookItems}
+                        bookings={[booking as any]}
+                    />
                 </div>
+
+                {/* Footer Actions (Sticky for visibility) */}
+                {isEditing && (
+                    <div className="sticky bottom-0 bg-background/95 backdrop-blur-md border-t border-border p-6 -mx-6 -mb-6 flex flex-col gap-4 shadow-[0_-8px_20px_-10px_rgba(0,0,0,0.1)] z-30 animate-in slide-in-from-bottom-5">
+                        {booking.status === 'pending' && (
+                            <div className="grid grid-cols-2 gap-4">
+                                <Button
+                                    variant="outline"
+                                    onClick={() => handleSave('declined')}
+                                    disabled={isSaving}
+                                    className="h-12 rounded-xl text-destructive hover:bg-destructive/5 border-destructive/20 font-bold uppercase tracking-wide transition-all"
+                                >
+                                    <XCircle className="h-4 w-4 mr-2" />
+                                    ZAMÍTNOUT
+                                </Button>
+                                <Button
+                                    variant="default"
+                                    onClick={() => handleSave('approved')}
+                                    disabled={isSaving}
+                                    className="h-12 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/20 font-bold uppercase tracking-wide transition-all"
+                                >
+                                    {isSaving ? (
+                                        <div className="flex items-center gap-2">
+                                            <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                            Ukládám...
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center gap-2">
+                                            <CheckCircle2 className="h-4 w-4" />
+                                            SCHVÁLIT A ULOŽIT
+                                        </div>
+                                    )}
+                                </Button>
+                            </div>
+                        )}
+
+                        <div className="flex items-center justify-between gap-4">
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setIsEditing(false)}
+                                className="text-muted-foreground hover:bg-muted font-bold tracking-tight px-6"
+                            >
+                                ZRUŠIT ZMĚNY
+                            </Button>
+                            {booking.status !== 'pending' && (
+                                <Button
+                                    onClick={() => handleSave()}
+                                    disabled={isSaving}
+                                    className="h-12 px-12 rounded-xl bg-primary shadow-lg shadow-primary/20 font-bold uppercase tracking-wide transition-all"
+                                >
+                                    {isSaving ? (
+                                        <div className="flex items-center gap-2">
+                                            <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                            AKTUALIZUJI...
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center gap-2">
+                                            <Save className="h-4 w-4" />
+                                            ULOŽIT ZMĚNY
+                                        </div>
+                                    )}
+                                </Button>
+                            )}
+                        </div>
+                    </div>
+                )}
             </DialogContent>
-        </Dialog >
+        </Dialog>
     );
 }

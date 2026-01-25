@@ -9,13 +9,27 @@ import { toast } from "sonner";
 import { Download, Eye, Trash2, Search, Filter, FileText, Settings, PackageOpen } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import JSZip from "jszip";
+import { downloadFile } from "@/utils/downloadUtils";
+import { downloadPDF } from "@/utils/pdfUtils";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { InvoicePreview } from "@/components/invoices/InvoicePreview";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { LoadingOverlay } from "@/components/LoadingOverlay";
+import { useInvoiceDownload } from "@/hooks/useInvoiceDownload";
+import { HiddenInvoiceContainer } from "@/components/invoices/HiddenInvoiceContainer";
 
 export default function InvoiceStorage() {
   const { user } = useAuth();
@@ -29,6 +43,9 @@ export default function InvoiceStorage() {
   const [invoiceItems, setInvoiceItems] = useState<any[]>([]);
   const [companyInfo, setCompanyInfo] = useState<any>(null);
   const [selectedInvoices, setSelectedInvoices] = useState<string[]>([]);
+  const { downloadInvoice, generatingInvoiceId, invoiceItems: hookItems, previewInvoice: hookInvoice } = useInvoiceDownload();
+  const [invoiceToDelete, setInvoiceToDelete] = useState<{ id: string, pdfPath: string } | null>(null);
+  const [bookings, setBookings] = useState<any[]>([]); // To support HiddenInvoiceContainer and fallbacks
 
   useEffect(() => {
     if (user) {
@@ -62,52 +79,18 @@ export default function InvoiceStorage() {
       console.error(error);
     } else {
       setInvoices(data || []);
+      // Also set bookings for HiddenInvoiceContainer compatibility
+      setBookings((data || []).map(inv => ({
+        id: inv.booking_id || `temp-${inv.id}`,
+        invoice: inv,
+        scheduled_date: inv.date_performance || inv.date_created,
+        service_type: 'cleaning' // default
+      })));
     }
     setLoading(false);
   };
 
-  const downloadInvoice = async (invoice: any) => {
-    if (!invoice.pdf_path) {
-      toast.error("PDF not found");
-      return;
-    }
-
-    try {
-      let downloadUrl = "";
-
-      if (invoice.pdf_path.startsWith('http')) {
-        // It's a Cloudinary URL (or other direct URL)
-        downloadUrl = invoice.pdf_path;
-
-        // If it's Cloudinary, we can force download by adding fl_attachment
-        if (downloadUrl.includes('cloudinary.com')) {
-          downloadUrl = downloadUrl.replace('/upload/', '/upload/fl_attachment/');
-        }
-      } else {
-        // It's an old Supabase path
-        const { data, error } = await supabase.storage
-          .from("invoices")
-          .download(invoice.pdf_path);
-
-        if (error) throw error;
-        downloadUrl = URL.createObjectURL(data);
-      }
-
-      const a = document.createElement("a");
-      a.href = downloadUrl;
-      a.download = `faktura-${invoice.invoice_number}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-
-      if (!invoice.pdf_path.startsWith('http')) {
-        URL.revokeObjectURL(downloadUrl);
-      }
-    } catch (error) {
-      toast.error("Error downloading invoice");
-      console.error(error);
-    }
-  };
+  // local downloadInvoice is removed in favor of the hook
 
   const updateInvoiceStatus = async (id: string, newStatus: string) => {
     // Get the invoice details first for loyalty points calculation
@@ -199,18 +182,123 @@ export default function InvoiceStorage() {
   };
 
   const previewInvoiceDetails = async (invoice: any) => {
-    const { data: items } = await supabase
-      .from("invoice_items")
-      .select("*")
-      .eq("invoice_id", invoice.id)
-      .order("sort_order");
+    try {
+      const { data: items, error: itemsError } = await supabase
+        .from("invoice_items")
+        .select("*")
+        .eq("invoice_id", invoice.id)
+        .order("sort_order");
 
-    setInvoiceItems(items || []);
-    setPreviewInvoice(invoice);
+      let refinedItems = items ? JSON.parse(JSON.stringify(items)) : [];
+
+      // If no items or only generic item, try to fetch booking for better description
+      if (refinedItems.length === 0 || (refinedItems.length === 1 && ['Úklidové služby', 'Uklid', 'Služby', 'Services'].some(d => refinedItems[0].description?.includes(d)))) {
+        let bookingId = invoice.booking_id;
+        if (!bookingId) {
+          const { data: bookingLink } = await supabase
+            .from('bookings')
+            .select('id, service_type, scheduled_date')
+            .eq('invoice_id', invoice.id)
+            .maybeSingle();
+          if (bookingLink) {
+            bookingId = bookingLink.id;
+            // If we didn't have refinedItems, create a fallback one now
+            if (refinedItems.length === 0) {
+              const serviceLabels: Record<string, string> = {
+                home_cleaning: 'Úklid domácnosti',
+                commercial_cleaning: 'Komerční úklid',
+                window_cleaning: 'Mytí oken',
+                post_construction_cleaning: 'Úklid po stavbě',
+                upholstery_cleaning: 'Čištění čalounění',
+                cleaning: 'Úklid',
+                extra_service: 'Doplňková služba'
+              };
+              refinedItems = [{
+                id: 'preview-fallback-1',
+                description: serviceLabels[bookingLink.service_type] || 'Úklidové služby',
+                quantity: 1,
+                unit_price: invoice.total || 0,
+                total: invoice.total || 0,
+                vat_rate: 0
+              }];
+            } else {
+              // Just update the generic description
+              const serviceLabels: Record<string, string> = {
+                home_cleaning: 'Úklid domácnosti',
+                commercial_cleaning: 'Komerční úklid',
+                window_cleaning: 'Mytí oken',
+                post_construction_cleaning: 'Úklid po stavbě',
+                upholstery_cleaning: 'Čištění čalounění',
+                cleaning: 'Úklid',
+                extra_service: 'Doplňková služba'
+              };
+              if (serviceLabels[bookingLink.service_type]) {
+                refinedItems[0].description = serviceLabels[bookingLink.service_type];
+              }
+            }
+          }
+        } else {
+          // Already have bookingId, just fetch service_type
+          const { data: booking } = await supabase
+            .from('bookings')
+            .select('service_type')
+            .eq('id', bookingId)
+            .maybeSingle();
+
+          if (booking) {
+            const serviceLabels: Record<string, string> = {
+              home_cleaning: 'Úklid domácnosti',
+              commercial_cleaning: 'Komerční úklid',
+              window_cleaning: 'Mytí oken',
+              post_construction_cleaning: 'Úklid po stavbě',
+              upholstery_cleaning: 'Čištění čalounění',
+              cleaning: 'Úklid',
+              extra_service: 'Doplňková služba'
+            };
+            if (refinedItems.length === 0) {
+              refinedItems = [{
+                id: 'preview-fallback-1',
+                description: serviceLabels[booking.service_type] || 'Úklidové služby',
+                quantity: 1,
+                unit_price: invoice.total || 0,
+                total: invoice.total || 0,
+                vat_rate: 0
+              }];
+            } else if (serviceLabels[booking.service_type]) {
+              refinedItems[0].description = serviceLabels[booking.service_type];
+            }
+          }
+        }
+      }
+
+      // Final fallback if still empty
+      if (refinedItems.length === 0) {
+        refinedItems = [{
+          id: 'preview-fallback-emergency',
+          description: 'Úklidové služby',
+          quantity: 1,
+          unit_price: invoice.total || 0,
+          total: invoice.total || 0,
+          vat_rate: 0
+        }];
+      }
+
+      setInvoiceItems(refinedItems);
+      setPreviewInvoice(invoice);
+    } catch (e) {
+      console.error("Error in previewInvoiceDetails:", e);
+      toast.error("Chyba při načítání náhledu");
+    }
   };
 
-  const deleteInvoice = async (id: string, pdfPath: string) => {
-    if (!confirm("Are you sure you want to delete this invoice?")) return;
+  const handleDeleteClick = (id: string, pdfPath: string) => {
+    setInvoiceToDelete({ id, pdfPath });
+  };
+
+  const confirmDelete = async () => {
+    if (!invoiceToDelete) return;
+
+    const { id, pdfPath } = invoiceToDelete;
 
     // Delete PDF from storage if it's a Supabase path
     if (pdfPath && !pdfPath.startsWith('http')) {
@@ -229,6 +317,7 @@ export default function InvoiceStorage() {
       toast.success("Invoice deleted");
       fetchInvoices();
     }
+    setInvoiceToDelete(null);
   };
 
   const filteredInvoices = invoices.filter(invoice => {
@@ -299,13 +388,8 @@ export default function InvoiceStorage() {
 
       const zipBlob = await zip.generateAsync({ type: "blob" });
       const url = URL.createObjectURL(zipBlob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `invoices-${new Date().toISOString().split('T')[0]}.zip`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      const zipFileName = `invoices-${new Date().toISOString().split('T')[0]}.zip`;
+      await downloadFile(url, zipFileName);
 
       toast.success("ZIP file downloaded successfully");
       setSelectedInvoices([]);
@@ -486,16 +570,16 @@ export default function InvoiceStorage() {
                     <Button
                       variant="outline"
                       size="icon"
-                      onClick={() => downloadInvoice(invoice)}
-                      disabled={!invoice.pdf_path}
+                      onClick={() => downloadInvoice(invoice, companyInfo)}
+                      disabled={generatingInvoiceId === invoice.id}
                       className="h-9 w-9 bg-background/50 border-0 rounded-lg hover:bg-success hover:text-white transition-all"
                     >
-                      <Download className="h-4 w-4" />
+                      <Download className={generatingInvoiceId === invoice.id ? "h-4 w-4 animate-bounce" : "h-4 w-4"} />
                     </Button>
                     <Button
                       variant="outline"
                       size="icon"
-                      onClick={() => deleteInvoice(invoice.id, invoice.pdf_path)}
+                      onClick={() => handleDeleteClick(invoice.id, invoice.pdf_path)}
                       className="h-9 w-9 bg-background/50 border-0 rounded-lg hover:bg-destructive hover:text-white transition-all"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -508,7 +592,7 @@ export default function InvoiceStorage() {
         </div>
 
         <Dialog open={!!previewInvoice} onOpenChange={() => setPreviewInvoice(null)}>
-          <DialogContent className="max-w-[794px] w-full p-0 border-0 bg-transparent shadow-2xl rounded-xl overflow-hidden">
+          <DialogContent className="max-w-[794px] w-full p-0 border-0 bg-transparent shadow-2xl rounded-xl overflow-hidden max-h-[85vh] overflow-y-auto">
             {previewInvoice && companyInfo && (
               <div className="bg-white p-0">
                 <InvoicePreview
@@ -537,6 +621,32 @@ export default function InvoiceStorage() {
           </DialogContent>
         </Dialog>
       </div>
+
+      {/* Hidden container for PDF generation */}
+      <HiddenInvoiceContainer
+        generatingInvoiceId={generatingInvoiceId}
+        previewInvoice={hookInvoice}
+        companyInfo={companyInfo}
+        invoiceItems={hookItems}
+        bookings={bookings} // We should ideally fetch relevant bookings or allow container to handle it
+      />
+
+      <AlertDialog open={!!invoiceToDelete} onOpenChange={(open) => !open && setInvoiceToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Opravdu smazat fakturu?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tato akce je nevratná. Faktura bude trvale odstraněna z databáze i úložiště.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Zrušit</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Smazat
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Layout>
   );
 }

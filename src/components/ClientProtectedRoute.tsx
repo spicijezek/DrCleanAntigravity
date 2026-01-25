@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { LoadingOverlay } from '@/components/LoadingOverlay';
 
 interface ClientProtectedRouteProps {
   children: React.ReactNode;
@@ -19,7 +20,7 @@ export const ClientProtectedRoute: React.FC<ClientProtectedRouteProps> = ({ chil
     if (!loading && user && !location.pathname.startsWith('/klient') && !isAdminUsingClientPages) {
       const restrictedPaths = ['/finances', '/protocols', '/team', '/clients', '/jobs', '/invoices', '/admin'];
       const isRestrictedPath = restrictedPaths.some(path => location.pathname.startsWith(path));
-      
+
       if (isRestrictedPath) {
         navigate('/klient', { replace: true });
       }
@@ -27,11 +28,7 @@ export const ClientProtectedRoute: React.FC<ClientProtectedRouteProps> = ({ chil
   }, [location.pathname, user, loading, navigate, isAdminUsingClientPages]);
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
-      </div>
-    );
+    return <LoadingOverlay />;
   }
 
   if (!user) {

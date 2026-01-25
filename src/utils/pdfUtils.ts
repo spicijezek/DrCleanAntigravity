@@ -25,11 +25,11 @@ export const generateInvoicePDF = async (elementId: string) => {
     // while hiding it from the user. Some mobile browsers cull elements that are far off-screen.
     const container = document.createElement('div');
     container.style.position = 'fixed';
-    container.style.left = '0';
+    container.style.left = '-3000px'; // Moving it far off-screen instead of just opacity
     container.style.top = '0';
     container.style.width = '794px'; // A4 width at ~96 DPI
-    container.style.zIndex = '-9999';
-    container.style.opacity = '0';
+    container.style.zIndex = '-1';
+    container.style.opacity = '1';
     container.style.pointerEvents = 'none';
     document.body.appendChild(container);
 

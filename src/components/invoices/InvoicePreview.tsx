@@ -226,7 +226,7 @@ export function InvoicePreview({
       )}
 
       {/* Footer - Centered */}
-      <div className="mt-auto pt-12 text-center pb-4">
+      <div className="mt-auto pt-12 text-center pb-8">
         <h4 className="font-bold text-slate-700 text-sm mb-4">Děkujeme za Vaši důvěru</h4>
         <div className="text-xs text-slate-500 space-y-1">
           {companyInfo?.email && <p>Email: {companyInfo.email}</p>}
@@ -234,6 +234,9 @@ export function InvoicePreview({
           {companyInfo?.website && <p>Web: {companyInfo.website}</p>}
         </div>
       </div>
+
+      {/* Bottom Edge Gradient Line */}
+      <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-gradient-to-r from-primary to-indigo-600 opacity-80" />
 
     </Card>
   );

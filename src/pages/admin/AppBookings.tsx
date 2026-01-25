@@ -72,16 +72,19 @@ export default function AppBookings() {
             has_children, has_pets, has_allergies, 
             allergies_notes, special_instructions
           ),
-          booking_feedback (rating, comment, declined)
+          booking_feedback (rating, comment, declined),
+          invoiced:invoices!invoice_id(id, invoice_number, status, pdf_path, total, variable_symbol),
+          linked_invoices:invoices!booking_id(id, invoice_number, status, pdf_path, total, variable_symbol)
         `)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
-      // Extract only non-declined feedback
+      // Extract only non-declined feedback and merge duplicate invoice joins
       const processedBookings = (bookingsData || []).map(b => ({
         ...b,
-        feedback: b.booking_feedback?.[0] && !b.booking_feedback[0].declined ? b.booking_feedback[0] : null
+        feedback: b.booking_feedback?.[0] && !b.booking_feedback[0].declined ? b.booking_feedback[0] : null,
+        invoices: b.invoiced && b.invoiced.length > 0 ? b.invoiced : (b.linked_invoices || [])
       }));
 
       // Fetch checklist details for each booking that has a checklist_id

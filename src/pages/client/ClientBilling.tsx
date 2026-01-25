@@ -1,11 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { FileText, Download, ChevronDown, ChevronUp, MapPin, Calendar, Clock, Banknote, CheckCircle2, AlertTriangle, Star, X, Phone, TrendingUp, CreditCard, History, Receipt, User, HeadphonesIcon, LucideIcon, Sparkles, Baby, Dog, HeartPulse } from 'lucide-react';
+import { Calendar, Clock, CheckCircle2, Phone, History, HeadphonesIcon, TrendingUp } from 'lucide-react';
 import { format } from 'date-fns';
 import { cs } from 'date-fns/locale';
 import { LoadingOverlay } from '@/components/LoadingOverlay';
@@ -13,74 +10,74 @@ import { ClientHeroHeader } from '@/components/client/ClientHeroHeader';
 import { toast } from 'sonner';
 import { BookingCard } from '@/components/client/dashboard/BookingCard';
 import { Booking } from '@/types/client-dashboard';
+import { useInvoiceDownload } from '@/hooks/useInvoiceDownload';
+import { HiddenInvoiceContainer } from '@/components/invoices/HiddenInvoiceContainer';
 
 export default function ClientBilling() {
-  const {
-    user
-  } = useAuth();
+  const { user } = useAuth();
   const [bookings, setBookings] = useState<Booking[]>([]);
-  const [invoices, setInvoices] = useState<any[]>([]);
   const [totalSpent, setTotalSpent] = useState(0);
   const [completedCount, setCompletedCount] = useState(0);
   const [nextScheduledDate, setNextScheduledDate] = useState<string | null>(null);
   const [lastCompletedDate, setLastCompletedDate] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [expandedBookingId, setExpandedBookingId] = useState<string | null>(null);
   const [companyInfo, setCompanyInfo] = useState<any>(null);
   const [clientId, setClientId] = useState<string | null>(null);
-  const [teamMembers, setTeamMembers] = useState<Record<string, string>>({});
   const [loyaltyCredits, setLoyaltyCredits] = useState<number>(0);
 
-  // Rating state
-  const [ratingBookingId, setRatingBookingId] = useState<string | null>(null);
-  const [selectedRating, setSelectedRating] = useState<number>(0);
-  const [ratingComment, setRatingComment] = useState('');
-  const [submittingRating, setSubmittingRating] = useState(false);
-  const [submittedFeedback, setSubmittedFeedback] = useState<Set<string>>(new Set());
+  const { downloadInvoice, generatingInvoiceId, invoiceItems, previewInvoice } = useInvoiceDownload();
 
   // Status filter state
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
+
   useEffect(() => {
     loadData();
   }, [user]);
+
   const loadData = async () => {
     if (!user) return;
     try {
-      const {
-        data: client,
-        error: clientError
-      } = await supabase.from('clients').select('id, name, has_allergies, allergies_notes, has_pets, has_children, special_instructions').eq('user_id', user.id).maybeSingle();
+      const { data: client, error: clientError } = await supabase
+        .from('clients')
+        .select('id, name, has_allergies, allergies_notes, has_pets, has_children, special_instructions')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
       if (clientError) throw clientError;
+
       if (client) {
         setClientId(client.id);
 
         // Count completed bookings and get last completed date
-        const {
-          data: completedBookings,
-          count: completedBookingsCount
-        } = await supabase.from('bookings').select('scheduled_date', {
-          count: 'exact'
-        }).eq('client_id', client.id).eq('status', 'completed').order('scheduled_date', {
-          ascending: false
-        }).limit(1);
+        const { data: completedBookings, count: completedBookingsCount } = await supabase
+          .from('bookings')
+          .select('scheduled_date', { count: 'exact' })
+          .eq('client_id', client.id)
+          .eq('status', 'completed')
+          .order('scheduled_date', { ascending: false })
+          .limit(1);
+
         setCompletedCount(completedBookingsCount || 0);
         setLastCompletedDate(completedBookings?.[0]?.scheduled_date || null);
 
-        // Get next scheduled booking - only APPROVED ones (Schváleno & Naplánováno)
+        // Get next scheduled booking
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        const {
-          data: upcomingBookings
-        } = await supabase.from('bookings').select('scheduled_date').eq('client_id', client.id).eq('status', 'approved').gte('scheduled_date', today.toISOString()).order('scheduled_date', {
-          ascending: true
-        }).limit(1);
+        const { data: upcomingBookings } = await supabase
+          .from('bookings')
+          .select('scheduled_date')
+          .eq('client_id', client.id)
+          .eq('status', 'approved')
+          .gte('scheduled_date', today.toISOString())
+          .order('scheduled_date', { ascending: true })
+          .limit(1);
+
         setNextScheduledDate(upcomingBookings?.[0]?.scheduled_date || null);
 
         // Fetch bookings with invoices
-        const {
-          data: bookingsData,
-          error: bookingsError
-        } = await supabase.from('bookings').select(`
+        const { data: bookingsData, error: bookingsError } = await supabase
+          .from('bookings')
+          .select(`
             id,
             address,
             scheduled_date,
@@ -107,20 +104,19 @@ export default function ClientBilling() {
                 sort_order
               )
             )
-          `).eq('client_id', client.id).order('scheduled_date', {
-          ascending: false
-        });
+          `)
+          .eq('client_id', client.id)
+          .order('scheduled_date', { ascending: false });
 
         if (bookingsError) throw bookingsError;
 
-        // Fetch all team members first
+        // Fetch team members
         const { data: teamData } = await supabase
           .from('team_members')
           .select('id, name, bio, user_id');
 
         const teamMap: Record<string, any> = {};
         if (teamData && teamData.length > 0) {
-          // Fetch all related profiles in one query
           const userIds = teamData.map(m => m.user_id).filter(Boolean);
           const { data: profilesData } = await supabase
             .from('profiles')
@@ -131,65 +127,37 @@ export default function ClientBilling() {
           profilesData?.forEach(p => profilesMap[p.user_id] = p);
 
           teamData.forEach(m => {
-            teamMap[m.id] = {
-              ...m,
-              profile: profilesMap[m.user_id] || null
-            };
+            teamMap[m.id] = { ...m, profile: profilesMap[m.user_id] || null };
           });
         }
 
-        // Fetch all invoices for this client
-        const {
-          data: bookingIdsData,
-          error: bookingIdsError
-        } = await supabase.from('bookings').select('id').eq('client_id', client.id);
-        if (bookingIdsError) throw bookingIdsError;
-        const bookingIds = (bookingIdsData || []).map(b => b.id);
-        const bookingIdsFilter = bookingIds.length ? `booking_id.in.(${bookingIds.join(',')})` : '';
-        const orFilter = [`client_id.eq.${client.id}`, bookingIdsFilter].filter(Boolean).join(',');
-        const {
-          data: invoicesData,
-          error: invoicesError
-        } = await supabase.from('invoices').select('id, invoice_number, date_created, date_due, total, status, pdf_path, variable_symbol, booking_id, user_id').or(orFilter).order('date_created', {
-          ascending: false
-        });
-        if (invoicesError) throw invoicesError;
-        setInvoices(invoicesData || []);
+        // Fetch invoices
+        const { data: invoicesData, error: invoicesError } = await supabase
+          .from('invoices')
+          .select('*')
+          .or(`client_id.eq.${client.id},booking_id.in.(${bookingsData?.map(b => b.id).join(',') || ''})`)
+          .order('date_created', { ascending: false });
 
-        // Calculate total spent from paid invoices
+        if (invoicesError) throw invoicesError;
+
+        // Calculate total spent
         const paidTotal = (invoicesData || []).filter(inv => inv.status === 'paid').reduce((sum, inv) => sum + (inv.total || 0), 0);
         setTotalSpent(paidTotal);
 
-        // Fetch company info for the admin who created the invoices
+        // Company Info
         const adminUserId = invoicesData?.[0]?.user_id;
-        let companyData = null;
         if (adminUserId) {
-          const { data } = await supabase
-            .from('company_info')
-            .select('*')
-            .eq('user_id', adminUserId)
-            .maybeSingle();
-          companyData = data;
-        }
-        setCompanyInfo(companyData);
-
-        // Fetch loyalty credits
-        const { data: loyaltyData } = await supabase
-          .from('loyalty_credits')
-          .select('current_credits')
-          .eq('client_id', client.id)
-          .maybeSingle();
-
-        if (loyaltyData) {
-          setLoyaltyCredits(loyaltyData.current_credits);
+          const { data } = await supabase.from('company_info').select('*').eq('user_id', adminUserId).maybeSingle();
+          setCompanyInfo(data);
         }
 
-        // Fetch existing feedback for bookings
-        const {
-          data: feedbackData
-        } = await supabase.from('booking_feedback').select('id, booking_id, rating, comment, declined').eq('client_id', client.id);
+        // Loyalty
+        const { data: loyaltyData } = await supabase.from('loyalty_credits').select('current_credits').eq('client_id', client.id).maybeSingle();
+        if (loyaltyData) setLoyaltyCredits(loyaltyData.current_credits);
 
-        // Map everything to bookings
+        // Map feedback
+        const { data: feedbackData } = await supabase.from('booking_feedback').select('*').eq('client_id', client.id);
+
         const bookingsWithAll = (bookingsData || []).map(booking => {
           const invoice = invoicesData?.find(inv => inv.booking_id === booking.id);
           const feedback = feedbackData?.find(fb => fb.booking_id === booking.id);
@@ -198,7 +166,7 @@ export default function ClientBilling() {
           return {
             ...booking,
             invoice,
-            company_info: companyData,
+            company_info: companyInfo,
             feedback,
             team_members: members,
             client: {
@@ -213,22 +181,8 @@ export default function ClientBilling() {
 
         setBookings(bookingsWithAll);
 
-        // Determine default filter status based on priority
-        const hasCompleted = bookingsWithAll.some(b => b.status === 'completed');
-        const hasInProgress = bookingsWithAll.some(b => b.status === 'in_progress');
-        const hasApproved = bookingsWithAll.some(b => b.status === 'approved');
-        const hasPending = bookingsWithAll.some(b => b.status === 'pending');
-        const hasPaid = bookingsWithAll.some(b => b.invoice?.status === 'paid');
-        const hasCancelled = bookingsWithAll.some(b => b.status === 'cancelled');
-        const hasDeclined = bookingsWithAll.some(b => b.status === 'declined');
-
-        if (hasCompleted) setSelectedStatus('completed');
-        else if (hasInProgress) setSelectedStatus('in_progress');
-        else if (hasApproved) setSelectedStatus('approved');
-        else if (hasPending) setSelectedStatus('pending');
-        else if (hasPaid) setSelectedStatus('paid');
-        else if (hasCancelled) setSelectedStatus('cancelled');
-        else if (hasDeclined) setSelectedStatus('declined');
+        // Set default filter
+        if (bookingsWithAll.some(b => b.status === 'completed')) setSelectedStatus('completed');
         else setSelectedStatus('all');
       }
     } catch (error) {
@@ -237,321 +191,111 @@ export default function ClientBilling() {
       setLoading(false);
     }
   };
+
   const handleRatingSubmit = async (bookingId: string, rating: number, comment: string) => {
     if (!clientId) return;
-    setSubmittingRating(true);
     try {
-      const {
-        error
-      } = await supabase.from('booking_feedback').insert({
+      const { error } = await supabase.from('booking_feedback').insert({
         booking_id: bookingId,
         client_id: clientId,
-        rating: rating,
+        rating,
         comment: comment.trim() || null,
         declined: false
       });
       if (error) throw error;
-
-      // Update bookings state
-      setBookings(prev => prev.map(b => b.id === bookingId ? {
-        ...b,
-        feedback: {
-          id: '',
-          booking_id: bookingId,
-          rating: rating,
-          comment: comment,
-          declined: false
-        }
-      } : b));
+      loadData(); // Reload to update UI
       toast.success('Děkujeme za zpětnou vazbu!');
     } catch (error) {
-      console.error('Error submitting rating:', error);
       toast.error('Nepodařilo se odeslat hodnocení');
-    } finally {
-      setSubmittingRating(false);
     }
   };
-  const handleDeclineRating = async (bookingId: string) => {
-    if (!clientId) return;
-    try {
-      const {
-        error
-      } = await supabase.from('booking_feedback').insert({
-        booking_id: bookingId,
-        client_id: clientId,
-        rating: 0,
-        declined: true
-      });
-      if (error) throw error;
 
-      // Update bookings state
-      setBookings(prev => prev.map(b => b.id === bookingId ? {
-        ...b,
-        feedback: {
-          id: '',
-          booking_id: bookingId,
-          rating: 0,
-          comment: null,
-          declined: true
-        }
-      } : b));
-    } catch (error) {
-      console.error('Error declining rating:', error);
-    }
-  };
-  const handleDownload = async (pdfPath: string) => {
-    try {
-      let downloadUrl = "";
-
-      if (pdfPath.startsWith('http')) {
-        // It's a Cloudinary URL
-        downloadUrl = pdfPath;
-
-        // Force download for Cloudinary
-        if (downloadUrl.includes('cloudinary.com')) {
-          downloadUrl = downloadUrl.replace('/upload/', '/upload/fl_attachment/');
-        }
-      } else {
-        // It's an old Supabase path
-        const { data, error } = await supabase.storage
-          .from('invoices').download(pdfPath);
-        if (error) throw error;
-        downloadUrl = URL.createObjectURL(data);
-      }
-
-      const a = document.createElement('a');
-      a.href = downloadUrl;
-      a.download = pdfPath.split('/').pop() || 'faktura.pdf';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-
-      if (!pdfPath.startsWith('http')) {
-        URL.revokeObjectURL(downloadUrl);
-      }
-    } catch (error) {
-      console.error('Error downloading invoice:', error);
-      toast.error('Chyba při stahování faktury');
-    }
-  };
-  const getStatusText = (status: string) => {
-    const labels: Record<string, string> = {
-      paid: 'Zaplaceno',
-      pending: 'K úhradě',
-      overdue: 'Po splatnosti',
-      draft: 'Koncept',
-      issued: 'K úhradě'
-    };
-    return labels[status] || status;
-  };
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'paid':
-        return 'text-green-600 dark:text-green-500';
-      case 'overdue':
-        return 'text-red-600 dark:text-red-500';
-      default:
-        return 'text-foreground';
-    }
-  };
-  const getServiceTypeLabel = (serviceType: string) => {
-    const labels: Record<string, string> = {
-      home_cleaning: 'Úklid domácnosti',
-      commercial_cleaning: 'Komerční úklid',
-      window_cleaning: 'Mytí oken',
-      post_construction_cleaning: 'Úklid po rekonstrukci',
-      upholstery_cleaning: 'Čištění čalounění',
-      cleaning: 'Úklid'
-    };
-    return labels[serviceType] || serviceType;
-  };
-  const toggleExpand = (bookingId: string) => {
-    setExpandedBookingId(expandedBookingId === bookingId ? null : bookingId);
-  };
-  const getDaysDiffLabel = (dateStr: string) => {
-    const target = new Date(dateStr);
-    target.setHours(0, 0, 0, 0);
-    const now = new Date();
-    now.setHours(0, 0, 0, 0);
-    const diffTime = target.getTime() - now.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-    if (diffDays <= 0) return 'Dnes';
-    if (diffDays === 1) return 'za 1 den';
-    if (diffDays >= 2 && diffDays <= 4) return `za ${diffDays} dny`;
-    return `za ${diffDays} dnů`;
-  };
-
-  // Status filter configuration
   const statusFilters = [
     { key: 'all', label: 'Vše' },
-    { key: 'pending', label: 'Čeká na schválení' },
+    { key: 'pending', label: 'Čeká' },
     { key: 'approved', label: 'Schváleno' },
     { key: 'in_progress', label: 'Probíhá' },
     { key: 'completed', label: 'Dokončeno' },
     { key: 'paid', label: 'Zaplaceno' },
-    { key: 'cancelled', label: 'Zrušeno' },
-    { key: 'declined', label: 'Zamítnuto' }
+    { key: 'cancelled', label: 'Zrušeno' }
   ];
 
-  // Filter bookings based on selected status
-  const getFilteredBookings = () => {
-    let filtered = bookings;
+  const filteredBookings = bookings.filter(b => {
+    if (selectedStatus === 'all') return true;
+    if (selectedStatus === 'paid') return b.invoice?.status === 'paid';
+    return b.status === selectedStatus;
+  }).sort((a, b) => new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime());
 
-    switch (selectedStatus) {
-      case 'pending':
-        filtered = bookings.filter(b => b.status === 'pending');
-        break;
-      case 'approved':
-        filtered = bookings.filter(b => b.status === 'approved');
-        break;
-      case 'in_progress':
-        filtered = bookings.filter(b => b.status === 'in_progress');
-        break;
-      case 'completed':
-        filtered = bookings.filter(b => b.status === 'completed');
-        break;
-      case 'paid':
-        filtered = bookings.filter(b => b.invoice?.status === 'paid');
-        break;
-      case 'cancelled':
-        filtered = bookings.filter(b => b.status === 'cancelled');
-        break;
-      case 'declined':
-        filtered = bookings.filter(b => b.status === 'declined');
-        break;
-      default:
-        filtered = bookings;
-    }
-
-    // Sort completed and paid bookings by scheduled date
-    if (selectedStatus === 'completed' || selectedStatus === 'paid') {
-      filtered = [...filtered].sort((a, b) =>
-        new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime()
-      );
-    }
-
-    return filtered;
+  const getDaysDiffLabel = (dateStr: string) => {
+    const diff = Math.ceil((new Date(dateStr).getTime() - new Date().setHours(0, 0, 0, 0)) / (1000 * 60 * 60 * 24));
+    if (diff <= 0) return 'Dnes';
+    if (diff === 1) return 'za 1 den';
+    if (diff < 5) return `za ${diff} dny`;
+    return `za ${diff} dnů`;
   };
 
-  const filteredBookings = getFilteredBookings();
+  if (loading) return <LoadingOverlay message="Načítám historii úklidů..." />;
 
-  if (loading) {
-    return <LoadingOverlay message="Načítám historii úklidů..." />;
-  }
-  const paidCount = bookings.filter(b => b.invoice?.status === 'paid').length;
-  const pendingCount = bookings.filter(b => b.invoice?.status !== 'paid').length;
-  return <div className="container mx-auto p-4 pb-24 space-y-6 max-w-4xl">
-    {/* Hero Stats Header */}
-    <ClientHeroHeader
-      icon={History}
-      title="Historie Úklidů"
-      subtitle="Přehled Vašich dokončených úklidů"
-      stats={[
-        {
-          icon: Calendar,
-          label: "Naplánovaný",
-          value: nextScheduledDate ? getDaysDiffLabel(nextScheduledDate) : 'Žádný'
-        },
-        {
-          icon: Clock,
-          label: "Poslední úklid",
-          value: lastCompletedDate ? format(new Date(lastCompletedDate), 'd. M. yyyy', { locale: cs }) : 'Žádný'
-        },
-        {
-          icon: TrendingUp,
-          label: "Investováno",
-          value: `${totalSpent.toLocaleString('cs-CZ')} Kč`
-        },
-        {
-          icon: CheckCircle2,
-          label: "Hotové",
-          value: `${completedCount} úklidů`
-        }
-      ]}
-    />
+  return (
+    <div className="container mx-auto p-4 pb-24 space-y-6 max-w-4xl">
+      <ClientHeroHeader
+        icon={History}
+        title="Historie Úklidů"
+        subtitle="Přehled Vašich dokončených úklidů"
+        stats={[
+          { icon: Calendar, label: "Naplánovaný", value: nextScheduledDate ? getDaysDiffLabel(nextScheduledDate) : 'Žádný' },
+          { icon: Clock, label: "Poslední úklid", value: lastCompletedDate ? format(new Date(lastCompletedDate), 'd. M. yyyy', { locale: cs }) : 'Žádný' },
+          { icon: TrendingUp, label: "Investováno", value: `${totalSpent.toLocaleString('cs-CZ')} Kč` },
+          { icon: CheckCircle2, label: "Hotové", value: `${completedCount} úklidů` }
+        ]}
+      />
 
-    {/* Status Filter Slider */}
-    <div className="-mx-4 px-4 mb-6">
-      <div className="relative">
-        <div className="flex gap-2 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-2">
-          {statusFilters.map((filter) => (
+      <div className="-mx-4 px-4 overflow-x-auto pb-2 scrollbar-hide">
+        <div className="flex gap-2">
+          {statusFilters.map(f => (
             <button
-              key={filter.key}
-              onClick={() => setSelectedStatus(filter.key)}
-              className={`
-                snap-start shrink-0 px-5 py-2.5 rounded-full font-bold text-sm transition-all duration-300
-                ${selectedStatus === filter.key
-                  ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20 scale-105'
-                  : 'bg-muted/50 text-muted-foreground hover:bg-muted hover:scale-105'
-                }
-              `}
+              key={f.key}
+              onClick={() => setSelectedStatus(f.key)}
+              className={`px-5 py-2.5 rounded-full font-bold text-sm transition-all ${selectedStatus === f.key ? 'bg-primary text-primary-foreground shadow-lg' : 'bg-muted/50 text-muted-foreground'}`}
             >
-              {filter.label}
+              {f.label}
             </button>
           ))}
         </div>
       </div>
-    </div>
 
-    {/* Invoices List */}
-    <div className="space-y-6">
-      {filteredBookings.length === 0 ? (
-        <Card className="rounded-[2.5rem] border-0 shadow-lg bg-card">
-          <CardContent className="py-20 text-center space-y-4">
-            <div className="p-6 rounded-full bg-muted/50 w-fit mx-auto shadow-inner text-muted-foreground/30">
-              <History className="h-12 w-12" />
-            </div>
-            <div className="max-w-xs mx-auto space-y-2">
-              <h3 className="text-xl font-black tracking-tight">Zatím nemáte žádnou historii</h3>
-              <p className="text-sm text-muted-foreground font-medium">
-                Jakmile dokončíte první úklid, najdete jej zde v přehledné historii i s fakturou.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      ) : (
-        filteredBookings.map(booking => (
-          <BookingCard
-            key={booking.id}
-            booking={booking}
-            onRatingSubmit={handleRatingSubmit}
-            isCollapsible={true}
-            currentLoyaltyPoints={loyaltyCredits}
-          />
-        ))
-      )}
-    </div>
+      <div className="space-y-6">
+        {filteredBookings.length === 0 ? (
+          <Card className="rounded-[2.5rem] border-0 shadow-lg bg-card py-20 text-center">
+            <History className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
+            <h3 className="text-xl font-black tracking-tight">Zatím nemáte žádnou historii</h3>
+            <p className="text-sm text-muted-foreground">Jakmile dokončíte první úklid, najdete jej zde.</p>
+          </Card>
+        ) : (
+          filteredBookings.map(booking => (
+            <BookingCard key={booking.id} booking={booking} onRatingSubmit={handleRatingSubmit} onDownload={downloadInvoice} isCollapsible={true} currentLoyaltyPoints={loyaltyCredits} />
+          ))
+        )}
+      </div>
 
-    {/* Support Section */}
-    <div className="pt-12 pb-12 animate-in fade-in slide-in-from-bottom-8 duration-1000">
-      <div className="max-w-md mx-auto">
-        <div className="relative overflow-hidden bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800/50 p-6 rounded-3xl border border-slate-200/60 dark:border-slate-800 transition-all hover:shadow-lg group shadow-sm text-center">
-          {/* Bubble Animation Background */}
-          <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-primary/5 animate-float-circle-1 pointer-events-none" />
-          <div className="absolute -right-2 top-16 h-16 w-16 rounded-full bg-primary/10 animate-float-circle-2 pointer-events-none" />
-          <div className="absolute -left-4 -bottom-4 h-24 w-24 rounded-full bg-primary/5 blur-xl animate-pulse pointer-events-none" />
-
-          <div className="relative z-10 flex flex-col items-center space-y-4">
-            <div className="h-14 w-14 rounded-full bg-white dark:bg-slate-800 shadow-sm flex items-center justify-center border border-slate-100 dark:border-slate-700 text-primary group-hover:scale-110 transition-transform duration-300">
-              <HeadphonesIcon className="h-7 w-7" />
-            </div>
-
-            <div className="space-y-1">
-              <h4 className="font-bold text-lg text-foreground tracking-tight">Potřebujete s něčím pomoci?</h4>
-              <p className="text-sm text-muted-foreground">Jsme tu pro vás, abychom vám pomohli s jakýmkoliv dotazem k vašim úklidům nebo fakturaci.</p>
-            </div>
-
-            <a
-              href="tel:+420777645610"
-              className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-primary text-primary-foreground hover:bg-primary/90 font-bold text-base rounded-2xl shadow-xl shadow-primary/20 transition-all active:scale-[0.98] mt-2"
-            >
-              <Phone className="h-5 w-5 fill-current" />
-              <span>Zavolat podporu</span>
-            </a>
+      <div className="pt-12 pb-12 max-w-md mx-auto text-center">
+        <div className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800/50 p-6 rounded-3xl border border-slate-200/60 shadow-sm space-y-4">
+          <div className="h-14 w-14 rounded-full bg-white dark:bg-slate-800 shadow-sm mx-auto flex items-center justify-center text-primary"><HeadphonesIcon className="h-7 w-7" /></div>
+          <div className="space-y-1">
+            <h4 className="font-bold text-lg">Potřebujete s něčím pomoci?</h4>
+            <p className="text-sm text-muted-foreground">Jsme tu pro vás s jakýmkoliv dotazem k vašim úklidům nebo fakturaci.</p>
           </div>
+          <a href="tel:+420777645610" className="flex items-center justify-center gap-3 px-6 py-4 bg-primary text-primary-foreground font-bold rounded-2xl shadow-xl transition-all active:scale-95"><Phone className="h-5 w-5" /><span>Zavolat podporu</span></a>
         </div>
       </div>
+
+      <HiddenInvoiceContainer
+        generatingInvoiceId={generatingInvoiceId}
+        previewInvoice={previewInvoice}
+        companyInfo={companyInfo}
+        invoiceItems={invoiceItems}
+        bookings={bookings}
+      />
     </div>
-  </div>;
+  );
 }

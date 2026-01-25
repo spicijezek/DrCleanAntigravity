@@ -4,6 +4,8 @@ import { LoadingOverlay } from "@/components/LoadingOverlay";
 import { ClientEmptyState } from '@/components/client/dashboard/ClientEmptyState';
 import { BookingCard } from '@/components/client/dashboard/BookingCard';
 import { useClientDashboardData } from '@/hooks/useClientDashboardData';
+import { useInvoiceDownload } from '@/hooks/useInvoiceDownload';
+import { HiddenInvoiceContainer } from '@/components/invoices/HiddenInvoiceContainer';
 import { toast } from 'sonner';
 import { ClientHeroHeader } from '@/components/client/ClientHeroHeader';
 import { CalendarIcon } from 'lucide-react';
@@ -18,6 +20,8 @@ export default function ClientDashboard() {
     submitRating,
     markAsViewed
   } = useClientDashboardData();
+
+  const { downloadInvoice, generatingInvoiceId, invoiceItems, previewInvoice } = useInvoiceDownload();
 
   // Mark terminal bookings as viewed when they appear on dashboard
   useEffect(() => {
@@ -111,12 +115,22 @@ export default function ClientDashboard() {
                 key={booking.id}
                 booking={booking}
                 onRatingSubmit={handleRatingSubmit}
+                onDownload={downloadInvoice}
                 currentLoyaltyPoints={loyaltyCredits?.current_credits}
               />
             ))}
           </div>
         </div>
       )}
+
+      <HiddenInvoiceContainer
+        generatingInvoiceId={generatingInvoiceId}
+        previewInvoice={previewInvoice}
+        companyInfo={bookings?.find(b => b.invoice?.id === previewInvoice?.id)?.company_info || {}}
+        invoiceItems={invoiceItems}
+        bookings={bookings as any || []}
+        clientData={clientData}
+      />
     </div>
   );
 }

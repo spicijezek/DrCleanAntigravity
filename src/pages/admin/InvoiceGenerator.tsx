@@ -55,7 +55,7 @@ export default function InvoiceGenerator() {
   ]);
   const [dateDue, setDateDue] = useState(() => {
     const dueDate = new Date();
-    dueDate.setDate(dueDate.getDate() + 14);
+    dueDate.setDate(dueDate.getDate() + 7);
     return dueDate.toISOString().split('T')[0];
   });
   const [variableSymbol, setVariableSymbol] = useState("");
@@ -169,10 +169,26 @@ export default function InvoiceGenerator() {
 
         if (client) {
           setClientName(client.name);
+          setClientIco(client.company_id || '');
+          setClientDic(client.vat_id || '');
           setClientAddress(client.address || booking.address);
           setClientEmail(client.email || '');
           setClientPhone(client.phone || '');
           setSelectedClientId(booking.client_id);
+          setPaymentMethod('bank_transfer');
+
+          // Set performance date to cleaning date
+          if (booking.scheduled_date) {
+            setPerformanceDates([{
+              id: crypto.randomUUID(),
+              startDate: booking.scheduled_date.split('T')[0]
+            }]);
+          }
+
+          // Set due date to 7 days from current issue date
+          const dueDate = new Date(dateCreated);
+          dueDate.setDate(dueDate.getDate() + 7);
+          setDateDue(dueDate.toISOString().split('T')[0]);
 
           // Add booking service as first item
           const serviceLabels: Record<string, string> = {
@@ -180,15 +196,20 @@ export default function InvoiceGenerator() {
             commercial_cleaning: 'Komerční úklid',
             window_cleaning: 'Mytí oken',
             post_construction_cleaning: 'Úklid po stavbě',
-            upholstery_cleaning: 'Čištění čalounění'
+            upholstery_cleaning: 'Čištění čalounění',
+            cleaning: 'Úklid',
+            extra_service: 'Doplňková služba'
           };
+
+          const price = booking.booking_details?.priceEstimate?.price ??
+            booking.booking_details?.priceEstimate?.priceMin ?? 0;
 
           setItems([{
             id: crypto.randomUUID(),
             description: serviceLabels[booking.service_type] || booking.service_type,
             quantity: 1,
-            unit_price: 0,
-            vat_rate: 21
+            unit_price: price,
+            vat_rate: 0
           }]);
         }
       }
@@ -518,7 +539,7 @@ export default function InvoiceGenerator() {
       setClientPhone("");
       setPerformanceDates([{ id: crypto.randomUUID(), startDate: new Date().toISOString().split('T')[0] }]);
       const newDueDate = new Date();
-      newDueDate.setDate(newDueDate.getDate() + 14);
+      newDueDate.setDate(newDueDate.getDate() + 7);
       setDateDue(newDueDate.toISOString().split('T')[0]);
       setVariableSymbol("");
       setNotes("");
@@ -562,7 +583,7 @@ export default function InvoiceGenerator() {
             setDateCreated(e.target.value);
             setPerformanceDates([{ id: crypto.randomUUID(), startDate: e.target.value }]);
             const dueDate = new Date(e.target.value);
-            dueDate.setDate(dueDate.getDate() + 14);
+            dueDate.setDate(dueDate.getDate() + 7);
             setDateDue(dueDate.toISOString().split('T')[0]);
           }} className="bg-white" />
         </div>
@@ -574,7 +595,15 @@ export default function InvoiceGenerator() {
 
       <div className="space-y-2">
         <Label className="text-sm font-medium font-bold text-primary">Přiřadit k rezervaci (volitelné)</Label>
-        <Select value={selectedBookingId} onValueChange={setSelectedBookingId}>
+        <Select
+          value={selectedBookingId}
+          onValueChange={(value) => {
+            setSelectedBookingId(value);
+            if (value && value !== "none") {
+              loadBookingData(value);
+            }
+          }}
+        >
           <SelectTrigger className="bg-white">
             <SelectValue placeholder="Vyberte dokončenou rezervaci" />
           </SelectTrigger>
@@ -907,7 +936,7 @@ export default function InvoiceGenerator() {
               <Button
                 onClick={saveInvoice}
                 disabled={loading || !clientName || items.some(i => !i.description) || isInvoiceUser}
-                variant="gradient"
+                variant="default"
                 className="shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all rounded-xl px-4 h-10"
               >
                 {isInvoiceUser ? <Lock className="h-4 w-4 mr-2" /> : <Save className="h-4 w-4 mr-2" />}
@@ -971,7 +1000,7 @@ export default function InvoiceGenerator() {
                 <Button
                   onClick={saveInvoice}
                   className="w-full h-12 text-lg font-bold rounded-xl shadow-lg shadow-primary/20"
-                  variant="gradient"
+                  variant="default"
                   disabled={loading || !clientName || items.some(i => !i.description) || isInvoiceUser}
                 >
                   <Save className="h-5 w-5 mr-2" />

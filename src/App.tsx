@@ -38,6 +38,7 @@ import ManageExtraServices from "./pages/admin/ManageExtraServices";
 import AppBookings from "./pages/admin/AppBookings";
 import AppRegisters from "./pages/admin/AppRegisters";
 import AdminChecklistManager from "./pages/admin/AdminChecklistManager";
+import AdminLoyalty from "./pages/admin/Loyalty";
 import { Layout } from "./components/layout/Layout";
 import NotFound from "./pages/admin/NotFound";
 import { ScrollToTop } from "@/components/ScrollToTop";
@@ -153,6 +154,11 @@ const App = () => (
             <Route path="/admin/app-registers" element={
               <ProtectedRoute>
                 <AppRegisters />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/loyalty" element={
+              <ProtectedRoute>
+                <AdminLoyalty />
               </ProtectedRoute>
             } />
             <Route path="/" element={

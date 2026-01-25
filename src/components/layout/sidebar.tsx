@@ -14,7 +14,8 @@ import {
   Shield,
   Receipt,
   Lock,
-  ClipboardCheck
+  ClipboardCheck,
+  Star
 } from "lucide-react"
 import { useSidebarState } from "@/hooks/useSidebarState"
 import { useState, useEffect } from "react"
@@ -34,6 +35,7 @@ const adminItems = [
   { title: "App Bookings", icon: Briefcase, href: "/admin/app-bookings" },
   { title: "App Registers", icon: UserCheck, href: "/admin/app-registers" },
   { title: "Checklists", icon: ClipboardCheck, href: "/admin/checklists" },
+  { title: "Loyalty", icon: Star, href: "/admin/loyalty" },
 ];
 
 const invoiceItems = [

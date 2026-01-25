@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { LoadingOverlay } from '@/components/LoadingOverlay';
 
 interface CleanerProtectedRouteProps {
   children: React.ReactNode;
@@ -30,11 +31,7 @@ export const CleanerProtectedRoute: React.FC<CleanerProtectedRouteProps> = ({ ch
   }, [user]);
 
   if (loading || isCleaner === null) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
-      </div>
-    );
+    return <LoadingOverlay />;
   }
 
   if (!user || !isCleaner) {

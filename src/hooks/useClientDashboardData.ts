@@ -153,7 +153,7 @@ export const useClientDashboardData = () => {
                         if (invoiceData.user_id) {
                             const { data: companyData } = await supabase
                                 .from('company_info')
-                                .select('company_name, address, city, postal_code, ic, dic, logo_url, bank_account, bank_code, bank_name, iban, email, phone, website')
+                                .select('*')
                                 .eq('user_id', invoiceData.user_id)
                                 .maybeSingle();
                             companyInfo = companyData;
