@@ -18,6 +18,7 @@ export default function ClientDashboard() {
     loyaltyCredits,
     isLoading,
     submitRating,
+    declineRating,
     markAsViewed
   } = useClientDashboardData();
 
@@ -47,25 +48,20 @@ export default function ClientDashboard() {
       // 1. Pending, Approved, In Progress are always active
       if (b.status !== 'completed') return true;
 
-      // 2. Completed with skip_invoice: show only if not viewed (moves to history immediately)
-      if (b.skip_invoice && !b.client_viewed_at) return true;
+      // 2. Completed with skip_invoice: show only if not viewed
+      if (b.skip_invoice) return !b.client_viewed_at;
 
       // 3. Completed with invoice assigned:
       if (b.invoice) {
-        // If overdue, always show
-        if (b.invoice.status === 'overdue') return true;
-
-        // If unpaid (pending), stay on dashboard
-        if (b.invoice.status === 'pending') return true;
+        // If unpaid (pending or overdue), stay on dashboard UNTIL PAID
+        if (b.invoice.status !== 'paid') return true;
 
         // If paid, show only if not viewed (brief moment before moving to history)
-        if (b.invoice.status === 'paid' && !b.client_viewed_at) return true;
+        return !b.client_viewed_at;
       }
 
       // 4. Completed without invoice yet (and not skipped): show until invoice is assigned
-      if (!b.invoice && !b.skip_invoice) return true;
-
-      return false;
+      return true;
     });
   }, [bookings]);
 
@@ -78,6 +74,14 @@ export default function ClientDashboard() {
   const handleRatingSubmit = async (bookingId: string, rating: number, comment: string) => {
     try {
       await submitRating.mutateAsync({ bookingId, rating, comment });
+    } catch (error) {
+      // already handled
+    }
+  };
+
+  const handleRatingDecline = async (bookingId: string) => {
+    try {
+      await declineRating.mutateAsync(bookingId);
     } catch (error) {
       // already handled
     }
@@ -115,6 +119,7 @@ export default function ClientDashboard() {
                 key={booking.id}
                 booking={booking}
                 onRatingSubmit={handleRatingSubmit}
+                onDecline={handleRatingDecline}
                 onDownload={downloadInvoice}
                 currentLoyaltyPoints={loyaltyCredits?.current_credits}
               />

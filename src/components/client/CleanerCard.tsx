@@ -47,10 +47,10 @@ export function CleanerCard({ name, userId, avatarPath, fullName, bio }: Cleaner
           <img
             src={avatarUrl}
             alt={name}
-            className="w-16 h-16 rounded-full object-cover border-2 border-primary animate-sweep"
+            className="w-16 h-16 rounded-full object-cover border-2 border-primary"
           />
         ) : (
-          <div className="w-16 h-16 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-semibold text-lg animate-sweep">
+          <div className="w-16 h-16 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-semibold text-lg">
             {name.charAt(0)}
           </div>
         )}

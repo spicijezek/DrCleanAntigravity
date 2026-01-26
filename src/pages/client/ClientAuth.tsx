@@ -29,7 +29,6 @@ export default function ClientAuth() {
   // Registration Multi-Step State
   const [step, setStep] = useState(1);
   const [clientType, setClientType] = useState<ClientType>('person');
-  const [verificationToken, setVerificationToken] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
   const [resendTimer, setResendTimer] = useState(0);
   const [fetchingAres, setFetchingAres] = useState(false);
@@ -55,7 +54,8 @@ export default function ClientAuth() {
     has_children: false,
     has_pets: false,
     allergies_notes: '',
-    special_instructions: ''
+    special_instructions: '',
+    referral_code: ''
   });
 
   useEffect(() => {
@@ -188,17 +188,35 @@ export default function ClientAuth() {
         throw new Error('Heslo musí mít alespoň 6 znaků');
       }
 
+      // Validate Referral Code if provided
+      let referredById = null;
+      if (formData.referral_code) {
+        const { data: referee, error: refereeError } = await supabase
+          .from('clients')
+          .select('id')
+          .eq('referral_code', formData.referral_code.toUpperCase())
+          .maybeSingle();
+
+        if (refereeError) throw refereeError;
+        if (!referee) {
+          throw new Error('Neplatný referral kód. Prosím zkontrolujte jej nebo nechte pole prázdné.');
+        }
+        referredById = referee.id;
+      }
+
       // Send OTP to email using Supabase
       const { data, error } = await supabase.auth.signInWithOtp({
         email: formData.email,
         options: {
           shouldCreateUser: false, // We'll create the user after verification
+          data: {
+            referred_by_id: referredById, // Temporarily store in metadata if needed, but we'll use local state
+          }
         }
       });
 
       if (error) throw error;
 
-      setVerificationToken(data.session?.access_token || '');
       setResendTimer(60);
       setStep(2);
 
@@ -331,6 +349,17 @@ export default function ClientAuth() {
         }
       });
 
+      // Look up referred_by_id again for the final step
+      let finalReferredById = null;
+      if (formData.referral_code) {
+        const { data: referee } = await supabase
+          .from('clients')
+          .select('id')
+          .eq('referral_code', formData.referral_code.toUpperCase())
+          .maybeSingle();
+        finalReferredById = referee?.id;
+      }
+
       if (authError) throw authError;
       if (!authData.user) throw new Error('Nepodařilo se vytvořit uživatele');
 
@@ -354,6 +383,8 @@ export default function ClientAuth() {
           has_pets: clientType === 'person' ? formData.has_pets : false,
           allergies_notes: clientType === 'person' ? formData.allergies_notes || null : null,
           special_instructions: clientType === 'person' ? formData.special_instructions || null : null,
+          referred_by_id: finalReferredById,
+          client_source: 'App'
         });
 
       if (clientError) throw clientError;
@@ -540,6 +571,22 @@ export default function ClientAuth() {
           />
         </div>
         <p className="text-xs text-white/40 ml-1">Minimálně 6 znaků</p>
+      </div>
+
+      {/* Referral Code (Optional) */}
+      <div className="space-y-2.5">
+        <Label htmlFor="referral_code" className="text-white/80 text-xs font-bold uppercase tracking-wider ml-1">Kód doporučení (Volitelné)</Label>
+        <div className="relative group">
+          <Check className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40 group-focus-within:text-white transition-colors" />
+          <Input
+            id="referral_code"
+            value={formData.referral_code}
+            onChange={(e) => setFormData({ ...formData, referral_code: e.target.value.toUpperCase() })}
+            placeholder="DRXXXX"
+            className="h-12 bg-white/5 border-white/10 text-white placeholder:text-white/20 pl-11 rounded-2xl focus-visible:ring-white/20 focus-visible:border-white/20 transition-all font-mono tracking-widest"
+          />
+        </div>
+        <p className="text-[10px] text-white/40 ml-1">Pokud vás doporučil přítel, získáte oba bonusové body!</p>
       </div>
 
       <Button

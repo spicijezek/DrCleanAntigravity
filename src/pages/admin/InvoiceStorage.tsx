@@ -122,7 +122,59 @@ export default function InvoiceStorage() {
     if (pointsToAdd <= 0) return;
 
     try {
-      // Check if loyalty_credits record exists for this client
+      // --- Referral Bonus Logic ---
+      const { data: clientData } = await supabase
+        .from('clients')
+        .select('total_spent, referred_by_id, name')
+        .eq('id', clientId)
+        .single();
+
+      const isFirstInvoice = (clientData?.total_spent || 0) === 0;
+      let finalPointsToAdd = pointsToAdd;
+
+      if (isFirstInvoice && clientData?.referred_by_id) {
+        // Double points for the referee
+        finalPointsToAdd = pointsToAdd * 2;
+
+        // Match reward for the referrer
+        const { data: referrerData } = await supabase
+          .from('clients')
+          .select('id, name')
+          .eq('id', clientData.referred_by_id)
+          .single();
+
+        if (referrerData) {
+          // Add points to referrer
+          const { data: referrerCredits } = await supabase
+            .from('loyalty_credits')
+            .select('current_credits, total_earned')
+            .eq('client_id', referrerData.id)
+            .single();
+
+          if (referrerCredits) {
+            await supabase
+              .from('loyalty_credits')
+              .update({
+                current_credits: (referrerCredits.current_credits || 0) + pointsToAdd,
+                total_earned: (referrerCredits.total_earned || 0) + pointsToAdd,
+                updated_at: new Date().toISOString()
+              })
+              .eq('client_id', referrerData.id);
+          }
+
+          // Transaction for referrer
+          await supabase
+            .from('loyalty_transactions')
+            .insert({
+              client_id: referrerData.id,
+              amount: pointsToAdd,
+              type: 'earned',
+              description: `Referral Bonus (1. úklid od ${clientData.name})`
+            });
+        }
+      }
+
+      // Check if loyalty_credits record exists for this client (referee)
       const { data: existingCredits } = await supabase
         .from('loyalty_credits')
         .select('*')
@@ -134,8 +186,8 @@ export default function InvoiceStorage() {
         await supabase
           .from('loyalty_credits')
           .update({
-            current_credits: (existingCredits.current_credits || 0) + pointsToAdd,
-            total_earned: (existingCredits.total_earned || 0) + pointsToAdd,
+            current_credits: (existingCredits.current_credits || 0) + finalPointsToAdd,
+            total_earned: (existingCredits.total_earned || 0) + finalPointsToAdd,
             updated_at: new Date().toISOString()
           })
           .eq('client_id', clientId);
@@ -145,19 +197,13 @@ export default function InvoiceStorage() {
           .from('loyalty_credits')
           .insert({
             client_id: clientId,
-            current_credits: pointsToAdd,
-            total_earned: pointsToAdd,
+            current_credits: finalPointsToAdd,
+            total_earned: finalPointsToAdd,
             total_spent: 0
           });
       }
 
       // Update client's total_spent
-      const { data: clientData } = await supabase
-        .from('clients')
-        .select('total_spent')
-        .eq('id', clientId)
-        .single();
-
       await supabase
         .from('clients')
         .update({
@@ -165,17 +211,19 @@ export default function InvoiceStorage() {
         })
         .eq('id', clientId);
 
-      // Add transaction record
+      // Add transaction record for referee
       await supabase
         .from('loyalty_transactions')
         .insert({
           client_id: clientId,
-          amount: pointsToAdd,
+          amount: finalPointsToAdd,
           type: 'earned',
-          description: `Body za úklid (${invoiceTotal.toLocaleString('cs-CZ')} Kč)`
+          description: finalPointsToAdd > pointsToAdd
+            ? `Bonus za první úklid (Doporučení) - ${invoiceTotal.toLocaleString('cs-CZ')} Kč`
+            : `Body za úklid (${invoiceTotal.toLocaleString('cs-CZ')} Kč)`
         });
 
-      console.log(`Added ${pointsToAdd} loyalty points to client ${clientId}`);
+      console.log(`Added ${finalPointsToAdd} loyalty points to client ${clientId}`);
     } catch (error) {
       console.error('Error adding loyalty points:', error);
     }

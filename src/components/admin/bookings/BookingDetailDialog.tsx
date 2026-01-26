@@ -322,6 +322,27 @@ export function BookingDetailDialog({ booking, isOpen, onClose, onUpdate, teamMe
     const isStarted = !!booking.started_at || booking.status === 'in_progress';
     const isCompleted = ['completed', 'paid'].includes(booking.status);
 
+    const calculateDuration = (start: string | null, end: string | null) => {
+        if (!start || !end) return null;
+        const startTime = new Date(start).getTime();
+        const endTime = new Date(end).getTime();
+        const diffMs = endTime - startTime;
+        if (diffMs <= 0) return null;
+
+        const hours = Math.floor(diffMs / (1000 * 60 * 60));
+        const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+
+        if (hours > 0) {
+            return `${hours}h ${minutes}min`;
+        }
+        return `${minutes} min`;
+    };
+
+    const realDuration = calculateDuration(booking.started_at, booking.completed_at);
+    const estimatedHours = booking.booking_details?.priceEstimate?.hoursMin === booking.booking_details?.priceEstimate?.hoursMax
+        ? `${booking.booking_details?.priceEstimate?.hoursMin} h`
+        : `${booking.booking_details?.priceEstimate?.hoursMin} - ${booking.booking_details?.priceEstimate?.hoursMax} h`;
+
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent className="max-w-5xl h-[85vh] p-0 border border-border bg-background shadow-soft rounded-xl overflow-hidden flex flex-col">
@@ -459,6 +480,28 @@ export function BookingDetailDialog({ booking, isOpen, onClose, onUpdate, teamMe
                                                     )}
                                                 </div>
                                                 <p className="text-xs text-muted-foreground">Čas zahájení</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center gap-4 p-3 rounded-lg bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-800/50 animate-in fade-in slide-in-from-top-2">
+                                            <div className="h-10 w-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
+                                                <Clock className="h-5 w-5" />
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-4 w-full">
+                                                <div>
+                                                    <p className="text-sm font-bold text-foreground">
+                                                        {estimatedHours}
+                                                    </p>
+                                                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest font-bold">Odhadovaný čas</p>
+                                                </div>
+                                                {isCompleted && realDuration && (
+                                                    <div className="animate-in fade-in slide-in-from-left-2 duration-500">
+                                                        <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                                                            {realDuration}
+                                                        </p>
+                                                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest font-bold">Skutečný čas</p>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-4 p-3 rounded-lg bg-muted/20 border border-border/50">

@@ -18,7 +18,7 @@ export function LoyaltyTracker({ currentCredits }: LoyaltyTrackerProps) {
     const startAmount = previousMilestone?.amount || 0;
     const progressRange = nextMilestone.amount - startAmount;
     const progressInRange = currentCredits - startAmount;
-    const progressPercentage = progressRange > 0 ? Math.min((progressInRange / progressRange) * 100, 100) : 100;
+    const progressPercentage = nextMilestone.amount > 0 ? Math.min((currentCredits / nextMilestone.amount) * 100, 100) : 100;
 
     const Icon = nextMilestone.icon;
 

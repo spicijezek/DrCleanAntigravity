@@ -42,6 +42,7 @@ interface Registration {
   // Cleaner-specific fields
   position?: string | null;
   bio?: string | null;
+  referrer?: { name: string } | null;
 }
 
 export default function AppRegisters() {
@@ -60,7 +61,8 @@ export default function AppRegisters() {
 
   const fetchRegistrations = async () => {
     try {
-      // Fetch client registrations from App
+      setLoading(true);
+      // 1. Fetch client registrations (only self-registered via app)
       const { data: clientsData, error: clientsError } = await supabase
         .from('clients')
         .select('*')
@@ -69,7 +71,8 @@ export default function AppRegisters() {
 
       if (clientsError) throw clientsError;
 
-      // Fetch cleaner registrations (team members with cleaner role)
+
+      // 2. Fetch cleaner registrations
       const { data: cleanersData, error: cleanersError } = await supabase
         .from('team_members')
         .select('*')
@@ -77,10 +80,32 @@ export default function AppRegisters() {
 
       if (cleanersError) throw cleanersError;
 
-      // Combine and format data
+      // 3. Handle Referrers manually to avoid self-join schema issues
+      const referrerIds = Array.from(new Set((clientsData || [])
+        .map(c => c.referred_by_id)
+        .filter(Boolean)));
+
+      let referrersMap: Record<string, string> = {};
+
+      if (referrerIds.length > 0) {
+        const { data: referrersData } = await supabase
+          .from('clients')
+          .select('id, name')
+          .in('id', referrerIds);
+
+        if (referrersData) {
+          referrersMap = referrersData.reduce((acc, curr) => ({
+            ...acc,
+            [curr.id]: curr.name
+          }), {});
+        }
+      }
+
+      // 4. Combine and format
       const formattedClients: Registration[] = (clientsData || []).map(client => ({
         ...client,
         type: 'client' as const,
+        referrer: client.referred_by_id ? { name: referrersMap[client.referred_by_id] || 'Neznámý' } : null
       }));
 
       const formattedCleaners: Registration[] = (cleanersData || []).map(cleaner => ({
@@ -210,6 +235,7 @@ export default function AppRegisters() {
                   <TableHead>Telefon</TableHead>
                   <TableHead>Datum registrace</TableHead>
                   <TableHead>Město</TableHead>
+                  <TableHead>Doporučil/a</TableHead>
                   <TableHead className="text-right">Akce</TableHead>
                 </TableRow>
               </TableHeader>
@@ -248,6 +274,16 @@ export default function AppRegisters() {
                         {format(new Date(registration.created_at), 'dd. MM. yyyy', { locale: cs })}
                       </TableCell>
                       <TableCell>{registration.city || 'N/A'}</TableCell>
+                      <TableCell>
+                        {registration.type === 'client' && registration.referrer ? (
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full bg-amber-400" />
+                            <span className="font-medium text-amber-700 dark:text-amber-400">{registration.referrer.name}</span>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground/40">-</span>
+                        )}
+                      </TableCell>
                       <TableCell className="text-right">
                         <Button
                           variant="ghost"
@@ -305,6 +341,13 @@ export default function AppRegisters() {
                     </p>
                   </div>
                 </div>
+
+                {selectedRegistration.type === 'client' && selectedRegistration.referrer && (
+                  <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/50">
+                    <h4 className="font-bold text-xs uppercase tracking-wider text-amber-700 dark:text-amber-400 mb-1">Doporučil/a (Referral)</h4>
+                    <p className="font-semibold">{selectedRegistration.referrer.name}</p>
+                  </div>
+                )}
 
                 <div>
                   <h4 className="font-semibold text-sm text-muted-foreground mb-1">Adresa</h4>

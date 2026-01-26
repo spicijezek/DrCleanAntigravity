@@ -1,6 +1,8 @@
 export interface ClientData {
   id: string;
   name: string;
+  email?: string;
+  referral_code?: string | null;
   has_allergies?: boolean;
   allergies_notes?: string | null;
   has_pets?: boolean;

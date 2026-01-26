@@ -43,7 +43,7 @@ export default function AdminLoyalty() {
     const fetchData = async () => {
         setLoading(true);
         try {
-            // Fetch clients and their loyalty credits
+            // Fetch clients and their loyalty credits - only for self-registered App clients
             const { data: clientsData } = await supabase
                 .from('clients')
                 .select(`
@@ -53,7 +53,8 @@ export default function AdminLoyalty() {
           loyalty_credits (
             current_credits
           )
-        `);
+        `)
+                .eq('client_source', 'App');
 
             if (clientsData) {
                 setClients(clientsData.map((c: any) => ({

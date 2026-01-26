@@ -37,26 +37,39 @@ export function BookingFeedback({ bookingId, onSubmit, onDecline }: BookingFeedb
             <div className="rounded-xl bg-gradient-to-br from-primary/5 via-primary/5 to-transparent p-5 text-center space-y-4 border border-primary/10">
                 <h4 className="font-semibold text-lg text-primary">Jak jste byli spokojeni s úklidem?</h4>
 
-                <div className="flex justify-center gap-1">
-                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((star) => (
-                        <button
-                            key={star}
-                            onClick={() => {
-                                setRating(star);
-                                setIsExpanded(true);
-                            }}
-                            className="focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-full transition-transform hover:scale-110 active:scale-95"
+                <div className="flex flex-col items-center gap-3">
+                    <div className="flex justify-center gap-1">
+                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((star) => (
+                            <button
+                                key={star}
+                                onClick={() => {
+                                    setRating(star);
+                                    setIsExpanded(true);
+                                }}
+                                className="focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-full transition-transform hover:scale-110 active:scale-95"
+                            >
+                                <Star
+                                    className={cn(
+                                        "h-7 w-7 transition-all duration-300",
+                                        star <= rating
+                                            ? "fill-yellow-400 text-yellow-400 drop-shadow-sm"
+                                            : "fill-transparent text-muted-foreground/30 hover:text-yellow-400/70"
+                                    )}
+                                />
+                            </button>
+                        ))}
+                    </div>
+
+                    {!isExpanded && onDecline && (
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => onDecline(bookingId)}
+                            className="text-muted-foreground hover:text-primary transition-all text-xs font-bold uppercase tracking-widest h-auto py-1"
                         >
-                            <Star
-                                className={cn(
-                                    "h-7 w-7 transition-all duration-300",
-                                    star <= rating
-                                        ? "fill-yellow-400 text-yellow-400 drop-shadow-sm"
-                                        : "fill-transparent text-muted-foreground/30 hover:text-yellow-400/70"
-                                )}
-                            />
-                        </button>
-                    ))}
+                            Nechci hodnotit
+                        </Button>
+                    )}
                 </div>
 
                 <div className={cn(

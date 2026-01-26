@@ -22,23 +22,23 @@ const services = [
     icon: Sparkles,
     media: uklidVideo,
     mediaType: "video" as const,
-    description: "Domácnosti, kanceláře, jednorázově i pravidelně",
+    description: "Kompletní úklid domácnosti nebo firmy",
   },
   {
     id: "window_cleaning",
-    title: "Mytí oken",
+    title: "Mytí Oken",
     icon: AppWindow,
     media: windowCleaningImage,
     mediaType: "image" as const,
-    description: "Špaletová, plastová, rámy i parapety",
+    description: "Dokonale čistá okna bez šmouh",
   },
   {
     id: "upholstery_cleaning",
-    title: "Čištění čalounění",
+    title: "Čištění Čalounění",
     icon: Sofa,
     media: upholsteryImage,
     mediaType: "image" as const,
-    description: "Sedačky, koberce, matrace, křesla, židle",
+    description: "Hloubkové čištění nábytku a koberců",
   },
 ];
 
@@ -71,35 +71,46 @@ export function FeaturedServices() {
   useEffect(() => {
     if (current === 0 && videoRef.current) {
       videoRef.current.currentTime = 0;
-      videoRef.current.play().catch(() => {});
+      videoRef.current.play().catch(() => { });
     }
   }, [current]);
 
-  const currentService = services[current];
-
-  const handleServiceClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    navigate(`/klient/sluzby?service=${currentService.id}`);
+  const handleServiceClick = (serviceId: string) => {
+    navigate(`/klient/sluzby?service=${serviceId}`);
   };
 
   return (
-    <div className="space-y-4 mb-6 pb-6">
-      <h2 className="text-lg font-semibold text-foreground">Naše služby</h2>
+    <div className="space-y-4 mb-6 pb-2">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-bold text-foreground tracking-tight">Naše služby</h2>
+        <div className="flex gap-1.5">
+          {services.map((_, i) => (
+            <div
+              key={i}
+              className={`h-1.5 rounded-full transition-all duration-300 ${i === current ? 'w-6 bg-primary' : 'w-1.5 bg-muted-foreground/30'}`}
+            />
+          ))}
+        </div>
+      </div>
 
-      <div onClick={handleServiceClick} className="block relative w-full cursor-pointer">
-        <Carousel
-          setApi={setApi}
-          plugins={[autoplayPlugin.current]}
-          opts={{
-            loop: true,
-            align: "start",
-          }}
-          className="w-full"
-        >
-          <CarouselContent className="-ml-0">
-            {services.map((service, index) => (
-              <CarouselItem key={service.id} className="pl-0">
-                <div className="relative aspect-[16/10] w-full bg-gradient-to-br from-muted to-muted/50 rounded-t-xl overflow-hidden">
+      <Carousel
+        setApi={setApi}
+        plugins={[autoplayPlugin.current]}
+        opts={{
+          loop: true,
+          align: "start",
+        }}
+        className="w-full"
+      >
+        <CarouselContent className="-ml-4">
+          {services.map((service, index) => (
+            <CarouselItem key={service.id} className="pl-4">
+              <div
+                onClick={() => handleServiceClick(service.id)}
+                className="group relative cursor-pointer overflow-hidden rounded-3xl border-2 border-border transition-all duration-300 hover:border-primary/50 hover:shadow-xl bg-card"
+              >
+                {/* Media Header */}
+                <div className="relative aspect-[21/9] w-full overflow-hidden bg-gradient-to-br from-muted to-muted/50">
                   {service.mediaType === "video" ? (
                     <video
                       ref={index === 0 ? videoRef : null}
@@ -108,38 +119,42 @@ export function FeaturedServices() {
                       loop
                       muted
                       playsInline
-                      className="absolute inset-0 w-full h-full object-cover"
+                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                     />
                   ) : (
                     <img
                       src={service.media}
                       alt={service.title}
-                      loading="eager"
-                      className="absolute inset-0 w-full h-full object-cover"
+                      loading="lazy"
+                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                     />
                   )}
+                  {/* Overlay for better text readability if needed, though here we use a separate container */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
                 </div>
-              </CarouselItem>
-            ))}
-          </CarouselContent>
-        </Carousel>
 
-        {/* Button - Connected below media */}
-        <Button
-          variant="secondary"
-          className="w-full rounded-none py-4 text-base font-medium"
-          asChild
-        >
-          <span>{currentService.title}</span>
-        </Button>
+                {/* Content Container (Matches ServiceCard design) */}
+                <div className="px-5 pb-6 pt-1 bg-card">
+                  <div className="flex flex-col items-center text-center gap-3">
+                    {/* Floating Icon Box */}
+                    <div className="p-4 rounded-2xl bg-gradient-to-br from-primary to-primary-foreground shadow-xl -mt-10 relative z-10 border-2 border-white/20 transition-transform duration-300 group-hover:scale-110 group-hover:-translate-y-1">
+                      <service.icon className="h-7 w-7 text-white stroke-[2.5]" />
+                    </div>
 
-        {/* Description - Connected below button with border */}
-        <div className="w-full bg-muted/50 rounded-b-xl py-3 px-4 text-center border border-border border-t-0">
-          <p className="text-sm text-muted-foreground">
-            {currentService.description}
-          </p>
-        </div>
-      </div>
+                    <div className="space-y-1">
+                      <h3 className="text-xl font-extrabold text-foreground tracking-tight">{service.title}</h3>
+                      <p className="text-sm text-muted-foreground font-medium max-w-[280px]">
+                        {service.description}
+                      </p>
+                    </div>
+
+                  </div>
+                </div>
+              </div>
+            </CarouselItem>
+          ))}
+        </CarouselContent>
+      </Carousel>
     </div>
   );
 }

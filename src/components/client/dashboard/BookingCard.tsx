@@ -114,9 +114,9 @@ export function BookingCard({ booking, onRatingSubmit, onDecline, currentLoyalty
             <div className={cn(
                 "absolute left-0 top-0 bottom-0 w-2 transition-all duration-500 z-20",
                 isPending ? "bg-amber-400" :
-                    (isStarted && !isCompleted) ? "bg-emerald-500 shadow-[2px_0_10px_rgba(16,185,129,0.3)] animate-pulse" :
-                        (isApproved) ? "bg-primary shadow-[2px_0_10px_hsl(var(--primary)_/_0.3)]" :
-                            isCompleted ? "bg-emerald-500 shadow-[2px_0_10px_rgba(16,185,129,0.3)]" : "bg-red-500"
+                    (isStarted && !isCompleted) ? "bg-[linear-gradient(to_bottom,hsl(var(--primary))_0%,hsl(var(--primary)_/_0.2)_100%)] shadow-[2px_0_10px_hsl(var(--primary)_/_0.3)] animate-pulse" :
+                        (isApproved) ? "bg-[linear-gradient(to_bottom,hsl(var(--primary))_0%,hsl(var(--primary)_/_0.2)_100%)] shadow-[2px_0_10px_hsl(var(--primary)_/_0.3)]" :
+                            isCompleted ? "bg-[linear-gradient(to_bottom,hsl(var(--primary))_0%,hsl(var(--primary)_/_0.2)_100%)] shadow-[2px_0_10px_hsl(var(--primary)_/_0.3)]" : "bg-red-500"
             )} />
 
             <Collapsible open={isOpen} onOpenChange={setIsOpen}>
@@ -188,11 +188,20 @@ export function BookingCard({ booking, onRatingSubmit, onDecline, currentLoyalty
                         {(isCompleted || booking.invoice || booking.skip_invoice) && !isPaid && (
                             <div className="space-y-4">
                                 {(booking.invoice) ? (
-                                    <div className="p-5 rounded-2xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/50 space-y-4 shadow-sm animate-in fade-in slide-in-from-top-2 duration-700">
-                                        <div className="flex items-center justify-between">
+                                    <div className="relative overflow-hidden p-5 rounded-3xl bg-gradient-to-r from-amber-50/80 to-orange-50/80 dark:from-amber-950/30 dark:to-orange-950/30 border border-amber-200 dark:border-amber-800 space-y-4 shadow-sm animate-in fade-in slide-in-from-top-2 duration-700 transition-all hover:shadow-md">
+                                        {/* Decorative circles to match loyalty section look */}
+                                        <div className="absolute -right-6 -top-6 h-16 w-16 rounded-full bg-amber-200/30 dark:bg-amber-700/20" />
+                                        <div className="absolute -right-2 top-8 h-8 w-8 rounded-full bg-orange-200/40 dark:bg-orange-700/20" />
+
+                                        {/* Sparkle decoration */}
+                                        <Sparkles className="absolute right-12 top-2 h-3 w-3 text-amber-400/60 animate-pulse" />
+
+                                        <div className="relative flex items-center justify-between">
                                             <div className="flex items-center gap-2">
-                                                <Banknote className={`h-5 w-5 ${booking.invoice.status === 'overdue' ? 'text-red-600' : 'text-amber-600'}`} />
-                                                <span className="text-sm font-bold uppercase tracking-wider">Platební údaje</span>
+                                                <div className="h-9 w-9 rounded-xl bg-white/80 dark:bg-amber-900/40 flex items-center justify-center shadow-sm text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-800">
+                                                    <Banknote className={`h-5 w-5 ${booking.invoice.status === 'overdue' ? 'text-red-600' : 'text-amber-600'}`} />
+                                                </div>
+                                                <span className="text-sm font-bold uppercase tracking-wider text-amber-800 dark:text-amber-200">Platební údaje</span>
                                             </div>
                                             <Badge variant="secondary" className={cn(
                                                 "px-3 py-1 text-[11px] font-bold rounded-full border shadow-sm",
@@ -203,21 +212,29 @@ export function BookingCard({ booking, onRatingSubmit, onDecline, currentLoyalty
                                                 {booking.invoice.status === 'paid' ? 'Zaplaceno' : booking.invoice.status === 'overdue' ? 'Po splatnosti' : 'K úhradě'}
                                             </Badge>
                                         </div>
-                                        <div className="space-y-2.5 text-sm">
+                                        <div className="relative space-y-2.5 text-sm">
                                             {booking.company_info?.bank_account && (
                                                 <div className="flex justify-between items-center">
-                                                    <span className="text-muted-foreground">Číslo účtu:</span>
-                                                    <span className="font-bold tabular-nums">{booking.company_info.bank_account}/{booking.company_info.bank_code}</span>
+                                                    <span className="text-amber-800/70 dark:text-amber-400/70 font-medium">Číslo účtu:</span>
+                                                    <span className="font-bold tabular-nums text-amber-900 dark:text-amber-100">{booking.company_info.bank_account}/{booking.company_info.bank_code}</span>
                                                 </div>
                                             )}
                                             {booking.invoice.variable_symbol && (
                                                 <div className="flex justify-between items-center">
-                                                    <span className="text-muted-foreground">Variabilní symbol:</span>
-                                                    <span className="font-bold tabular-nums">{booking.invoice.variable_symbol}</span>
+                                                    <span className="text-amber-800/70 dark:text-amber-400/70 font-medium">Variabilní symbol:</span>
+                                                    <span className="font-bold tabular-nums text-amber-900 dark:text-amber-100">{booking.invoice.variable_symbol}</span>
                                                 </div>
                                             )}
-                                            <div className="flex justify-between items-center border-t border-amber-200/30 pt-3 mt-3">
-                                                <span className="text-muted-foreground font-medium">Celkem k úhradě:</span>
+                                            {booking.invoice.date_due && (
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-amber-800/70 dark:text-amber-400/70 font-medium">Splatnost do:</span>
+                                                    <span className="font-bold tabular-nums text-amber-900 dark:text-amber-100">
+                                                        {format(new Date(booking.invoice.date_due), 'd. M. yyyy', { locale: cs })}
+                                                    </span>
+                                                </div>
+                                            )}
+                                            <div className="flex justify-between items-center border-t border-amber-200/50 dark:border-amber-700/30 pt-3 mt-3">
+                                                <span className="text-amber-800/80 dark:text-amber-300 font-bold">Celkem k úhradě:</span>
                                                 <span className="font-black text-2xl text-amber-900 dark:text-amber-100">{(booking.invoice.total || 0).toLocaleString('cs-CZ')} Kč</span>
                                             </div>
 
@@ -236,22 +253,31 @@ export function BookingCard({ booking, onRatingSubmit, onDecline, currentLoyalty
                                         </div>
                                     </div>
                                 ) : (isCompleted && !booking.invoice && !booking.skip_invoice) ? (
-                                    <div className="p-5 rounded-2xl bg-amber-50/50 dark:bg-amber-950/10 border border-amber-200/50 dark:border-amber-900/30 space-y-4 shadow-sm animate-in fade-in slide-in-from-top-2 duration-700">
-                                        <div className="flex items-center justify-between">
+                                    <div className="relative overflow-hidden p-5 rounded-3xl bg-gradient-to-r from-amber-50/80 to-orange-50/80 dark:from-amber-950/30 dark:to-orange-950/30 border border-amber-200 dark:border-amber-800 space-y-4 shadow-sm animate-in fade-in slide-in-from-top-2 duration-700 transition-all hover:shadow-md">
+                                        {/* Decorative circles to match loyalty section look */}
+                                        <div className="absolute -right-6 -top-6 h-16 w-16 rounded-full bg-amber-200/30 dark:bg-amber-700/20" />
+                                        <div className="absolute -right-2 top-8 h-8 w-8 rounded-full bg-orange-200/40 dark:bg-orange-700/20" />
+
+                                        {/* Sparkle decoration */}
+                                        <Sparkles className="absolute right-12 top-2 h-3 w-3 text-amber-400/60 animate-pulse" />
+
+                                        <div className="relative flex items-center justify-between">
                                             <div className="flex items-center gap-2">
-                                                <Banknote className="h-5 w-5 text-amber-600/50" />
-                                                <span className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Platební údaje</span>
+                                                <div className="h-9 w-9 rounded-xl bg-white/80 dark:bg-amber-900/40 flex items-center justify-center shadow-sm text-amber-600/50 dark:text-amber-400/50 border border-amber-100/50 dark:border-amber-800/50">
+                                                    <Banknote className="h-5 w-5" />
+                                                </div>
+                                                <span className="text-sm font-bold uppercase tracking-wider text-amber-800/70 dark:text-amber-200/70">Platební údaje</span>
                                             </div>
-                                            <Badge variant="outline" className="px-3 py-1 text-[11px] font-bold rounded-full border-amber-200 text-amber-700/70 bg-amber-50">
+                                            <Badge variant="outline" className="px-3 py-1 text-[11px] font-bold rounded-full border-amber-200 text-amber-700/70 bg-white/50 backdrop-blur-sm">
                                                 Čeká na vystavení
                                             </Badge>
                                         </div>
-                                        <div className="text-center py-4 space-y-2">
-                                            <div className="h-12 w-12 rounded-full bg-amber-100/50 flex items-center justify-center mx-auto mb-2 text-amber-600/50">
+                                        <div className="relative text-center py-4 space-y-2">
+                                            <div className="h-12 w-12 rounded-full bg-white/80 dark:bg-amber-900/40 flex items-center justify-center mx-auto mb-2 text-amber-600 dark:text-amber-400 shadow-sm border border-amber-100/50">
                                                 <FileText className="h-6 w-6 animate-pulse" />
                                             </div>
-                                            <p className="font-medium text-amber-900 dark:text-amber-100">Faktura se připravuje</p>
-                                            <p className="text-sm text-muted-foreground max-w-[250px] mx-auto">
+                                            <p className="font-bold text-amber-900 dark:text-amber-100">Faktura se připravuje</p>
+                                            <p className="text-sm text-amber-800/70 dark:text-amber-400/70 max-w-[250px] mx-auto leading-relaxed">
                                                 Zde najdete platební údaje a fakturu ihned po jejím vystavení.
                                             </p>
                                         </div>
@@ -302,31 +328,48 @@ export function BookingCard({ booking, onRatingSubmit, onDecline, currentLoyalty
                     <CollapsibleContent className="space-y-6 pt-2 animate-in fade-in slide-in-from-top-4 duration-500">
                         {/* Move Payment Info here if PAID */}
                         {isPaid && booking.invoice && (
-                            <div className="p-5 rounded-2xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/50 space-y-4 shadow-sm animate-in fade-in slide-in-from-top-2 duration-700">
-                                <div className="flex items-center justify-between">
+                            <div className="relative overflow-hidden p-5 rounded-3xl bg-gradient-to-r from-amber-50/80 to-orange-50/80 dark:from-amber-950/30 dark:to-orange-950/30 border border-amber-200 dark:border-amber-800 space-y-4 shadow-sm animate-in fade-in slide-in-from-top-2 duration-700 transition-all hover:shadow-md">
+                                {/* Decorative circles to match loyalty section look */}
+                                <div className="absolute -right-6 -top-6 h-16 w-16 rounded-full bg-amber-200/30 dark:bg-amber-700/20" />
+                                <div className="absolute -right-2 top-8 h-8 w-8 rounded-full bg-orange-200/40 dark:bg-orange-700/20" />
+
+                                {/* Sparkle decoration */}
+                                <Sparkles className="absolute right-12 top-2 h-3 w-3 text-amber-400/60 animate-pulse" />
+
+                                <div className="relative flex items-center justify-between">
                                     <div className="flex items-center gap-2">
-                                        <Banknote className="h-5 w-5 text-green-600" />
-                                        <span className="text-sm font-bold uppercase tracking-wider">Platební údaje</span>
+                                        <div className="h-9 w-9 rounded-xl bg-white/80 dark:bg-amber-900/40 flex items-center justify-center shadow-sm text-green-600 dark:text-green-400 border border-green-100 dark:border-green-900/30">
+                                            <Banknote className="h-5 w-5" />
+                                        </div>
+                                        <span className="text-sm font-bold uppercase tracking-wider text-amber-800 dark:text-amber-200">Platební údaje</span>
                                     </div>
                                     <Badge variant="secondary" className="px-3 py-1 text-[11px] font-bold rounded-full border shadow-sm bg-green-100 text-green-800 border-green-200">
                                         Zaplaceno
                                     </Badge>
                                 </div>
-                                <div className="space-y-2.5 text-sm">
+                                <div className="relative space-y-2.5 text-sm">
                                     {booking.company_info?.bank_account && (
                                         <div className="flex justify-between items-center">
-                                            <span className="text-muted-foreground">Číslo účtu:</span>
-                                            <span className="font-bold tabular-nums">{booking.company_info.bank_account}/{booking.company_info.bank_code}</span>
+                                            <span className="text-amber-800/70 dark:text-amber-400/70 font-medium">Číslo účtu:</span>
+                                            <span className="font-bold tabular-nums text-amber-900 dark:text-amber-100">{booking.company_info.bank_account}/{booking.company_info.bank_code}</span>
                                         </div>
                                     )}
                                     {booking.invoice.variable_symbol && (
                                         <div className="flex justify-between items-center">
-                                            <span className="text-muted-foreground">Variabilní symbol:</span>
-                                            <span className="font-bold tabular-nums">{booking.invoice.variable_symbol}</span>
+                                            <span className="text-amber-800/70 dark:text-amber-400/70 font-medium">Variabilní symbol:</span>
+                                            <span className="font-bold tabular-nums text-amber-900 dark:text-amber-100">{booking.invoice.variable_symbol}</span>
                                         </div>
                                     )}
-                                    <div className="flex justify-between items-center border-t border-amber-200/30 pt-3 mt-3">
-                                        <span className="text-muted-foreground font-medium">Celkem uhrazeno:</span>
+                                    {booking.invoice.date_due && (
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-amber-800/70 dark:text-amber-400/70 font-medium">Splatnost:</span>
+                                            <span className="font-bold tabular-nums text-amber-900 dark:text-amber-100 italic opacity-70">
+                                                {format(new Date(booking.invoice.date_due), 'd. M. yyyy', { locale: cs })}
+                                            </span>
+                                        </div>
+                                    )}
+                                    <div className="flex justify-between items-center border-t border-amber-200/50 dark:border-amber-700/30 pt-3 mt-3">
+                                        <span className="text-amber-800/80 dark:text-amber-300 font-bold">Celkem uhrazeno:</span>
                                         <span className="font-black text-2xl text-emerald-900 dark:text-emerald-100">{(booking.invoice.total || 0).toLocaleString('cs-CZ')} Kč</span>
                                     </div>
 
@@ -410,9 +453,16 @@ export function BookingCard({ booking, onRatingSubmit, onDecline, currentLoyalty
 
                                 {/* 3. Loyalty Points container - Dynamic text based on payment status */}
                                 {singlePointsMax > 0 && (
-                                    <div className="p-4 rounded-2xl bg-amber-50/50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-900/50 flex flex-col gap-3 transition-all duration-300">
-                                        <div className="flex items-center gap-3">
-                                            <div className="h-10 w-10 rounded-xl bg-white dark:bg-slate-800 flex items-center justify-center shadow-sm text-amber-600 border border-amber-100">
+                                    <div className="relative overflow-hidden p-5 rounded-3xl bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 border border-amber-200 dark:border-amber-800 flex flex-col gap-3 transition-all duration-300 shadow-sm hover:shadow-md">
+                                        {/* Decorative circles to match home screen richer look */}
+                                        <div className="absolute -right-6 -top-6 h-16 w-16 rounded-full bg-amber-200/30 dark:bg-amber-700/20" />
+                                        <div className="absolute -right-2 top-8 h-8 w-8 rounded-full bg-orange-200/40 dark:bg-orange-700/20" />
+
+                                        {/* Sparkle decoration */}
+                                        <Sparkles className="absolute right-12 top-2 h-3 w-3 text-amber-400/60 animate-pulse" />
+
+                                        <div className="relative flex items-center gap-3">
+                                            <div className="h-10 w-10 rounded-xl bg-white/80 dark:bg-amber-900/40 flex items-center justify-center shadow-sm text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-800 animate-phone-shake">
                                                 <Sparkles className="h-5 w-5" />
                                             </div>
                                             <div>

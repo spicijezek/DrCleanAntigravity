@@ -12,12 +12,9 @@ export function StaffAssignment({ booking }: StaffAssignmentProps) {
 
     return (
         <div className="pt-4 border-t border-border/50">
-            <div className="flex items-center gap-2 mb-3">
-                <div className="p-1.5 rounded-full bg-primary/10 text-primary">
-                    <Users className="h-4 w-4" />
-                </div>
-                <span className="font-semibold text-sm">Váš úklidový tým</span>
-            </div>
+            <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2 mb-3">
+                <Users className="h-4 w-4" /> Váš úklidový tým
+            </h4>
 
             {booking.team_members && booking.team_members.length > 0 ? (
                 <div className="grid gap-3 animate-in fade-in slide-in-from-bottom-2 duration-500">
@@ -39,10 +36,10 @@ export function StaffAssignment({ booking }: StaffAssignmentProps) {
                     <div className="absolute -left-2 -bottom-2 h-20 w-20 rounded-full bg-primary/5 blur-lg" />
 
                     <div className="relative flex items-center gap-5">
-                        {/* Animated maid placeholder */}
-                        <div className="flex-shrink-0 animate-sweep drop-shadow-lg">
+                        {/* Static maid placeholder */}
+                        <div className="flex-shrink-0 drop-shadow-lg">
                             <div className="relative">
-                                <div className="absolute inset-0 bg-primary/20 rounded-full blur-md animate-pulse" />
+                                <div className="absolute inset-0 bg-primary/10 rounded-full blur-md" />
                                 <img
                                     src={maidImage}
                                     alt="Uklízečka"

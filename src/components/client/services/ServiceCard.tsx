@@ -89,8 +89,8 @@ export function ServiceCard({
               {/* Title container - connected to image but not overlaid */}
               <div className="px-4 py-3 bg-card border-t-0">
                 <div className="flex flex-col items-center text-center gap-2">
-                  <div className="p-3.5 rounded-2xl bg-gradient-primary shadow-xl -mt-10 relative z-10 border-2 border-white/20">
-                    <Icon className="h-8 w-8 text-primary-foreground stroke-[2.5]" />
+                  <div className="p-3.5 rounded-2xl bg-gradient-to-br from-primary to-primary-foreground shadow-xl -mt-10 relative z-10 border-2 border-white/20 transition-all duration-300">
+                    <Icon className="h-8 w-8 text-white stroke-[2.5]" />
                   </div>
                   <div>
                     <h3 className="text-lg font-bold text-foreground">{title}</h3>
@@ -105,8 +105,8 @@ export function ServiceCard({
           {!media && (
             <CardHeader className="pb-3">
               <div className="flex items-center gap-3">
-                <div className="p-3 rounded-xl bg-gradient-primary shadow-lg border-2 border-white/10">
-                  <Icon className="h-7 w-7 text-primary-foreground stroke-[2.5]" />
+                <div className="p-3 rounded-xl bg-gradient-to-br from-primary to-primary-foreground shadow-lg border-2 border-white/10">
+                  <Icon className="h-7 w-7 text-white stroke-[2.5]" />
                 </div>
                 <div className="flex-1">
                   <h3 className="text-lg font-bold text-foreground">{title}</h3>

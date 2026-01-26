@@ -103,6 +103,27 @@ export function BookingCard({ booking, onViewDetail, onDelete, onCreateInvoice }
     const totalRooms = booking.checklist_rooms?.length || 0;
     const completedRooms = booking.checklist_rooms?.filter(r => r.is_completed).length || 0;
 
+    const calculateDuration = (start: string | null, end: string | null) => {
+        if (!start || !end) return null;
+        const startTime = new Date(start).getTime();
+        const endTime = new Date(end).getTime();
+        const diffMs = endTime - startTime;
+        if (diffMs <= 0) return null;
+
+        const hours = Math.floor(diffMs / (1000 * 60 * 60));
+        const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+
+        if (hours > 0) {
+            return `${hours}h ${minutes}min`;
+        }
+        return `${minutes} min`;
+    };
+
+    const realDuration = calculateDuration(booking.started_at, booking.completed_at);
+    const estimatedHours = details?.priceEstimate?.hoursMin === details?.priceEstimate?.hoursMax
+        ? `${details?.priceEstimate?.hoursMin} h`
+        : `${details?.priceEstimate?.hoursMin} - ${details?.priceEstimate?.hoursMax} h`;
+
     return (
         <Card className="group relative overflow-hidden border border-border shadow-soft hover:shadow-medium transition-all duration-standard rounded-xl bg-card">
             {/* Thick left accent strip */}
@@ -188,6 +209,20 @@ export function BookingCard({ booking, onViewDetail, onDelete, onCreateInvoice }
                                     )}
                                 </div>
                                 <p className="text-xs text-muted-foreground truncate mt-0.5">{booking.address}</p>
+                                {(isCompleted || isStarted) && (
+                                    <div className="flex items-center gap-3 mt-1 pt-1 border-t border-border/30">
+                                        <div className="flex items-center gap-1">
+                                            <Clock className="h-3 w-3 text-muted-foreground" />
+                                            <span className="text-[10px] font-bold text-muted-foreground">ODHAD: {estimatedHours}</span>
+                                        </div>
+                                        {isCompleted && realDuration && (
+                                            <div className="flex items-center gap-1">
+                                                <div className="h-1 w-1 rounded-full bg-emerald-500" />
+                                                <span className="text-[10px] font-bold text-emerald-600">SKUTEČNOST: {realDuration}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         </div>
 
