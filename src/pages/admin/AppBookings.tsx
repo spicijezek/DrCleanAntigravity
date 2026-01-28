@@ -17,6 +17,7 @@ import { useNavigate } from 'react-router-dom';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { subDays, startOfDay, endOfDay, isWithinInterval, parseISO, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear } from 'date-fns';
+import { removeLoyaltyPoints } from '@/utils/loyaltyUtils';
 
 export default function AppBookings() {
   const navigate = useNavigate();
@@ -151,6 +152,15 @@ export default function AppBookings() {
   const confirmDelete = async () => {
     if (!bookingToDelete) return;
     try {
+      // If booking was completed/paid, remove associated loyalty points
+      const booking = bookings.find(b => b.id === bookingToDelete);
+      if (booking && booking.client_id) {
+        // If there's an invoice, we use its total. If not, we might not have points anyway.
+        // Usually points are added only when invoice is paid.
+        const invoiceTotal = booking.invoices?.[0]?.total || 0;
+        await removeLoyaltyPoints(booking.client_id, invoiceTotal, bookingToDelete);
+      }
+
       const { error } = await supabase.from('bookings').delete().eq('id', bookingToDelete);
       if (error) throw error;
       toast({ title: 'Smazáno', description: 'Rezervace byla úspěšně smazána' });

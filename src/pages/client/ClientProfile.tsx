@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { PremiumButton } from '@/components/ui/PremiumButton';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -292,7 +293,7 @@ export default function ClientProfile() {
   }
 
   return (
-    <div className="container mx-auto p-4 pb-20 space-y-6 max-w-5xl">
+    <div className="container mx-auto px-4 pt-6 pb-20 space-y-6 max-w-5xl">
       {/* Hero Header */}
       <ClientHeroHeader
         icon={User}
@@ -488,10 +489,10 @@ export default function ClientProfile() {
                   </div>
 
                   <div className="pt-4">
-                    <Button className="w-full h-12 text-base shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all" onClick={handleSave} disabled={loading}>
+                    <PremiumButton className="w-full h-12 text-base shadow-lg shadow-primary/25" onClick={handleSave} disabled={loading}>
                       <Save className="h-4 w-4 mr-2" />
                       {loading ? "Ukládám..." : "Uložit Změny"}
-                    </Button>
+                    </PremiumButton>
                   </div>
                 </CardContent>
               </CollapsibleContent>
@@ -594,14 +595,14 @@ export default function ClientProfile() {
                         />
                       </div>
 
-                      <Button
+                      <PremiumButton
                         className="w-full"
                         onClick={handleSave}
                         disabled={loading}
                       >
                         <Save className="h-4 w-4 mr-2" />
                         Uložit preference a pokyny
-                      </Button>
+                      </PremiumButton>
                     </div>
                   </CardContent>
                 </CollapsibleContent>
@@ -655,25 +656,25 @@ export default function ClientProfile() {
                       className="bg-muted/30"
                     />
                   </div>
-                  <Button
+                  <PremiumButton
                     className="w-full"
                     onClick={handlePasswordChange}
                     disabled={loading}
                   >
                     Změnit Heslo
-                  </Button>
+                  </PremiumButton>
                 </CardContent>
               </CollapsibleContent>
             </Card>
           </Collapsible>
 
-          <Button
-            className="w-full py-4 font-bold"
+          <PremiumButton
+            className="w-full py-4 text-base rounded-2xl"
             onClick={() => signOut()}
           >
             <LogOut className="h-4 w-4 mr-2" />
             Odhlásit se
-          </Button>
+          </PremiumButton>
         </div>
       </div>
     </div>

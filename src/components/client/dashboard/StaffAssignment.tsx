@@ -30,7 +30,7 @@ export function StaffAssignment({ booking }: StaffAssignmentProps) {
                     ))}
                 </div>
             ) : (
-                <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-muted via-muted to-muted/50 p-6 border border-border/50 shadow-sm group hover:shadow-md transition-all duration-300">
+                <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-muted via-muted to-muted/50 p-6 border border-border/50 shadow-sm group hover:shadow-md transition-all duration-300">
                     {/* Background decoration */}
                     <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-primary/5 blur-xl group-hover:bg-primary/10 transition-colors duration-500" />
                     <div className="absolute -left-2 -bottom-2 h-20 w-20 rounded-full bg-primary/5 blur-lg" />

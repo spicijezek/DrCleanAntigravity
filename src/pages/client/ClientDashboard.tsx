@@ -62,6 +62,17 @@ export default function ClientDashboard() {
 
       // 4. Completed without invoice yet (and not skipped): show until invoice is assigned
       return true;
+    }).sort((a, b) => {
+      const aIsUnpaid = a.invoice?.status === 'overdue' || a.invoice?.status === 'issued';
+      const bIsUnpaid = b.invoice?.status === 'overdue' || b.invoice?.status === 'issued';
+
+      if (aIsUnpaid && !bIsUnpaid) return -1;
+      if (!aIsUnpaid && bIsUnpaid) return 1;
+
+      // For everything else, default to chronological (using scheduled_date or created_at)
+      const dateA = new Date(a.scheduled_date || a.created_at).getTime();
+      const dateB = new Date(b.scheduled_date || b.created_at).getTime();
+      return dateB - dateA;
     });
   }, [bookings]);
 
@@ -92,7 +103,7 @@ export default function ClientDashboard() {
   }
 
   return (
-    <div className="container mx-auto p-4 pb-20 space-y-6 animate-in fade-in duration-700">
+    <div className="container mx-auto px-4 pt-6 pb-20 space-y-6 animate-in fade-in duration-700">
       {/* Empty State - shown when no active bookings */}
       {!hasActiveBookings && (
         <ClientEmptyState

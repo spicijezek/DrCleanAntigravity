@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { PremiumButton } from '@/components/ui/PremiumButton';
 import { Sparkles } from 'lucide-react';
 import maidImage from '@/assets/maid.png';
 import drcleanIcon from '@/assets/drclean-icon.png';
@@ -30,14 +31,24 @@ export function EmptyStateWelcome({ firstName, hasBookedBefore = false }: EmptyS
   }, [hasBookedBefore]);
 
   return (
-    <div className="bg-silver-premium p-6 text-white group">
+    <div className="bg-silver-premium p-5 text-white group">
       {/* Background pattern */}
       <div className="absolute inset-0 bg-[url('/placeholder.svg')] opacity-[0.03]" />
 
-      {/* Animated decorative circles - refined for silver look */}
-      <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-white/20 animate-float-circle-1 blur-xl" />
-      <div className="absolute -right-2 top-14 h-16 w-16 rounded-full bg-white/10 animate-float-circle-2 blur-lg" />
-      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-64 w-64 rounded-full bg-primary/5 blur-3xl" />
+      {/* Animated decorative circles - visible floating bubbles (mobile-optimized positioning) */}
+      <div className="absolute right-2 top-2 h-24 w-24 rounded-full bg-white/10 animate-float-circle-1" />
+      <div className="absolute right-4 top-16 h-14 w-14 rounded-full bg-white/15 animate-float-circle-2" />
+      <div className="absolute left-2 bottom-2 h-16 w-16 rounded-full bg-white/10 animate-float-circle-1" />
+      <div className="absolute left-10 top-8 h-10 w-10 rounded-full bg-white/12 animate-float-circle-2" />
+      <div className="absolute right-1/3 bottom-4 h-18 w-18 rounded-full bg-white/8 animate-float-circle-1" />
+      <div className="absolute left-1/2 top-6 h-12 w-12 rounded-full bg-white/10 animate-float-circle-2" />
+      <div className="absolute left-1/4 bottom-10 h-13 w-13 rounded-full bg-white/9 animate-float-circle-1" />
+      <div className="absolute right-20 top-1/2 h-11 w-11 rounded-full bg-white/11 animate-float-circle-2" />
+      {/* Additional small bubbles for richness */}
+      <div className="absolute left-16 top-12 h-8 w-8 rounded-full bg-white/10 animate-float-circle-1" />
+      <div className="absolute right-1/4 top-20 h-9 w-9 rounded-full bg-white/12 animate-float-circle-2" />
+      <div className="absolute left-1/3 bottom-6 h-7 w-7 rounded-full bg-white/9 animate-float-circle-1" />
+      <div className="absolute right-12 bottom-12 h-8 w-8 rounded-full bg-white/11 animate-float-circle-2" />
 
       <div className="relative z-10 flex items-start justify-between gap-2">
         <div className="space-y-4 flex-1">

@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import phoneBadgeIcon from '@/assets/phone-badge-icon.png';
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
+import { PremiumButton } from '@/components/ui/PremiumButton';
 import customProfileIcon from '@/assets/custom-profile-icon.png';
 import customMenuIcon from '@/assets/custom-menu-icon.png';
 
@@ -54,8 +55,12 @@ export function ClientLayout({ children }: ClientLayoutProps) {
                 <div className="flex flex-col h-full bg-background animate-in slide-in-from-left duration-300">
                   {/* Menu Header with Bubble Animation */}
                   <div className="relative overflow-hidden bg-primary p-6 text-primary-foreground">
+                    {/* Animated Bubble Background */}
                     <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-white/10 blur-2xl" />
                     <div className="absolute bottom-0 left-0 -mb-4 -ml-4 h-20 w-20 rounded-full bg-white/10 blur-xl" />
+                    <div className="absolute right-8 top-4 h-12 w-12 rounded-full bg-white/10 animate-float-circle-1" />
+                    <div className="absolute left-1/3 bottom-2 h-8 w-8 rounded-full bg-white/5 animate-float-circle-2" />
+                    <div className="absolute right-1/4 top-1/2 h-6 w-6 rounded-full bg-white/5 animate-float-circle-1" />
 
                     <div className="relative z-10 flex items-center gap-3 mb-2">
                       <div className="h-12 w-12 rounded-full bg-white/20 flex items-center justify-center text-xl font-bold border-2 border-white/20">
@@ -119,13 +124,13 @@ export function ClientLayout({ children }: ClientLayoutProps) {
                       </a>
                     </SheetClose>
 
-                    <Button
-                      className="w-full justify-start gap-3 font-bold"
+                    <PremiumButton
+                      className="w-full justify-center gap-3 text-base rounded-xl py-3"
                       onClick={handleSignOut}
                     >
                       <LogOut className="h-5 w-5" />
                       Odhlásit se
-                    </Button>
+                    </PremiumButton>
                   </div>
                 </div>
               </SheetContent>
@@ -151,7 +156,7 @@ export function ClientLayout({ children }: ClientLayoutProps) {
           </div>
         </div>
       </header>
-      <main className="pb-24 pt-8">
+      <main className="pb-24 pt-0">
         {children}
       </main>
       <ClientBottomNav />

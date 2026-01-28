@@ -80,7 +80,7 @@ export function FeaturedServices() {
   };
 
   return (
-    <div className="space-y-4 mb-6 pb-2">
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-bold text-foreground tracking-tight">Naše služby</h2>
         <div className="flex gap-1.5">

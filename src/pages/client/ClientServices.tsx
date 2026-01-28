@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { PremiumButton } from '@/components/ui/PremiumButton';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -27,9 +28,9 @@ import { DateTimeRow } from '@/components/ui/date-time-picker';
 import { LoadingOverlay } from '@/components/LoadingOverlay';
 
 // Import media assets
-import uklidVideo from '@/assets/uklid-video.mp4';
+import uklidImage from '@/assets/uklid-image.png';
 import windowCleaningImage from '@/assets/window-cleaning-image.jpg';
-import upholsteryImage from '@/assets/upholstery-image.jpg';
+import upholsteryImage from '@/assets/upholstery-image-new.jpg';
 
 const services = [{
   id: 'cleaning',
@@ -37,8 +38,8 @@ const services = [{
   icon: Sparkles,
   description: 'Kompletní úklid domácnosti nebo firmy',
   category: 'home_cleaning',
-  media: uklidVideo,
-  mediaType: 'video' as const,
+  media: uklidImage,
+  mediaType: 'image' as const,
   painPoints: ['Nemáte čas na pravidelný úklid?', 'Unavuje Vás neustálé mytí a lešení?', 'Chybí Vám síla po práci?'],
   benefits: ['Úspora času na rodinu a koníčky', 'Profesionální výsledek za skvělou cenu', 'Ekologické čisticí prostředky']
 }, {
@@ -809,7 +810,7 @@ export default function ClientServices() {
       doplnky_home: prev.doplnky_home.includes(doplnek) ? prev.doplnky_home.filter(d => d !== doplnek) : [...prev.doplnky_home, doplnek]
     }));
   };
-  return <div className="container mx-auto p-4 pb-20 space-y-5">
+  return <div className="container mx-auto px-4 pt-6 pb-20 space-y-6">
     {/* Hero Header */}
     <ClientHeroHeader
       icon={Sparkles}
@@ -1785,13 +1786,13 @@ export default function ClientServices() {
                 })} placeholder="Speciální požadavky..." rows={3} />
               </section>
 
-              <Button
-                className="w-full bg-gradient-primary hover:opacity-90 text-white font-semibold py-6 text-base shadow-lg"
+              <PremiumButton
+                className="w-full py-6 text-base"
                 onClick={handleBooking}
                 disabled={loading || !bookingData.date || !bookingData.time || !bookingData.street || !bookingData.city || !bookingData.postal_code || service.id === 'upholstery_cleaning' && priceEstimate.upholsteryBelowMinimum}
               >
                 {loading ? 'Odesílám...' : service.id === 'upholstery_cleaning' && priceEstimate.upholsteryBelowMinimum ? `Min. objednávka ${priceEstimate.upholsteryMinimumOrder} Kč` : 'Odeslat Poptávku'}
-              </Button>
+              </PremiumButton>
             </ServiceCard>
           </div>
         );
@@ -1807,13 +1808,13 @@ export default function ClientServices() {
       <p className="text-sm text-muted-foreground">
         Zavolejte nám a rádi vám pomůžeme s výběrem
       </p>
-      <a
-        href="tel:+420777645610"
-        className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-primary text-primary-foreground font-medium text-sm hover:bg-primary/90 transition-colors w-full"
+      <PremiumButton
+        className="h-12 w-full"
+        onClick={() => window.location.href = 'tel:+420777645610'}
       >
-        <Phone className="h-4 w-4" />
+        <Phone className="h-4 w-4 mr-2" />
         Zavolat
-      </a>
+      </PremiumButton>
     </div>
 
     {/* Success Dialog */}
@@ -1855,12 +1856,12 @@ export default function ClientServices() {
               </a>
             </div>
           </div>
-          <Button
+          <PremiumButton
             onClick={() => setShowSuccess(false)}
-            className="w-full bg-gradient-primary"
+            className="w-full"
           >
             Rozumím
-          </Button>
+          </PremiumButton>
         </div>
       </DialogContent>
     </Dialog>

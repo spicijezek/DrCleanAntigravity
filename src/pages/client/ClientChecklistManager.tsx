@@ -10,6 +10,7 @@ import {
   Navigation, Trash2, CheckCircle2, CheckSquare,
   Building2, MapPin, Plus, X, Pencil, HelpCircle, Phone, MessageSquare, Check, HeadphonesIcon
 } from 'lucide-react';
+import { PremiumButton } from '@/components/ui/PremiumButton';
 import { cn } from '@/lib/utils';
 import { LoadingOverlay } from '@/components/LoadingOverlay';
 import { ClientHeroHeader } from '@/components/client/ClientHeroHeader';
@@ -391,7 +392,7 @@ export default function ClientChecklistManager() {
   const activeChecklist = checklists.find(c => c.id === activeChecklistId);
 
   return (
-    <div className="container mx-auto p-4 pb-24 space-y-6 max-w-4xl">
+    <div className="container mx-auto px-4 pt-6 pb-24 space-y-6 max-w-4xl">
       <div className="flex flex-col gap-4">
         <ClientHeroHeader
           icon={Building2}
@@ -661,13 +662,13 @@ export default function ClientChecklistManager() {
                 <p className="text-sm text-muted-foreground">Jsme tu pro vás, abychom vám pomohli s nastavením vašeho checklistu.</p>
               </div>
 
-              <a
-                href="tel:+420777645610"
-                className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-primary text-primary-foreground hover:bg-primary/90 font-bold text-base rounded-2xl shadow-xl shadow-primary/20 transition-all active:scale-[0.98] mt-2"
+              <PremiumButton
+                className="w-full py-2.5 rounded-2xl text-base"
+                onClick={() => window.location.href = 'tel:+420777645610'}
               >
-                <Phone className="h-5 w-5 fill-current" />
-                <span>Zavolat podporu</span>
-              </a>
+                <Phone className="h-4 w-4" />
+                Zavolat podporu
+              </PremiumButton>
             </div>
           </div>
         </div>

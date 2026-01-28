@@ -1,15 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { PremiumButton } from '@/components/ui/PremiumButton';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useClientDashboardData } from '@/hooks/useClientDashboardData';
-import { Gift, Share2, CheckCircle2, Phone, Flame, UtensilsCrossed, Sparkles, Trophy, Target, History as HistoryIcon, Coins, ArrowRight } from 'lucide-react';
+import { Gift, Share2, CheckCircle2, Phone, Flame, UtensilsCrossed, Sparkles, Trophy, Target, History as HistoryIcon, Coins, ArrowRight, Copy } from 'lucide-react';
 import { format } from 'date-fns';
 import { cs } from 'date-fns/locale';
 import { LoadingOverlay } from '@/components/LoadingOverlay';
-import { useToast } from '@/hooks/use-toast';
+import { toast as sonnerToast } from 'sonner';
 import { ClientHeroHeader } from '@/components/client/ClientHeroHeader';
 import { cn } from '@/lib/utils';
 
@@ -41,35 +43,61 @@ const milestones = [
   { amount: 13500, reward: 'Masáž', icon: Sparkles }
 ];
 
-// Confetti particle component
-function ConfettiParticle({ delay, color }: { delay: number; color: string }) {
+// Premium Sparkle particle component (optimized for mobile)
+function SparkleParticle({ delay, color, scale, left, top, duration }: {
+  delay: number;
+  color: string;
+  scale: number;
+  left: number;
+  top: number;
+  duration: number;
+}) {
   return (
     <div
-      className="absolute w-2 h-2 rounded-full animate-confetti"
+      className="absolute animate-sparkle-up"
       style={{
+        width: `${4 * scale}px`,
+        height: `${4 * scale}px`,
         backgroundColor: color,
-        left: `${Math.random() * 100}%`,
+        left: `${left}%`,
+        top: `${top}%`,
+        boxShadow: `0 0 ${10 * scale}px ${color}`,
+        borderRadius: '50%',
         animationDelay: `${delay}ms`,
+        animationDuration: `${duration}s`
       }}
     />
   );
 }
 
-// Celebration effect component
-function CelebrationEffect({ show }: { show: boolean }) {
+// Celebration effect component - "Rising Magic Dust"
+function PremiumCelebration({ show }: { show: boolean }) {
   if (!show) return null;
 
-  const colors = ['#f59e0b', '#fbbf24', '#fcd34d', '#fef3c7', '#ea580c'];
-  const particles = Array.from({ length: 30 }, (_, i) => ({
+  const colors = ['#f59e0b', '#fbbf24', '#fcd34d', '#fef3c7', '#ffffff'];
+  // Increased particle count (135) for a dense, long-lasting magical effect
+  const particles = Array.from({ length: 135 }, (_, i) => ({
     id: i,
-    delay: Math.random() * 500,
-    color: colors[Math.floor(Math.random() * colors.length)]
+    delay: i * 40, // Spread out over ~5.4 seconds
+    color: colors[i % colors.length],
+    scale: 0.3 + Math.random() * 0.8,
+    left: 2 + Math.random() * 96,
+    top: 30 + Math.random() * 60,
+    duration: 3 + Math.random() * 3 // Longer travel time
   }));
 
   return (
     <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
       {particles.map(p => (
-        <ConfettiParticle key={p.id} delay={p.delay} color={p.color} />
+        <SparkleParticle
+          key={p.id}
+          delay={p.delay}
+          color={p.color}
+          scale={p.scale}
+          left={p.left}
+          top={p.top}
+          duration={p.duration}
+        />
       ))}
     </div>
   );
@@ -157,6 +185,7 @@ function useProgressAnimation(targetPercentage: number, duration: number = 1500)
 
 export default function ClientLoyalty() {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   // Use the same hook as the dashboard - this guarantees consistency
   const { clientData, loyaltyCredits, isLoading: hookLoading } = useClientDashboardData();
 
@@ -165,7 +194,7 @@ export default function ClientLoyalty() {
   const [loading, setLoading] = useState(true);
   const [redeeming, setRedeeming] = useState<string | null>(null);
   const [showCelebration, setShowCelebration] = useState(false);
-  const { toast } = useToast();
+  const [isCopied, setIsCopied] = useState(false);
 
   // Get points from the hook (same source as homepage)
   const currentPoints = loyaltyCredits?.current_credits || 0;
@@ -177,7 +206,6 @@ export default function ClientLoyalty() {
   const targetProgressPercentage = nextMilestone.amount > 0 ? Math.min((currentPoints / nextMilestone.amount) * 100, 100) : 100;
   const animatedProgress = useProgressAnimation(targetProgressPercentage);
 
-  // Load transactions and redemptions when client data is available
   useEffect(() => {
     if (clientData?.id) {
       loadTransactionsAndRedemptions();
@@ -191,18 +219,12 @@ export default function ClientLoyalty() {
     }
   }, [hookLoading]);
 
-  // Check for newly achieved milestones
+  // Show celebration briefly when page loads
   useEffect(() => {
-    if (currentPoints > 0) {
-      const achievedMilestones = milestones.filter(m => currentPoints >= m.amount);
-      if (achievedMilestones.length > 0) {
-        // Show celebration briefly when page loads with achieved milestones
-        setShowCelebration(true);
-        const timer = setTimeout(() => setShowCelebration(false), 2500);
-        return () => clearTimeout(timer);
-      }
-    }
-  }, [currentPoints]);
+    setShowCelebration(true);
+    const timer = setTimeout(() => setShowCelebration(false), 8000); // 8 seconds to allow all sparkles to finish
+    return () => clearTimeout(timer);
+  }, []);
 
   const loadTransactionsAndRedemptions = async () => {
     if (!clientData?.id) return;
@@ -312,25 +334,85 @@ export default function ClientLoyalty() {
     }
   };
 
-  const handleShare = () => {
-    const shareText = `Vyzkoušejte profesionální úklidové služby DrClean! Při první objednávce získáte 2x více věrnostních bodů s mým kódem: ${referralCode}`;
-    if (navigator.share) {
-      navigator.share({
-        title: 'DrClean - Věrnostní program',
-        text: shareText,
-        url: window.location.origin + '/klient-prihlaseni'
+  const handleShare = async () => {
+    const code = referralCode;
+    if (!code) {
+      sonnerToast.error("Kód není k dispozici", {
+        description: "Prosím zkuste to za chvíli nebo kontaktujte podporu.",
       });
-    } else {
-      copyToClipboard(referralCode || '');
-      toast({
-        title: 'Kód zkopírován!',
+      return;
+    }
+
+    const shareText = `Získejte profesionální úklid DrClean s bonusem! Při registraci použijte můj kód: ${code}`;
+    const shareUrl = `${window.location.origin}/klient-prihlaseni?ref=${code}`;
+
+    // Native sharing only works on HTTPS or Localhost
+    const isSecureContext = window.isSecureContext || window.location.hostname === 'localhost';
+
+    if (navigator.share && isSecureContext) {
+      try {
+        // Native share call
+        await navigator.share({
+          title: 'DrClean - Pozvánka',
+          text: shareText,
+          url: shareUrl
+        });
+        return; // Success
+      } catch (err) {
+        // Only log if not a user cancellation
+        if ((err as Error).name !== 'AbortError') {
+          console.error('Native share failed:', err);
+        } else {
+          return; // User cancelled, don't fallback to copy
+        }
+      }
+    }
+
+    // Fallback if not supported or not secure context
+    console.log('Native share not available (requires HTTPS or Localhost). Context secure:', isSecureContext);
+    await copyToClipboard(`${shareText}\n${shareUrl}`);
+    sonnerToast.success("Odkaz připraven!", {
+      description: isSecureContext
+        ? 'Text s vaším kódem byl zkopírován do schránky.'
+        : 'Native sdílení vyžaduje HTTPS. Odkaz byl zkopírován do schránky.',
+    });
+  };
+
+  const handleCopyCode = async () => {
+    if (!referralCode) return;
+
+    try {
+      await copyToClipboard(referralCode);
+      setIsCopied(true);
+      sonnerToast.success("Kód zkopírován!", {
         description: 'Teď ho můžete poslat přátelům.',
+      });
+      setTimeout(() => setIsCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy code:', err);
+      sonnerToast.error("Chyba kopírování", {
+        description: 'Kód se nepodařilo zkopírovat automaticky.',
       });
     }
   };
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
+  const copyToClipboard = async (text: string) => {
+    // Try the modern API first
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text);
+    }
+
+    // Fallback: Create a temporary textarea
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    document.body.appendChild(textArea);
+    textArea.select();
+    try {
+      document.execCommand('copy');
+    } catch (err) {
+      throw new Error('Fallback copy failed');
+    }
+    document.body.removeChild(textArea);
   };
 
   if (loading) {
@@ -340,46 +422,69 @@ export default function ClientLoyalty() {
   const achievedCount = milestones.filter(m => currentPoints >= m.amount).length;
 
   return (
-    <div className="container mx-auto p-4 pb-20 space-y-5">
-      {/* Celebration Effect */}
-      <CelebrationEffect show={showCelebration} />
+    <div className="container mx-auto px-4 pt-6 pb-20 space-y-6">
+      {/* Celebration Effect - Premium rising sparkles */}
+      <PremiumCelebration show={showCelebration} />
 
-      {/* Hero Header - Primary variant */}
-      <ClientHeroHeader
-        icon={Gift}
-        title="Věrnostní Program"
-        subtitle="Získávejte odměny za každý úklid"
-        variant="primary"
-      >
-        <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 space-y-1">
-          <span className="text-white/70 text-sm">Vaše body</span>
-          <div className="text-4xl font-bold text-white">
+      {/* Slim Status Bar - Forced single-row for mobile */}
+      <div className={cn(
+        "relative overflow-hidden rounded-2xl px-4 py-3.5 bg-[linear-gradient(135deg,hsl(var(--primary)_/_0.9)_0%,hsl(var(--primary))_50%,hsl(var(--primary)_/_0.9)_100%)] text-white shadow-xl border-2 border-primary/20 transition-all duration-700",
+        showCelebration ? "animate-glow-pulse scale-[1.02]" : ""
+      )}>
+        {/* Animated decorative bubbles - 12 bubbles for rich animation */}
+        <div className="absolute right-2 top-2 h-24 w-24 rounded-full bg-white/10 animate-float-circle-1" />
+        <div className="absolute right-4 top-16 h-14 w-14 rounded-full bg-white/15 animate-float-circle-2" />
+        <div className="absolute left-2 bottom-2 h-16 w-16 rounded-full bg-white/10 animate-float-circle-1" />
+        <div className="absolute left-10 top-8 h-10 w-10 rounded-full bg-white/12 animate-float-circle-2" />
+        <div className="absolute right-1/3 bottom-4 h-18 w-18 rounded-full bg-white/8 animate-float-circle-1" />
+        <div className="absolute left-1/2 top-6 h-12 w-12 rounded-full bg-white/10 animate-float-circle-2" />
+        <div className="absolute left-1/4 bottom-10 h-13 w-13 rounded-full bg-white/9 animate-float-circle-1" />
+        <div className="absolute right-20 top-1/2 h-11 w-11 rounded-full bg-white/11 animate-float-circle-2" />
+        <div className="absolute left-16 top-12 h-8 w-8 rounded-full bg-white/10 animate-float-circle-1" />
+        <div className="absolute right-1/4 top-20 h-9 w-9 rounded-full bg-white/12 animate-float-circle-2" />
+        <div className="absolute left-1/3 bottom-6 h-7 w-7 rounded-full bg-white/9 animate-float-circle-1" />
+        <div className="absolute right-12 bottom-12 h-8 w-8 rounded-full bg-white/11 animate-float-circle-2" />
+
+        <div className="relative z-10 flex flex-row items-center w-full flex-nowrap gap-2">
+          <div className="backdrop-blur-sm rounded-lg px-2.5 py-1.5 bg-white/10 border border-white/20 shrink-0">
+            <p className="text-[10px] font-bold text-white/90 tracking-wide uppercase whitespace-nowrap">Vaše body</p>
+          </div>
+
+          <div className="text-2xl sm:text-3xl font-black text-white tracking-tighter drop-shadow-sm whitespace-nowrap ml-auto">
             {animatedPoints.toLocaleString('cs-CZ')} b.
           </div>
         </div>
-      </ClientHeroHeader>
+      </div>
 
-      {/* Progress to Next Milestone - Exact copy of Homepage Banner */}
-      <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 border border-amber-200 dark:border-amber-800 p-4 shadow-md">
-        {/* Decorative circles from homepage */}
-        <div className="absolute -right-6 -top-6 h-20 w-20 rounded-full bg-amber-200/30 dark:bg-amber-700/20" />
-        <div className="absolute -right-2 top-8 h-10 w-10 rounded-full bg-orange-200/40 dark:bg-orange-700/20" />
-        <div className="absolute -left-4 -bottom-4 h-16 w-16 rounded-full bg-amber-100/40 dark:bg-amber-800/20" />
+      {/* Progress to Next Milestone - Exact copy of Homepage Banner Design */}
+      <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-amber-100 to-orange-200 dark:from-amber-900/50 dark:to-orange-900/50 border-2 border-amber-200 dark:border-amber-700 p-4 shadow-lg">
+        {/* Animated decorative bubbles - 11 bubbles matching dashboard refinement */}
+        <div className="absolute right-4 top-3 h-20 w-20 rounded-full bg-white/38 dark:bg-amber-300/40 animate-float-circle-1" />
+        <div className="absolute right-8 top-14 h-14 w-14 rounded-full bg-orange-600/38 dark:bg-orange-300/42 animate-float-circle-2" />
+        <div className="absolute left-4 bottom-3 h-16 w-16 rounded-full bg-white/40 dark:bg-amber-400/38 animate-float-circle-1" />
+        <div className="absolute left-12 top-10 h-10 w-10 rounded-full bg-amber-600/38 dark:bg-orange-400/40 animate-float-circle-2" />
+        <div className="absolute right-12 bottom-6 h-18 w-18 rounded-full bg-white/35 dark:bg-amber-300/38 animate-float-circle-1" />
+        <div className="absolute left-1/2 top-8 h-12 w-12 rounded-full bg-orange-600/38 dark:bg-orange-300/40 animate-float-circle-2" />
+        <div className="absolute left-8 bottom-12 h-14 w-14 rounded-full bg-white/38 dark:bg-amber-400/38 animate-float-circle-1" />
+        <div className="absolute right-16 top-1/2 h-11 w-11 rounded-full bg-amber-700/38 dark:bg-orange-300/40 animate-float-circle-2" />
+        <div className="absolute left-20 top-14 h-9 w-9 rounded-full bg-white/40 dark:bg-amber-300/38 animate-float-circle-1" />
+        <div className="absolute right-10 top-10 h-12 w-12 rounded-full bg-orange-600/38 dark:bg-orange-300/42 animate-float-circle-2" />
+        <div className="absolute left-6 top-6 h-10 w-10 rounded-full bg-white/38 dark:bg-amber-400/38 animate-float-circle-1" />
 
-        {/* Sparkle decorations from homepage */}
-        <Sparkles className="absolute right-12 top-2 h-3 w-3 text-amber-500/60 animate-pulse" />
+        {/* Sparkle decorations */}
+        <Sparkles className="absolute right-12 top-2 h-3 w-3 text-amber-600/70 dark:text-amber-300/60 animate-pulse" />
         <Sparkles className="absolute left-8 bottom-2 h-2.5 w-2.5 text-orange-400/50 animate-pulse" style={{ animationDelay: '0.5s' }} />
 
         <div className="relative space-y-3">
-          {/* Header with points - Word for word copy */}
+          {/* Header with points - Exact copy of Homepage Branding */}
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-amber-100 dark:bg-amber-900/50 shrink-0 animate-phone-shake">
-              <Gift className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+            <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-900/60 shrink-0 animate-phone-shake shadow-md">
+              <Gift className="h-5 w-5 text-amber-700 dark:text-amber-300" />
             </div>
 
             <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-foreground">Věrnostní program</h3>
-              <p className="text-sm text-muted-foreground">
+              <h3 className="font-bold text-amber-900 dark:text-white drop-shadow-sm">Věrnostní program</h3>
+              <p className="text-sm text-amber-800 dark:text-amber-100 font-medium">
                 {currentPoints > 0
                   ? `Máte ${animatedPoints.toLocaleString('cs-CZ')} bodů`
                   : 'Sbírejte body za každý úklid'
@@ -388,48 +493,43 @@ export default function ClientLoyalty() {
             </div>
 
             <div className="flex items-center gap-2 shrink-0">
-              {currentPoints > 0 && (
-                <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-100 dark:bg-amber-900/50">
-                  <Coins className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400 animate-pulse" />
-                  <span className="text-sm font-bold text-amber-700 dark:text-amber-400">{animatedPoints.toLocaleString('cs-CZ')}</span>
-                </div>
-              )}
-              <ArrowRight className="h-5 w-5 text-muted-foreground" />
+              <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-50 dark:bg-amber-900/60 shadow-md">
+                <Coins className="h-3.5 w-3.5 text-amber-700 dark:text-amber-300 animate-pulse" />
+                <span className="text-sm font-bold text-amber-900 dark:text-amber-100">{animatedPoints.toLocaleString('cs-CZ')}</span>
+              </div>
             </div>
           </div>
 
-          {/* Progress to next prize - Exact layout from homepage */}
-          {currentPoints > 0 && (
-            <div className="space-y-2 pt-2 border-t border-amber-200/50 dark:border-amber-700/50">
-              <div className="flex items-center justify-between text-xs">
-                <div className="flex items-center gap-1 text-muted-foreground">
-                  <Target className="h-3 w-3" />
-                  <span>Další odměna</span>
-                </div>
-                <span className="font-medium text-amber-700 dark:text-amber-400">
-                  {nextMilestone.reward}
-                </span>
+          {/* Progress to next prize - Exact copy of Homepage Layout */}
+          <div className="space-y-2 pt-2 border-t border-amber-400/40 dark:border-amber-500/40">
+            <div className="flex items-center justify-between text-xs">
+              <div className="flex items-center gap-1 text-amber-800 dark:text-amber-200 font-medium">
+                <Target className="h-3 w-3" />
+                <span>Další odměna</span>
               </div>
-
-              {/* Animated progress bar from homepage */}
-              <div className="relative h-2 bg-amber-200/50 dark:bg-amber-900/50 rounded-full overflow-hidden">
-                <div
-                  className="absolute inset-y-0 left-0 bg-gradient-to-r from-amber-400 to-orange-400 rounded-full transition-all duration-100"
-                  style={{ width: `${animatedProgress}%` }}
-                />
-                {/* Shimmer effect */}
-                <div
-                  className="absolute inset-y-0 left-0 bg-gradient-to-r from-transparent via-white/30 to-transparent rounded-full animate-shimmer"
-                  style={{ width: `${animatedProgress}%` }}
-                />
-              </div>
-
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>{animatedPoints.toLocaleString('cs-CZ')} bodů</span>
-                <span>{nextMilestone.amount.toLocaleString('cs-CZ')} bodů</span>
-              </div>
+              <span className="font-bold text-amber-900 dark:text-white drop-shadow-sm">
+                {nextMilestone.reward}
+              </span>
             </div>
-          )}
+
+            {/* Animated progress bar - Exact copy of Homepage Styling */}
+            <div className="relative h-2 bg-amber-300/40 dark:bg-amber-900/40 rounded-full overflow-hidden shadow-inner">
+              <div
+                className="absolute inset-y-0 left-0 bg-gradient-to-r from-amber-500 to-orange-500 dark:from-amber-600 dark:to-orange-600 rounded-full transition-all duration-100 shadow-sm"
+                style={{ width: `${animatedProgress}%` }}
+              />
+              {/* Shimmer effect */}
+              <div
+                className="absolute inset-y-0 left-0 bg-gradient-to-r from-transparent via-white/40 to-transparent rounded-full animate-shimmer"
+                style={{ width: `${animatedProgress}%` }}
+              />
+            </div>
+
+            <div className="flex justify-between text-xs text-amber-800 dark:text-amber-200 font-medium">
+              <span>{animatedPoints.toLocaleString('cs-CZ')} bodů</span>
+              <span>{nextMilestone.amount.toLocaleString('cs-CZ')} bodů</span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -471,14 +571,14 @@ export default function ClientLoyalty() {
                   </div>
 
                   {achieved ? (
-                    <Button
+                    <PremiumButton
                       size="sm"
-                      className="bg-silver-button border-0 shadow-md font-black uppercase text-[10px] tracking-wider"
+                      className="uppercase text-[10px] tracking-wider"
                       onClick={() => handleRedeem(milestone)}
                       disabled={redeeming === milestone.reward}
                     >
                       {redeeming === milestone.reward ? 'Zpracovávám...' : 'Vybrat odměnu'}
-                    </Button>
+                    </PremiumButton>
                   ) : (
                     <Badge variant="outline" className="opacity-50 font-bold border-amber-200">
                       Zbývá {(milestone.amount - currentPoints).toLocaleString('cs-CZ')} b.
@@ -494,10 +594,25 @@ export default function ClientLoyalty() {
         </div>
       </div>
 
-      {/* Referral Card */}
-      <Card className="overflow-hidden border-border dark:border-amber-800 shadow-lg">
-        <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 p-5 space-y-4">
-          <div className="flex items-center gap-4">
+      <Card className="relative overflow-hidden border-2 border-amber-200 dark:border-amber-700 shadow-lg">
+        <div className="relative z-10 bg-gradient-to-r from-amber-100 to-orange-200 dark:from-amber-900/50 dark:to-orange-900/50 p-5 space-y-4">
+          {/* Animated decorative bubbles - 11 bubbles matching dashboard refinement */}
+          <div className="absolute right-4 top-3 h-20 w-20 rounded-full bg-white/38 dark:bg-amber-300/40 animate-float-circle-1" />
+          <div className="absolute right-8 top-14 h-14 w-14 rounded-full bg-orange-600/38 dark:bg-orange-300/42 animate-float-circle-2" />
+          <div className="absolute left-4 bottom-3 h-16 w-16 rounded-full bg-white/40 dark:bg-amber-400/38 animate-float-circle-1" />
+          <div className="absolute left-12 top-10 h-10 w-10 rounded-full bg-amber-600/38 dark:bg-orange-400/40 animate-float-circle-2" />
+          <div className="absolute right-12 bottom-6 h-18 w-18 rounded-full bg-white/35 dark:bg-amber-300/38 animate-float-circle-1" />
+          <div className="absolute left-1/2 top-8 h-12 w-12 rounded-full bg-orange-600/38 dark:bg-orange-300/40 animate-float-circle-2" />
+          <div className="absolute left-8 bottom-12 h-14 w-14 rounded-full bg-white/38 dark:bg-amber-400/38 animate-float-circle-1" />
+          <div className="absolute right-16 top-1/2 h-11 w-11 rounded-full bg-amber-700/38 dark:bg-orange-300/40 animate-float-circle-2" />
+          <div className="absolute left-20 top-14 h-9 w-9 rounded-full bg-white/40 dark:bg-amber-300/38 animate-float-circle-1" />
+          <div className="absolute right-10 top-10 h-12 w-12 rounded-full bg-orange-600/38 dark:bg-orange-300/42 animate-float-circle-2" />
+          <div className="absolute left-6 top-6 h-10 w-10 rounded-full bg-white/38 dark:bg-amber-400/38 animate-float-circle-1" />
+
+          {/* Sparkle decorations */}
+          <Sparkles className="absolute right-12 top-2 h-3 w-3 text-amber-600/70 dark:text-amber-300/60 animate-pulse" />
+
+          <div className="relative z-10 flex items-center gap-4">
             <div className="p-3 rounded-2xl bg-amber-100 dark:bg-amber-900/50 shadow-sm">
               <Share2 className="h-6 w-6 text-amber-600 dark:text-amber-400" />
             </div>
@@ -507,10 +622,14 @@ export default function ClientLoyalty() {
             </div>
           </div>
 
-          <div className="bg-white/50 dark:bg-amber-900/20 rounded-2xl p-4 border border-amber-200/50 dark:border-amber-800/50 space-y-3">
-            <div className="flex flex-col items-center justify-center p-3 py-6 bg-white dark:bg-slate-900 rounded-xl border-2 border-dashed border-amber-300 dark:border-amber-700">
+          <div className="relative z-10 bg-white/50 dark:bg-amber-900/20 rounded-2xl p-4 border border-amber-200/50 dark:border-amber-800/50 space-y-3">
+            <div className="flex flex-col items-center justify-center p-3 py-6 bg-white dark:bg-slate-900 rounded-xl border-2 border-dashed border-amber-300 dark:border-amber-700 relative overflow-hidden">
               <p className="text-[10px] uppercase tracking-[0.2em] font-black text-amber-600 dark:text-amber-400 mb-1">Váš unikátní kód</p>
-              <p className="text-4xl font-black tracking-[0.3em] text-foreground font-mono">{referralCode || 'DR...'}</p>
+              {referralCode ? (
+                <p className="text-4xl font-black tracking-[0.1em] text-foreground font-mono transition-all animate-in fade-in duration-500">{referralCode}</p>
+              ) : (
+                <p className="text-sm text-muted-foreground font-medium italic py-2">Kód bude k dispozici po první objednávce</p>
+              )}
             </div>
 
             <div className="space-y-2 pt-2">
@@ -520,16 +639,26 @@ export default function ClientLoyalty() {
             </div>
           </div>
 
-          <div className="flex gap-2">
-            <Button className="flex-1 bg-silver-button border-0 h-12 rounded-xl" onClick={handleShare}>
+          <div className="relative z-10 flex gap-2">
+            <PremiumButton
+              className="flex-1 h-12 rounded-xl"
+              onClick={handleShare}
+              disabled={!referralCode}
+            >
               <Share2 className="h-4 w-4 mr-2" />
               Sdílet s přáteli
-            </Button>
-            <Button variant="outline" className="h-12 w-12 rounded-xl border-amber-200 dark:border-amber-800" onClick={() => {
-              copyToClipboard(referralCode || '');
-              toast({ title: 'Kód zkopírován' });
-            }}>
-              <CheckCircle2 className="h-5 w-5 text-amber-600" />
+            </PremiumButton>
+            <Button
+              variant="outline"
+              className={`h-12 w-12 rounded-xl border-amber-200 dark:border-amber-800 transition-all ${isCopied ? 'bg-amber-50 dark:bg-amber-900/20' : ''}`}
+              onClick={handleCopyCode}
+              disabled={!referralCode}
+            >
+              {isCopied ? (
+                <CheckCircle2 className="h-5 w-5 text-amber-600 animate-in zoom-in duration-300" />
+              ) : (
+                <Copy className="h-5 w-5 text-amber-600" />
+              )}
             </Button>
           </div>
         </div>
@@ -599,7 +728,7 @@ export default function ClientLoyalty() {
       </div>
 
       {/* Support Section */}
-      <div className="rounded-xl bg-card border border-border p-4 space-y-3">
+      <div className="rounded-xl bg-card border border-border p-4 space-y-3 mt-8">
         <div className="flex items-center gap-2">
           <Phone className="h-4 w-4 text-primary" />
           <h3 className="font-semibold text-foreground">Máte dotaz k věrnostnímu programu?</h3>
@@ -607,13 +736,13 @@ export default function ClientLoyalty() {
         <p className="text-sm text-muted-foreground">
           Rádi Vám zodpovíme jakékoliv otázky.
         </p>
-        <a
-          href="tel:+420777645610"
-          className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-silver-button border-0 font-bold text-sm hover:shadow-lg transition-all w-full"
+        <PremiumButton
+          className="w-full py-2.5 rounded-2xl text-base"
+          onClick={() => window.location.href = 'tel:+420777645610'}
         >
           <Phone className="h-4 w-4" />
           Zavolat
-        </a>
+        </PremiumButton>
       </div>
     </div>
   );

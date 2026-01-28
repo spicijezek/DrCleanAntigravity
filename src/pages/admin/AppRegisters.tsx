@@ -42,6 +42,7 @@ interface Registration {
   // Cleaner-specific fields
   position?: string | null;
   bio?: string | null;
+  referral_code?: string | null;
   referrer?: { name: string } | null;
 }
 
@@ -235,6 +236,7 @@ export default function AppRegisters() {
                   <TableHead>Telefon</TableHead>
                   <TableHead>Datum registrace</TableHead>
                   <TableHead>Město</TableHead>
+                  <TableHead>Referral Kód</TableHead>
                   <TableHead>Doporučil/a</TableHead>
                   <TableHead className="text-right">Akce</TableHead>
                 </TableRow>
@@ -242,7 +244,7 @@ export default function AppRegisters() {
               <TableBody>
                 {filteredRegistrations.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
+                    <TableCell colSpan={8} className="text-center py-12 text-muted-foreground">
                       Žádné registrace k zobrazení
                     </TableCell>
                   </TableRow>
@@ -274,6 +276,15 @@ export default function AppRegisters() {
                         {format(new Date(registration.created_at), 'dd. MM. yyyy', { locale: cs })}
                       </TableCell>
                       <TableCell>{registration.city || 'N/A'}</TableCell>
+                      <TableCell>
+                        {registration.type === 'client' && registration.referral_code ? (
+                          <Badge variant="outline" className="font-mono text-xs border-amber-200 text-amber-700 bg-amber-50">
+                            {registration.referral_code}
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground/40">-</span>
+                        )}
+                      </TableCell>
                       <TableCell>
                         {registration.type === 'client' && registration.referrer ? (
                           <div className="flex items-center gap-2">
@@ -340,56 +351,63 @@ export default function AppRegisters() {
                       })}
                     </p>
                   </div>
-                </div>
 
-                {selectedRegistration.type === 'client' && selectedRegistration.referrer && (
-                  <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/50">
-                    <h4 className="font-bold text-xs uppercase tracking-wider text-amber-700 dark:text-amber-400 mb-1">Doporučil/a (Referral)</h4>
-                    <p className="font-semibold">{selectedRegistration.referrer.name}</p>
-                  </div>
-                )}
-
-                <div>
-                  <h4 className="font-semibold text-sm text-muted-foreground mb-1">Adresa</h4>
-                  <p>
-                    {selectedRegistration.address || 'Neuvedeno'}
-                    {selectedRegistration.city && `, ${selectedRegistration.city}`}
-                    {selectedRegistration.postal_code && ` ${selectedRegistration.postal_code}`}
-                  </p>
-                </div>
-
-                {selectedRegistration.type === 'client' && (
-                  <div>
-                    <h4 className="font-semibold text-sm text-muted-foreground mb-2">Dodatečné informace</h4>
-                    <div className="flex gap-2">
-                      {selectedRegistration.has_children && <Badge variant="secondary">Děti</Badge>}
-                      {selectedRegistration.has_pets && <Badge variant="secondary">Domácí mazlíčci</Badge>}
-                      {selectedRegistration.has_allergies && <Badge variant="secondary">Alergie</Badge>}
-                      {!selectedRegistration.has_children &&
-                        !selectedRegistration.has_pets &&
-                        !selectedRegistration.has_allergies && (
-                          <span className="text-sm text-muted-foreground">Žádné</span>
-                        )}
+                  {selectedRegistration.type === 'client' && selectedRegistration.referral_code && (
+                    <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/50">
+                      <h4 className="font-bold text-xs uppercase tracking-wider text-blue-700 dark:text-blue-400 mb-1">Jeho unikátní kód</h4>
+                      <p className="font-mono font-bold text-lg">{selectedRegistration.referral_code}</p>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {selectedRegistration.type === 'cleaner' && (
-                  <>
-                    {selectedRegistration.position && (
-                      <div>
-                        <h4 className="font-semibold text-sm text-muted-foreground mb-1">Pozice</h4>
-                        <p>{selectedRegistration.position}</p>
+                  {selectedRegistration.type === 'client' && selectedRegistration.referrer && (
+                    <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/50">
+                      <h4 className="font-bold text-xs uppercase tracking-wider text-amber-700 dark:text-amber-400 mb-1">Doporučil/a (Referral)</h4>
+                      <p className="font-semibold">{selectedRegistration.referrer.name}</p>
+                    </div>
+                  )}
+
+                  <div>
+                    <h4 className="font-semibold text-sm text-muted-foreground mb-1">Adresa</h4>
+                    <p>
+                      {selectedRegistration.address || 'Neuvedeno'}
+                      {selectedRegistration.city && `, ${selectedRegistration.city}`}
+                      {selectedRegistration.postal_code && ` ${selectedRegistration.postal_code}`}
+                    </p>
+                  </div>
+
+                  {selectedRegistration.type === 'client' && (
+                    <div>
+                      <h4 className="font-semibold text-sm text-muted-foreground mb-2">Dodatečné informace</h4>
+                      <div className="flex gap-2">
+                        {selectedRegistration.has_children && <Badge variant="secondary">Děti</Badge>}
+                        {selectedRegistration.has_pets && <Badge variant="secondary">Domácí mazlíčci</Badge>}
+                        {selectedRegistration.has_allergies && <Badge variant="secondary">Alergie</Badge>}
+                        {!selectedRegistration.has_children &&
+                          !selectedRegistration.has_pets &&
+                          !selectedRegistration.has_allergies && (
+                            <span className="text-sm text-muted-foreground">Žádné</span>
+                          )}
                       </div>
-                    )}
-                    {selectedRegistration.bio && (
-                      <div>
-                        <h4 className="font-semibold text-sm text-muted-foreground mb-1">Bio</h4>
-                        <p>{selectedRegistration.bio}</p>
-                      </div>
-                    )}
-                  </>
-                )}
+                    </div>
+                  )}
+
+                  {selectedRegistration.type === 'cleaner' && (
+                    <>
+                      {selectedRegistration.position && (
+                        <div>
+                          <h4 className="font-semibold text-sm text-muted-foreground mb-1">Pozice</h4>
+                          <p>{selectedRegistration.position}</p>
+                        </div>
+                      )}
+                      {selectedRegistration.bio && (
+                        <div>
+                          <h4 className="font-semibold text-sm text-muted-foreground mb-1">Bio</h4>
+                          <p>{selectedRegistration.bio}</p>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
               </div>
             )}
           </DialogContent>

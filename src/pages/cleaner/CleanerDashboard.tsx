@@ -17,6 +17,7 @@ import { cn } from '@/lib/utils';
 import { ClientHeroHeader } from '@/components/client/ClientHeroHeader';
 import { CalendarIcon, Clock, Percent, HeadphonesIcon, Phone as PhoneIcon } from 'lucide-react';
 import { LoadingOverlay } from '@/components/LoadingOverlay';
+import { calculateTimeEstimate as calculateBookingEstimate } from '@/utils/bookingCalculations';
 interface TeamMember {
   id: string;
   name: string;
@@ -111,27 +112,10 @@ export default function CleanerDashboard() {
     const price = booking.booking_details?.priceEstimate?.price || booking.booking_details?.priceEstimate?.priceMin || 0;
     if (!price) return null;
 
-    let rate = 500;
-    if (booking.service_type === 'upholstery_cleaning' || booking.booking_details?.service_id?.includes('upholstery') || booking.booking_details?.service_title?.toLowerCase().includes('čalounění')) {
-      rate = 1500;
-    }
+    const estimate = calculateBookingEstimate(booking);
+    if (!estimate) return null;
 
-    const totalHours = price / rate;
-    const numCleaners = booking.team_member_ids.length || 1;
-    const hoursPerPerson = totalHours / numCleaners;
-
-    const minHours = hoursPerPerson * 0.85;
-    const maxHours = hoursPerPerson * 1.15;
-
-    const formatHours = (h: number) => {
-      const hrs = Math.floor(h);
-      const mins = Math.round((h - hrs) * 60);
-      if (hrs === 0) return `${mins} min`;
-      if (mins === 0) return `${hrs} h`;
-      return `${hrs} h ${mins} min`;
-    };
-
-    return `Čas na osobu: ${formatHours(minHours)} - ${formatHours(maxHours)}`;
+    return `Čas na osobu: ${estimate.formattedRange}`;
   };
 
   const isLeadCleaner = (booking: Booking) => {
@@ -549,24 +533,16 @@ export default function CleanerDashboard() {
             </div>
 
             {/* Notes Section - Always Visible */}
-            {(booking.admin_notes || booking.booking_details?.notes) && (
+            {booking.admin_notes && (
               <div className="space-y-3">
                 <h4 className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
                   <AlertCircle className="h-4 w-4 text-amber-500" /> Poznámky k úklidu
                 </h4>
                 <div className="grid gap-3">
-                  {booking.admin_notes && (
-                    <div className="p-4 bg-amber-50/50 dark:bg-amber-900/10 rounded-2xl border border-amber-100/50 text-sm">
-                      <p className="font-bold text-amber-900 dark:text-amber-200 mb-1">Interní poznámka (Admin):</p>
-                      <p className="text-amber-800/80 dark:text-amber-300/80 italic">{booking.admin_notes}</p>
-                    </div>
-                  )}
-                  {booking.booking_details?.notes && (
-                    <div className="p-4 bg-blue-50/50 dark:bg-blue-900/10 rounded-2xl border border-blue-100/50 text-sm">
-                      <p className="font-bold text-blue-900 dark:text-blue-200 mb-1">Specifické požadavky k termínu:</p>
-                      <p className="text-blue-800/80 dark:text-blue-300/80 italic">{booking.booking_details.notes}</p>
-                    </div>
-                  )}
+                  <div className="p-4 bg-amber-50/50 dark:bg-amber-900/10 rounded-2xl border border-amber-100/50 text-sm">
+                    <p className="font-bold text-amber-900 dark:text-amber-200 mb-1">Interní poznámka (Admin):</p>
+                    <p className="text-amber-800/80 dark:text-amber-300/80 italic">{booking.admin_notes}</p>
+                  </div>
                 </div>
               </div>
             )}
@@ -615,6 +591,11 @@ export default function CleanerDashboard() {
                 {booking.client.has_allergies && booking.client.allergies_notes && (
                   <div className="p-3 bg-red-50/50 dark:bg-red-900/20 rounded-2xl border border-red-100 dark:border-red-900/50 text-xs text-red-800 dark:text-red-300">
                     <strong>Poznámka k alergiím:</strong> {booking.client.allergies_notes}
+                  </div>
+                )}
+                {booking.booking_details?.notes && (
+                  <div className="p-3 bg-blue-50/50 dark:bg-blue-900/10 rounded-2xl border border-blue-100/50 text-xs text-blue-800 dark:text-blue-300 italic">
+                    {booking.booking_details.notes}
                   </div>
                 )}
               </div>
@@ -819,7 +800,6 @@ export default function CleanerDashboard() {
         </div>
       </div>
     </div>
-
     {/* Room Completion Dialog */}
     <AlertDialog open={!!roomToComplete} onOpenChange={() => setRoomToComplete(null)}>
       <AlertDialogContent>

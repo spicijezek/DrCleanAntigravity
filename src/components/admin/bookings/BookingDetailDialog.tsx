@@ -20,6 +20,7 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { useInvoiceDownload } from '@/hooks/useInvoiceDownload';
 import { HiddenInvoiceContainer } from '@/components/invoices/HiddenInvoiceContainer';
+import { calculateTimeEstimate } from '@/utils/bookingCalculations';
 
 interface Booking {
     id: string;
@@ -123,7 +124,8 @@ export function BookingDetailDialog({ booking, isOpen, onClose, onUpdate, teamMe
         price: 0,
         manual_loyalty_points: 0,
         team_reward: 0,
-        status: ''
+        status: '',
+        estimated_hours: 0
     });
 
     // Initialize state when booking changes
@@ -168,10 +170,33 @@ export function BookingDetailDialog({ booking, isOpen, onClose, onUpdate, teamMe
                 manual_loyalty_points: booking.booking_details?.manual_loyalty_points ?? 0,
                 team_reward: booking.booking_details?.manual_team_reward ??
                     booking.job_earnings?.reduce((sum, item) => sum + (item.amount || 0), 0) ?? 0,
-                status: booking.status || 'pending'
+                status: booking.status || 'pending',
+                estimated_hours: booking.booking_details?.priceEstimate?.hoursMin || 0
             });
         }
     }, [booking, isOpen]);
+
+    // Automatic Estimated Time Calculation
+    useEffect(() => {
+        if (!isEditing || !booking) return;
+
+        const price = editFormData.price;
+        if (!price) return;
+
+        const est = calculateTimeEstimate({
+            service_type: booking.service_type,
+            booking_details: booking.booking_details,
+            team_member_ids: selectedTeamMembers
+        }, price, selectedTeamMembers.length);
+
+        if (est && est.totalHours) {
+            const val = Number(est.totalHours.toFixed(1));
+            // Only update if different
+            if (val !== editFormData.estimated_hours) {
+                setEditFormData(prev => ({ ...prev, estimated_hours: val }));
+            }
+        }
+    }, [editFormData.price, booking?.service_type, isEditing, selectedTeamMembers]);
 
     const fetchInvoice = async (invoiceId: string) => {
         setFetchingInvoice(true);
@@ -268,12 +293,14 @@ export function BookingDetailDialog({ booking, isOpen, onClose, onUpdate, teamMe
 
             const updatedDetails = {
                 ...booking.booking_details,
+                manual_loyalty_points: editFormData.manual_loyalty_points,
+                manual_team_reward: editFormData.team_reward,
                 priceEstimate: {
                     ...booking.booking_details?.priceEstimate,
-                    price: editFormData.price
-                },
-                manual_loyalty_points: editFormData.manual_loyalty_points,
-                manual_team_reward: editFormData.team_reward
+                    price: editFormData.price,
+                    hoursMin: editFormData.estimated_hours,
+                    hoursMax: editFormData.estimated_hours
+                }
             };
 
             const newChecklistId = (selectedChecklistId && selectedChecklistId !== 'none_selection') ? selectedChecklistId : null;
@@ -339,9 +366,10 @@ export function BookingDetailDialog({ booking, isOpen, onClose, onUpdate, teamMe
     };
 
     const realDuration = calculateDuration(booking.started_at, booking.completed_at);
-    const estimatedHours = booking.booking_details?.priceEstimate?.hoursMin === booking.booking_details?.priceEstimate?.hoursMax
-        ? `${booking.booking_details?.priceEstimate?.hoursMin} h`
-        : `${booking.booking_details?.priceEstimate?.hoursMin} - ${booking.booking_details?.priceEstimate?.hoursMax} h`;
+
+    // Calculate estimate for display (Per Person Range)
+    const estDisplay = calculateTimeEstimate(booking);
+    const estimatedHours = estDisplay ? `Čas na osobu: ${estDisplay.formattedRange}` : '-';
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
@@ -546,18 +574,9 @@ export function BookingDetailDialog({ booking, isOpen, onClose, onUpdate, teamMe
                                     <div className="mt-4 pt-4 border-t border-border/50 animate-in fade-in slide-in-from-top-2">
                                         <div className="flex items-center justify-between mb-2">
                                             <p className="text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest">Hodnocení zákazníka</p>
-                                            <div className="flex items-center gap-1">
-                                                {[1, 2, 3, 4, 5].map((star) => (
-                                                    <Star
-                                                        key={star}
-                                                        className={cn(
-                                                            "h-3.5 w-3.5",
-                                                            star <= booking.feedback!.rating
-                                                                ? "fill-amber-400 text-amber-400"
-                                                                : "text-muted-foreground/30"
-                                                        )}
-                                                    />
-                                                ))}
+                                            <div className="flex items-center gap-1.5 bg-amber-50 text-amber-700 border border-amber-100 px-2.5 py-1 rounded-full text-[10px] font-black">
+                                                <Star className="h-3.5 w-3.5 fill-current" />
+                                                <span>{booking.feedback.rating}/10</span>
                                             </div>
                                         </div>
                                         {booking.feedback.comment && (
@@ -681,6 +700,18 @@ export function BookingDetailDialog({ booking, isOpen, onClose, onUpdate, teamMe
                                                     className="h-11 rounded-lg border-border pr-12"
                                                 />
                                                 <Sparkles className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-amber-500" />
+                                            </div>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-xs font-bold text-muted-foreground/70 ml-1">ODHADOVANÝ ČAS (h)</Label>
+                                            <div className="relative">
+                                                <Input
+                                                    type="number"
+                                                    value={editFormData.estimated_hours}
+                                                    onChange={e => setEditFormData({ ...editFormData, estimated_hours: Number(e.target.value) })}
+                                                    className="h-11 rounded-lg border-border pr-12"
+                                                />
+                                                <Clock className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                                             </div>
                                         </div>
                                         <div className="flex items-center space-x-3 pt-1">
@@ -905,38 +936,6 @@ export function BookingDetailDialog({ booking, isOpen, onClose, onUpdate, teamMe
                 {/* Footer Actions (Sticky for visibility) */}
                 {isEditing && (
                     <div className="sticky bottom-0 bg-background/95 backdrop-blur-md border-t border-border p-6 -mx-6 -mb-6 flex flex-col gap-4 shadow-[0_-8px_20px_-10px_rgba(0,0,0,0.1)] z-30 animate-in slide-in-from-bottom-5">
-                        {booking.status === 'pending' && (
-                            <div className="grid grid-cols-2 gap-4">
-                                <Button
-                                    variant="outline"
-                                    onClick={() => handleSave('declined')}
-                                    disabled={isSaving}
-                                    className="h-12 rounded-xl text-destructive hover:bg-destructive/5 border-destructive/20 font-bold uppercase tracking-wide transition-all"
-                                >
-                                    <XCircle className="h-4 w-4 mr-2" />
-                                    ZAMÍTNOUT
-                                </Button>
-                                <Button
-                                    variant="default"
-                                    onClick={() => handleSave('approved')}
-                                    disabled={isSaving}
-                                    className="h-12 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/20 font-bold uppercase tracking-wide transition-all"
-                                >
-                                    {isSaving ? (
-                                        <div className="flex items-center gap-2">
-                                            <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                            Ukládám...
-                                        </div>
-                                    ) : (
-                                        <div className="flex items-center gap-2">
-                                            <CheckCircle2 className="h-4 w-4" />
-                                            SCHVÁLIT A ULOŽIT
-                                        </div>
-                                    )}
-                                </Button>
-                            </div>
-                        )}
-
                         <div className="flex items-center justify-between gap-4">
                             <Button
                                 variant="ghost"
@@ -946,7 +945,33 @@ export function BookingDetailDialog({ booking, isOpen, onClose, onUpdate, teamMe
                             >
                                 ZRUŠIT ZMĚNY
                             </Button>
-                            {booking.status !== 'pending' && (
+
+                            <div className="flex items-center gap-3">
+                                {booking.status === 'pending' && (
+                                    <>
+                                        <Button
+                                            variant="outline"
+                                            onClick={() => handleSave('declined')}
+                                            disabled={isSaving}
+                                            className="h-12 rounded-xl text-destructive hover:bg-destructive/5 border-destructive/20 font-bold uppercase tracking-wide transition-all"
+                                        >
+                                            <XCircle className="h-4 w-4 mr-2" />
+                                            ZAMÍTNOUT
+                                        </Button>
+                                        <Button
+                                            variant="default"
+                                            onClick={() => handleSave('approved')}
+                                            disabled={isSaving}
+                                            className="h-12 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/20 font-bold uppercase tracking-wide transition-all mr-2"
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                <CheckCircle2 className="h-4 w-4" />
+                                                SCHVÁLIT
+                                            </div>
+                                        </Button>
+                                    </>
+                                )}
+
                                 <Button
                                     onClick={() => handleSave()}
                                     disabled={isSaving}
@@ -964,7 +989,7 @@ export function BookingDetailDialog({ booking, isOpen, onClose, onUpdate, teamMe
                                         </div>
                                     )}
                                 </Button>
-                            )}
+                            </div>
                         </div>
                     </div>
                 )}

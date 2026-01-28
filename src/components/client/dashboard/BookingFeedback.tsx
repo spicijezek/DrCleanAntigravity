@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { PremiumButton } from '@/components/ui/PremiumButton';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -90,13 +91,13 @@ export function BookingFeedback({ bookingId, onSubmit, onDecline }: BookingFeedb
                                     Nechci hodnotit
                                 </Button>
                             )}
-                            <Button
+                            <PremiumButton
                                 onClick={handleSubmit}
                                 disabled={isSubmitting}
-                                className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-md shadow-primary/20"
+                                className="h-10 px-4"
                             >
                                 {isSubmitting ? 'Odesílání...' : 'Odeslat hodnocení'}
-                            </Button>
+                            </PremiumButton>
                         </div>
                     </div>
                 </div>

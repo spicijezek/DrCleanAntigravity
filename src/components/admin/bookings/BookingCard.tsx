@@ -209,20 +209,18 @@ export function BookingCard({ booking, onViewDetail, onDelete, onCreateInvoice }
                                     )}
                                 </div>
                                 <p className="text-xs text-muted-foreground truncate mt-0.5">{booking.address}</p>
-                                {(isCompleted || isStarted) && (
-                                    <div className="flex items-center gap-3 mt-1 pt-1 border-t border-border/30">
-                                        <div className="flex items-center gap-1">
-                                            <Clock className="h-3 w-3 text-muted-foreground" />
-                                            <span className="text-[10px] font-bold text-muted-foreground">ODHAD: {estimatedHours}</span>
-                                        </div>
-                                        {isCompleted && realDuration && (
-                                            <div className="flex items-center gap-1">
-                                                <div className="h-1 w-1 rounded-full bg-emerald-500" />
-                                                <span className="text-[10px] font-bold text-emerald-600">SKUTEČNOST: {realDuration}</span>
-                                            </div>
-                                        )}
+                                <div className="flex items-center gap-3 mt-1 pt-1 border-t border-border/30">
+                                    <div className="flex items-center gap-1">
+                                        <Clock className="h-3 w-3 text-muted-foreground" />
+                                        <span className="text-[10px] font-bold text-muted-foreground">ODHAD: {estimatedHours}</span>
                                     </div>
-                                )}
+                                    {isCompleted && realDuration && (
+                                        <div className="flex items-center gap-1">
+                                            <div className="h-1 w-1 rounded-full bg-emerald-500" />
+                                            <span className="text-[10px] font-bold text-emerald-600">SKUTEČNOST: {realDuration}</span>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
 
@@ -245,6 +243,19 @@ export function BookingCard({ booking, onViewDetail, onDelete, onCreateInvoice }
                             </div>
                         </div>
                     </div>
+
+                    {/* Client Notes Section */}
+                    {(details?.notes || details?.poznamky) && (
+                        <div className="p-4 rounded-lg bg-blue-50/50 border border-blue-100/50 space-y-1">
+                            <p className="text-xs font-bold text-blue-700 uppercase tracking-wider flex items-center gap-1.5">
+                                <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
+                                Poznámka k úklidu
+                            </p>
+                            <p className="text-sm text-foreground/80 italic leading-relaxed">
+                                "{details.notes || details.poznamky}"
+                            </p>
+                        </div>
+                    )}
                 </div>
 
                 {/* Footer: Progress Tracker */}

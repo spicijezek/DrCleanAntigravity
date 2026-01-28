@@ -17,7 +17,7 @@ export function CleanerCard({ name, userId, avatarPath, fullName, bio }: Cleaner
 
   useEffect(() => {
     if (avatarPath) {
-      if (avatarPath.startsWith('http')) {
+      if (avatarPath.startsWith('http') || avatarPath.startsWith('data:') || avatarPath.startsWith('/src') || avatarPath.startsWith('/@fs')) {
         setAvatarUrl(avatarPath);
       } else {
         // Try public URL first since bucket is public
@@ -41,7 +41,7 @@ export function CleanerCard({ name, userId, avatarPath, fullName, bio }: Cleaner
   }, [avatarPath]);
 
   return (
-    <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
+    <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-3xl">
       <div className="flex-shrink-0">
         {avatarUrl ? (
           <img

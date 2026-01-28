@@ -11,12 +11,16 @@ import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { cs } from 'date-fns/locale';
 import { LoadingOverlay } from '@/components/LoadingOverlay';
+import { recalculateClientLoyalty } from '@/utils/loyaltyUtils';
+import { RefreshCw } from 'lucide-react';
 
 interface ClientLoyaltyInfo {
     id: string;
     name: string;
     email: string;
     current_credits: number;
+    referral_code?: string;
+    referrer_name?: string;
 }
 
 interface RedemptionRequest {
@@ -50,8 +54,12 @@ export default function AdminLoyalty() {
           id,
           name,
           email,
+          referral_code,
           loyalty_credits (
             current_credits
+          ),
+          referrer:referred_by_id (
+            name
           )
         `)
                 .eq('client_source', 'App');
@@ -61,7 +69,9 @@ export default function AdminLoyalty() {
                     id: c.id,
                     name: c.name,
                     email: c.email,
-                    current_credits: c.loyalty_credits?.[0]?.current_credits || 0
+                    current_credits: c.loyalty_credits?.[0]?.current_credits || 0,
+                    referral_code: c.referral_code,
+                    referrer_name: c.referrer?.name
                 })));
             }
 
@@ -126,6 +136,44 @@ export default function AdminLoyalty() {
         }
     };
 
+    const handleSyncCredits = async (clientId: string) => {
+        try {
+            await recalculateClientLoyalty(clientId);
+            toast({
+                title: 'Body synchronizovány',
+                description: 'Kredity klienta byly přepočítány podle historie transakcí.',
+            });
+            fetchData();
+        } catch (error: any) {
+            toast({
+                variant: 'destructive',
+                title: 'Chyba synchronizace',
+                description: error.message,
+            });
+        }
+    };
+
+    const handleSyncAll = async () => {
+        setLoading(true);
+        try {
+            for (const client of clients) {
+                await recalculateClientLoyalty(client.id);
+            }
+            toast({
+                title: 'Vše synchronizováno',
+                description: 'Věrnostní body všech klientů byly přepočítány.',
+            });
+            fetchData();
+        } catch (error: any) {
+            toast({
+                variant: 'destructive',
+                title: 'Chyba hromadné synchronizace',
+                description: error.message,
+            });
+            setLoading(false);
+        }
+    };
+
     const filteredClients = clients.filter(c =>
         c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         c.email?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -141,6 +189,17 @@ export default function AdminLoyalty() {
                 <AdminPageHeader
                     title="Loyalty & Odměny"
                     description="Správa věrnostních bodů a čerpání odměn"
+                    action={
+                        <Button
+                            onClick={handleSyncAll}
+                            variant="outline"
+                            size="sm"
+                            className="flex items-center gap-2 border-primary/30 text-primary hover:bg-primary/5 font-bold"
+                        >
+                            <RefreshCw className="h-4 w-4" />
+                            Synchronizovat vše
+                        </Button>
+                    }
                 />
 
                 {/* Stats Grid */}
@@ -286,13 +345,36 @@ export default function AdminLoyalty() {
                             <div className="max-h-[500px] overflow-y-auto divide-y divide-border">
                                 {filteredClients.map(c => (
                                     <div key={c.id} className="p-4 flex items-center justify-between group">
-                                        <div className="min-w-0">
-                                            <p className="text-xs font-bold text-foreground truncate">{c.name}</p>
+                                        <div className="min-w-0 flex-1">
+                                            <div className="flex items-center gap-2">
+                                                <p className="text-xs font-bold text-foreground truncate">{c.name}</p>
+                                                {c.referral_code && (
+                                                    <Badge variant="outline" className="text-[9px] h-4 px-1 py-0 border-amber-200 text-amber-700 bg-amber-50">
+                                                        {c.referral_code}
+                                                    </Badge>
+                                                )}
+                                            </div>
                                             <p className="text-[10px] text-muted-foreground truncate">{c.email}</p>
+                                            {c.referrer_name && (
+                                                <p className="text-[9px] text-emerald-600 font-medium truncate italic mt-0.5">
+                                                    Doporučen od: {c.referrer_name}
+                                                </p>
+                                            )}
                                         </div>
-                                        <div className="flex items-center gap-1.5 shrink-0 ml-3">
-                                            <Star className="h-3 w-3 text-amber-500 fill-amber-500" />
-                                            <span className="text-sm font-black">{c.current_credits.toLocaleString('cs-CZ')}</span>
+                                        <div className="flex items-center gap-2 shrink-0 ml-3">
+                                            <div className="flex items-center gap-1.5 mr-2">
+                                                <Star className="h-3 w-3 text-amber-500 fill-amber-500" />
+                                                <span className="text-sm font-black">{c.current_credits.toLocaleString('cs-CZ')}</span>
+                                            </div>
+                                            <Button
+                                                size="icon"
+                                                variant="ghost"
+                                                className="h-7 w-7 text-muted-foreground hover:text-primary transition-colors"
+                                                onClick={() => handleSyncCredits(c.id)}
+                                                title="Přepočítat body"
+                                            >
+                                                <RefreshCw className="h-3.5 w-3.5" />
+                                            </Button>
                                         </div>
                                     </div>
                                 ))}

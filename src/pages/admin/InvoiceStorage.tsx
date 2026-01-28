@@ -30,6 +30,7 @@ import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { LoadingOverlay } from "@/components/LoadingOverlay";
 import { useInvoiceDownload } from "@/hooks/useInvoiceDownload";
 import { HiddenInvoiceContainer } from "@/components/invoices/HiddenInvoiceContainer";
+import { addLoyaltyPoints, removeLoyaltyPoints } from "@/utils/loyaltyUtils";
 
 export default function InvoiceStorage() {
   const { user } = useAuth();
@@ -95,7 +96,8 @@ export default function InvoiceStorage() {
   const updateInvoiceStatus = async (id: string, newStatus: string) => {
     // Get the invoice details first for loyalty points calculation
     const invoice = invoices.find(inv => inv.id === id);
-    const wasNotPaid = invoice?.status !== 'paid';
+    const wasPaid = invoice?.status === 'paid';
+    const becomingPaid = newStatus === 'paid';
 
     const { error } = await supabase
       .from("invoices")
@@ -106,128 +108,21 @@ export default function InvoiceStorage() {
       toast.error("Error updating status");
       console.error(error);
     } else {
-      // If status changed to 'paid', add loyalty points
-      if (newStatus === 'paid' && wasNotPaid && invoice?.client_id && invoice?.total) {
-        await addLoyaltyPoints(invoice.client_id, invoice.total, id);
+      // If status changed to 'paid', add loyalty points (if not already added)
+      if (becomingPaid && !wasPaid && invoice?.client_id && invoice?.total) {
+        await addLoyaltyPoints(invoice.client_id, invoice.total, invoice.booking_id);
       }
+      // If status was 'paid' and changed to something else, remove loyalty points
+      else if (wasPaid && !becomingPaid && invoice?.client_id && invoice?.total) {
+        await removeLoyaltyPoints(invoice.client_id, invoice.total, invoice.booking_id);
+      }
+
       toast.success("Status updated");
       fetchInvoices();
     }
   };
 
-  const addLoyaltyPoints = async (clientId: string, invoiceTotal: number, invoiceId: string) => {
-    const POINTS_PER_CZK = 0.27;
-    const pointsToAdd = Math.round(invoiceTotal * POINTS_PER_CZK);
 
-    if (pointsToAdd <= 0) return;
-
-    try {
-      // --- Referral Bonus Logic ---
-      const { data: clientData } = await supabase
-        .from('clients')
-        .select('total_spent, referred_by_id, name')
-        .eq('id', clientId)
-        .single();
-
-      const isFirstInvoice = (clientData?.total_spent || 0) === 0;
-      let finalPointsToAdd = pointsToAdd;
-
-      if (isFirstInvoice && clientData?.referred_by_id) {
-        // Double points for the referee
-        finalPointsToAdd = pointsToAdd * 2;
-
-        // Match reward for the referrer
-        const { data: referrerData } = await supabase
-          .from('clients')
-          .select('id, name')
-          .eq('id', clientData.referred_by_id)
-          .single();
-
-        if (referrerData) {
-          // Add points to referrer
-          const { data: referrerCredits } = await supabase
-            .from('loyalty_credits')
-            .select('current_credits, total_earned')
-            .eq('client_id', referrerData.id)
-            .single();
-
-          if (referrerCredits) {
-            await supabase
-              .from('loyalty_credits')
-              .update({
-                current_credits: (referrerCredits.current_credits || 0) + pointsToAdd,
-                total_earned: (referrerCredits.total_earned || 0) + pointsToAdd,
-                updated_at: new Date().toISOString()
-              })
-              .eq('client_id', referrerData.id);
-          }
-
-          // Transaction for referrer
-          await supabase
-            .from('loyalty_transactions')
-            .insert({
-              client_id: referrerData.id,
-              amount: pointsToAdd,
-              type: 'earned',
-              description: `Referral Bonus (1. úklid od ${clientData.name})`
-            });
-        }
-      }
-
-      // Check if loyalty_credits record exists for this client (referee)
-      const { data: existingCredits } = await supabase
-        .from('loyalty_credits')
-        .select('*')
-        .eq('client_id', clientId)
-        .single();
-
-      if (existingCredits) {
-        // Update existing record
-        await supabase
-          .from('loyalty_credits')
-          .update({
-            current_credits: (existingCredits.current_credits || 0) + finalPointsToAdd,
-            total_earned: (existingCredits.total_earned || 0) + finalPointsToAdd,
-            updated_at: new Date().toISOString()
-          })
-          .eq('client_id', clientId);
-      } else {
-        // Create new record
-        await supabase
-          .from('loyalty_credits')
-          .insert({
-            client_id: clientId,
-            current_credits: finalPointsToAdd,
-            total_earned: finalPointsToAdd,
-            total_spent: 0
-          });
-      }
-
-      // Update client's total_spent
-      await supabase
-        .from('clients')
-        .update({
-          total_spent: (clientData?.total_spent || 0) + invoiceTotal
-        })
-        .eq('id', clientId);
-
-      // Add transaction record for referee
-      await supabase
-        .from('loyalty_transactions')
-        .insert({
-          client_id: clientId,
-          amount: finalPointsToAdd,
-          type: 'earned',
-          description: finalPointsToAdd > pointsToAdd
-            ? `Bonus za první úklid (Doporučení) - ${invoiceTotal.toLocaleString('cs-CZ')} Kč`
-            : `Body za úklid (${invoiceTotal.toLocaleString('cs-CZ')} Kč)`
-        });
-
-      console.log(`Added ${finalPointsToAdd} loyalty points to client ${clientId}`);
-    } catch (error) {
-      console.error('Error adding loyalty points:', error);
-    }
-  };
 
   const previewInvoiceDetails = async (invoice: any) => {
     try {
@@ -354,6 +249,12 @@ export default function InvoiceStorage() {
     }
     // Note: Deleting from Cloudinary would require an API secret, 
     // which we shouldn't have in the frontend. We just leave it there or handle manually.
+
+    // If invoice was paid, remove loyalty points
+    const invoice = invoices.find(inv => inv.id === id);
+    if (invoice?.status === 'paid' && invoice?.client_id && invoice?.total) {
+      await removeLoyaltyPoints(invoice.client_id, invoice.total, invoice.booking_id);
+    }
 
     // Delete invoice from database
     const { error } = await supabase.from("invoices").delete().eq("id", id);

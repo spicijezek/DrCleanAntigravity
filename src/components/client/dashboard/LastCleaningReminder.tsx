@@ -8,6 +8,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { PremiumButton } from '@/components/ui/PremiumButton';
 import { RefreshCw, Sparkles, Star, Coins } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -231,10 +232,10 @@ export function LastCleaningReminder({ clientId, onBookingCreated }: LastCleanin
           />
 
           {/* Submit button */}
-          <Button
+          <PremiumButton
             onClick={handleRebook}
             disabled={submitting || !selectedDate}
-            className="w-full bg-primary hover:bg-primary/90 font-semibold"
+            className="w-full h-12"
           >
             {submitting ? (
               <>
@@ -247,7 +248,7 @@ export function LastCleaningReminder({ clientId, onBookingCreated }: LastCleanin
                 Objednat úklid
               </>
             )}
-          </Button>
+          </PremiumButton>
         </div>
       </CardContent>
     </Card>

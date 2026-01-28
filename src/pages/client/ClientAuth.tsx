@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { PremiumButton } from '@/components/ui/PremiumButton';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -63,6 +64,16 @@ export default function ClientAuth() {
       navigate('/klient', { replace: true });
     }
   }, [user, profile, navigate]);
+
+  // Handle referral code from URL
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get('ref') || params.get('referral');
+    if (ref) {
+      setIsSignIn(false);
+      setFormData(prev => ({ ...prev, referral_code: ref.toUpperCase() }));
+    }
+  }, []);
 
   // Resend timer countdown
   useEffect(() => {
@@ -591,7 +602,7 @@ export default function ClientAuth() {
 
       <Button
         type="submit"
-        className="w-full h-14 bg-white text-slate-950 hover:bg-primary/10 font-bold rounded-[1.25rem] shadow-xl hover:shadow-2xl transition-all hover:scale-[1.02] active:scale-[0.98]"
+        className="w-full h-14 bg-white text-blue-900 hover:bg-blue-50 font-bold rounded-[1.25rem] shadow-xl hover:shadow-2xl transition-all hover:scale-[1.02] active:scale-[0.98]"
         disabled={loading}
       >
         {loading ? "Odesílám..." : "Zaregistrovat se"}
@@ -638,13 +649,13 @@ export default function ClientAuth() {
           <ArrowLeft className="mr-2 h-4 w-4" />
           Zpět
         </Button>
-        <Button
+        <PremiumButton
           type="submit"
-          className="flex-1 h-12 bg-white text-slate-950 hover:bg-primary/10 font-bold rounded-xl shadow-lg"
+          className="flex-1 h-12 rounded-xl shadow-lg"
           disabled={loading || verificationCode.length !== 6}
         >
           {loading ? "Ověřuji..." : "Ověřit kód"}
-        </Button>
+        </PremiumButton>
       </div>
 
       <Button
@@ -800,13 +811,13 @@ export default function ClientAuth() {
           <ArrowLeft className="mr-2 h-4 w-4" />
           Zpět
         </Button>
-        <Button
+        <PremiumButton
           type="submit"
-          className="flex-1 h-12 bg-white text-slate-950 hover:bg-primary/10 font-bold rounded-xl shadow-lg"
+          className="flex-1 h-12 rounded-xl shadow-lg"
         >
           Pokračovat
           <ArrowRight className="ml-2 h-4 w-4" />
-        </Button>
+        </PremiumButton>
       </div>
     </form>
   );
@@ -843,13 +854,13 @@ export default function ClientAuth() {
               <ArrowLeft className="mr-2 h-4 w-4" />
               Zpět
             </Button>
-            <Button
+            <PremiumButton
               type="submit"
-              className="flex-1 h-12 bg-white text-slate-950 hover:bg-primary/10 font-bold rounded-xl shadow-lg"
+              className="flex-1 h-12 rounded-xl shadow-lg"
             >
               Pokračovat
               <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
+            </PremiumButton>
           </div>
         </form>
       );
@@ -965,13 +976,13 @@ export default function ClientAuth() {
             <ArrowLeft className="mr-2 h-4 w-4" />
             Zpět
           </Button>
-          <Button
+          <PremiumButton
             type="submit"
-            className="flex-1 h-12 bg-white text-slate-950 hover:bg-primary/10 font-bold rounded-xl shadow-lg"
+            className="flex-1 h-12 rounded-xl shadow-lg"
           >
             Pokračovat
             <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
+          </PremiumButton>
         </div>
       </form>
     );
@@ -1090,14 +1101,14 @@ export default function ClientAuth() {
           <ArrowLeft className="mr-2 h-4 w-4" />
           Zpět
         </Button>
-        <Button
+        <PremiumButton
           onClick={handleFinalSubmit}
-          className="flex-1 h-14 bg-gradient-to-r from-green-500 to-primary text-white hover:from-green-600 hover:to-primary-hover font-bold rounded-xl shadow-xl hover:shadow-2xl transition-all hover:scale-[1.02]"
+          className="flex-1 h-14 rounded-xl shadow-xl"
           disabled={loading}
         >
           {loading ? "Dokončuji..." : "Dokončit registraci"}
           <Check className="ml-2 h-5 w-5" />
-        </Button>
+        </PremiumButton>
       </div>
     </div>
   );
@@ -1174,7 +1185,7 @@ export default function ClientAuth() {
                 </div>
                 <Button
                   type="submit"
-                  className="w-full h-14 bg-white text-slate-950 hover:bg-primary/10 font-bold rounded-[1.25rem] shadow-xl hover:shadow-2xl transition-all hover:scale-[1.02] active:scale-[0.98]"
+                  className="w-full h-14 bg-white text-blue-900 hover:bg-blue-50 font-bold rounded-[1.25rem] shadow-xl hover:shadow-2xl transition-all hover:scale-[1.02] active:scale-[0.98]"
                   disabled={loading}
                 >
                   {loading ? "Přihlašování..." : "Přihlásit se"}

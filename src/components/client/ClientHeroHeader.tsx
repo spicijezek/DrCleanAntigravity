@@ -40,21 +40,62 @@ export function ClientHeroHeader({
     <div className={cn(
       "relative overflow-hidden rounded-2xl p-5",
       isPrimary
-        ? "bg-[linear-gradient(135deg,hsl(var(--primary))_0%,hsl(var(--primary)_/_0.8)_40%,hsl(var(--primary)_/_0.05)_100%)] text-white shadow-xl border-2 border-white/10"
+        ? "bg-[linear-gradient(135deg,hsl(var(--primary)_/_0.9)_0%,hsl(var(--primary))_50%,hsl(var(--primary)_/_0.9)_100%)] text-white shadow-xl border-2 border-primary/20"
         : "bg-[linear-gradient(to_right,hsl(var(--primary)_/_0.08),hsl(var(--primary)_/_0.03))] dark:bg-[linear-gradient(to_right,hsl(var(--primary)_/_0.15),hsl(var(--primary)_/_0.08))] border border-primary/20 dark:border-primary/30",
       className
     )}>
       {/* Background pattern */}
       <div className="absolute inset-0 bg-[url('/placeholder.svg')] opacity-5" />
 
-      {/* Animated decorative circles */}
+      {/* Animated decorative circles - 12 bubbles for rich animation (mobile-optimized) */}
       <div className={cn(
-        "absolute -right-8 -top-8 h-28 w-28 rounded-full animate-float-circle-1",
+        "absolute right-2 top-2 h-24 w-24 rounded-full animate-float-circle-1",
         isPrimary ? "bg-white/10" : "bg-primary/10 dark:bg-primary/20"
       )} />
       <div className={cn(
-        "absolute -right-2 top-14 h-14 w-14 rounded-full animate-float-circle-2",
+        "absolute right-4 top-16 h-14 w-14 rounded-full animate-float-circle-2",
         isPrimary ? "bg-white/15" : "bg-primary/15 dark:bg-primary/25"
+      )} />
+      <div className={cn(
+        "absolute left-2 bottom-2 h-16 w-16 rounded-full animate-float-circle-1",
+        isPrimary ? "bg-white/10" : "bg-primary/10 dark:bg-primary/20"
+      )} />
+      <div className={cn(
+        "absolute left-10 top-8 h-10 w-10 rounded-full animate-float-circle-2",
+        isPrimary ? "bg-white/12" : "bg-primary/12 dark:bg-primary/22"
+      )} />
+      <div className={cn(
+        "absolute right-1/3 bottom-4 h-18 w-18 rounded-full animate-float-circle-1",
+        isPrimary ? "bg-white/8" : "bg-primary/8 dark:bg-primary/18"
+      )} />
+      <div className={cn(
+        "absolute left-1/2 top-6 h-12 w-12 rounded-full animate-float-circle-2",
+        isPrimary ? "bg-white/10" : "bg-primary/10 dark:bg-primary/20"
+      )} />
+      <div className={cn(
+        "absolute left-1/4 bottom-10 h-13 w-13 rounded-full animate-float-circle-1",
+        isPrimary ? "bg-white/9" : "bg-primary/9 dark:bg-primary/19"
+      )} />
+      <div className={cn(
+        "absolute right-20 top-1/2 h-11 w-11 rounded-full animate-float-circle-2",
+        isPrimary ? "bg-white/11" : "bg-primary/11 dark:bg-primary/21"
+      )} />
+      {/* Additional small bubbles for richness */}
+      <div className={cn(
+        "absolute left-16 top-12 h-8 w-8 rounded-full animate-float-circle-1",
+        isPrimary ? "bg-white/10" : "bg-primary/10 dark:bg-primary/20"
+      )} />
+      <div className={cn(
+        "absolute right-1/4 top-20 h-9 w-9 rounded-full animate-float-circle-2",
+        isPrimary ? "bg-white/12" : "bg-primary/12 dark:bg-primary/22"
+      )} />
+      <div className={cn(
+        "absolute left-1/3 bottom-6 h-7 w-7 rounded-full animate-float-circle-1",
+        isPrimary ? "bg-white/9" : "bg-primary/9 dark:bg-primary/19"
+      )} />
+      <div className={cn(
+        "absolute right-12 bottom-12 h-8 w-8 rounded-full animate-float-circle-2",
+        isPrimary ? "bg-white/11" : "bg-primary/11 dark:bg-primary/21"
       )} />
 
       <div className="relative z-10 space-y-4">

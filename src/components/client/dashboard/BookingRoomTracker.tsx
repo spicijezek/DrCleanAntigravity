@@ -83,3 +83,59 @@ export function BookingRoomTracker({ checklist, isStarted = false }: BookingRoom
         </div>
     );
 }
+
+export function MockBookingRoomTracker() {
+    const mockRooms = [
+        { id: '1', room_name: 'Kuchyně', is_completed: false },
+        { id: '2', room_name: 'Koupelna', is_completed: false },
+        { id: '3', room_name: 'Obývací pokoj', is_completed: false },
+        { id: '4', room_name: 'Ložnice', is_completed: false },
+        { id: '5', room_name: 'Předsíň', is_completed: false },
+    ];
+
+    return (
+        <div className="mt-4 pt-4 border-t border-border/50 animate-in slide-in-from-bottom-2 duration-500">
+            <div className="flex items-center justify-between mb-2">
+                <h4 className="text-[11px] font-bold uppercase tracking-wider flex items-center gap-2 text-foreground/70">
+                    <span className="relative flex h-2 w-2">
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-slate-400 dark:bg-slate-600"></span>
+                    </span>
+                    Průběh úklidu
+                </h4>
+                <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full">
+                    0%
+                </span>
+            </div>
+
+            {/* Mock Header for "Čeká na schválení" context */}
+            <div className="flex items-center gap-2 mb-3 text-xs text-amber-600 dark:text-amber-500 bg-amber-50 dark:bg-amber-900/10 p-2 rounded-lg border border-amber-100 dark:border-amber-900/20">
+                <Clock className="h-3.5 w-3.5" />
+                <span className="font-semibold">Sledování průběhu bude dostupné po zahájení úklidu</span>
+            </div>
+
+            {/* Single Continuous Progress Bar - Empty State */}
+            <div className="relative h-3 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden border border-slate-200/50 dark:border-slate-700/50 shadow-inner">
+                <div className="absolute top-0 left-0 h-full w-0 bg-slate-300" />
+            </div>
+
+            <div className="flex justify-between mt-1.5 text-[9px] font-bold text-muted-foreground/60 uppercase tracking-widest px-1">
+                <span>Start</span>
+                <span>0 z {mockRooms.length} místností hotovo</span>
+                <span>Cíl</span>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-4 opacity-70">
+                {mockRooms.map(room => (
+                    <div key={room.id} className="flex items-center gap-1.5 p-1.5 rounded-lg border text-[10px] transition-all duration-300 bg-muted/5 border-transparent text-muted-foreground/60">
+                        <div className="h-4 w-4 rounded-full flex items-center justify-center shrink-0 transition-colors duration-500 bg-muted/40">
+                            <Circle className="h-2 w-2 opacity-20" />
+                        </div>
+                        <span className="truncate font-semibold flex-1">
+                            {room.room_name}
+                        </span>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}

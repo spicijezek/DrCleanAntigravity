@@ -370,7 +370,10 @@ export function EditJobForm({ job, onClose, onJobUpdated }: EditJobFormProps) {
                       <SelectValue placeholder="Vyberte stav" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="pending">Čeká na schválení</SelectItem>
+                      <SelectItem value="approved">Schváleno</SelectItem>
                       <SelectItem value="scheduled">Naplánováno</SelectItem>
+                      <SelectItem value="in_progress">Probíhá</SelectItem>
                       <SelectItem value="completed">Dokončeno</SelectItem>
                       <SelectItem value="paid">Zaplaceno</SelectItem>
                     </SelectContent>
