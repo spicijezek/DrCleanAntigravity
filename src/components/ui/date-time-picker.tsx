@@ -34,16 +34,20 @@ export function DatePicker({
   // Calculate min date if disabledDates is provided
   const minDate = React.useMemo(() => {
     if (!disabledDates) return undefined;
-    // Check if today is disabled
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    if (disabledDates(today)) {
-      // Tomorrow
-      const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      return tomorrow.toISOString().split('T')[0];
+    const date = new Date();
+    date.setHours(0, 0, 0, 0);
+
+    // Find first enabled date (max 30 days ahead to avoid infinite loop)
+    let found = false;
+    for (let i = 0; i < 30; i++) {
+      if (!disabledDates(date)) {
+        found = true;
+        break;
+      }
+      date.setDate(date.getDate() + 1);
     }
-    return today.toISOString().split('T')[0];
+
+    return found ? date.toISOString().split('T')[0] : undefined;
   }, [disabledDates]);
 
   // Calculate max date for date of birth (must be in the past)
@@ -100,7 +104,7 @@ export function DatePicker({
             {value ? format(value, "d. M. yyyy", { locale: cs }) : placeholder}
           </span>
         </button>
-        
+
         {/* Hidden native input for iOS compatibility */}
         <input
           ref={inputRef}
@@ -170,7 +174,7 @@ export function TimePicker({
             {value || placeholder}
           </span>
         </button>
-        
+
         {/* Hidden native input for iOS compatibility */}
         <input
           ref={inputRef}

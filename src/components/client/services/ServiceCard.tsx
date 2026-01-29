@@ -15,6 +15,7 @@ interface ServiceCardProps {
   benefits?: string[];
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
+  hideDetails?: boolean;
   children: React.ReactNode;
 }
 
@@ -29,6 +30,7 @@ export function ServiceCard({
   benefits,
   isOpen,
   onOpenChange,
+  hideDetails,
   children
 }: ServiceCardProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -126,7 +128,7 @@ export function ServiceCard({
         <CollapsibleContent>
           <CardContent className="space-y-5 pt-4 pb-6">
             {/* Pain Points & Benefits Section */}
-            {(painPoints || benefits) && (
+            {!hideDetails && (painPoints || benefits) && (
               <div className="space-y-4">
                 {/* Toggle button */}
                 <button

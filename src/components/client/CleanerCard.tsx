@@ -17,25 +17,23 @@ export function CleanerCard({ name, userId, avatarPath, fullName, bio }: Cleaner
 
   useEffect(() => {
     if (avatarPath) {
-      if (avatarPath.startsWith('http') || avatarPath.startsWith('data:') || avatarPath.startsWith('/src') || avatarPath.startsWith('/@fs')) {
+      if (avatarPath.startsWith('http') || avatarPath.startsWith('data:') || avatarPath.startsWith('/src') || avatarPath.startsWith('/@fs') || avatarPath.startsWith('/assets')) {
         setAvatarUrl(avatarPath);
       } else {
-        // Try public URL first since bucket is public
-        const publicUrl = supabase.storage
+        // Use signed URL for better reliability with private buckets
+        // This matches the logic in CleanerProfile.tsx
+        supabase.storage
           .from('avatars')
-          .getPublicUrl(avatarPath);
-
-        if (publicUrl.data) {
-          setAvatarUrl(publicUrl.data.publicUrl);
-        } else {
-          // Fallback to signed URL
-          supabase.storage
-            .from('avatars')
-            .createSignedUrl(avatarPath, 3600)
-            .then(({ data }) => {
-              if (data) setAvatarUrl(data.signedUrl);
-            });
-        }
+          .createSignedUrl(avatarPath, 3600)
+          .then(({ data }) => {
+            if (data) setAvatarUrl(data.signedUrl);
+          })
+          .catch(err => {
+            console.error('Error generating signed URL:', err);
+            // Fallback to public URL construction if signing fails
+            const { data: publicData } = supabase.storage.from('avatars').getPublicUrl(avatarPath);
+            if (publicData) setAvatarUrl(publicData.publicUrl);
+          });
       }
     }
   }, [avatarPath]);
@@ -48,6 +46,7 @@ export function CleanerCard({ name, userId, avatarPath, fullName, bio }: Cleaner
             src={avatarUrl}
             alt={name}
             className="w-16 h-16 rounded-full object-cover border-2 border-primary"
+            onError={() => setAvatarUrl(null)}
           />
         ) : (
           <div className="w-16 h-16 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-semibold text-lg">
