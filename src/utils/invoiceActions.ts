@@ -97,8 +97,8 @@ export const createInvoiceFromBooking = async (bookingId: string) => {
                 client_name: client?.name || 'Unknown',
                 client_email: client?.email,
                 client_phone: client?.phone,
-                client_address: booking.address,
                 client_vat: client?.company_id,
+                client_dic: client?.dic,
                 date_created: new Date().toISOString().split('T')[0],
                 date_performance: booking.scheduled_date ? booking.scheduled_date.split('T')[0] : new Date().toISOString().split('T')[0],
                 date_due: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Default 7 days

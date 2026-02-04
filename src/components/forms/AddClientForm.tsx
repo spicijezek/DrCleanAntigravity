@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { ModalOverlay } from '@/components/ui/modal-overlay';
@@ -26,6 +27,7 @@ interface Client {
   created_at: string;
   client_type?: string;
   company_id?: string;
+  dic?: string;
   company_legal_name?: string;
   reliable_person?: string;
   client_source?: string;
@@ -50,6 +52,7 @@ export function AddClientForm({ onClose, onClientAdded, editingClient }: AddClie
     date_added: editingClient?.created_at ? editingClient.created_at.split('T')[0] : new Date().toISOString().split('T')[0],
     notes: editingClient?.notes || '',
     company_id: editingClient?.company_id || '',
+    dic: editingClient?.dic || '',
     company_legal_name: editingClient?.company_legal_name || '',
     reliable_person: editingClient?.reliable_person || '',
     client_source: editingClient?.client_source || '',
@@ -176,6 +179,7 @@ export function AddClientForm({ onClose, onClientAdded, editingClient }: AddClie
           name: data.name || prev.name,
           company_legal_name: data.company_legal_name || prev.company_legal_name,
           company_id: data.company_id || prev.company_id,
+          dic: data.dic || prev.dic,
           address: data.address || prev.address,
           city: data.city || prev.city,
           postal_code: data.postal_code || prev.postal_code,
@@ -323,17 +327,33 @@ export function AddClientForm({ onClose, onClientAdded, editingClient }: AddClie
                     />
                   </div>
                 ) : (
-                  <div className="space-y-2">
-                    <Label htmlFor="company_id" className="text-sm font-semibold">IČO (Firma)</Label>
-                    <Input
-                      id="company_id"
-                      name="company_id"
-                      value={formData.company_id}
-                      onChange={handleCompanyIdChange}
-                      placeholder="8místné IČO"
-                      disabled={fetchingAres}
-                      className="rounded-xl border-primary/20 focus:border-primary focus:ring-primary/20"
-                    />
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="company_id" className="text-sm font-semibold">IČO</Label>
+                        <Input
+                          id="company_id"
+                          name="company_id"
+                          value={formData.company_id}
+                          onChange={handleCompanyIdChange}
+                          placeholder="IČO"
+                          disabled={fetchingAres}
+                          className="rounded-xl border-primary/20 focus:border-primary focus:ring-primary/20"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="dic" className="text-sm font-semibold">DIČ</Label>
+                        <Input
+                          id="dic"
+                          name="dic"
+                          value={formData.dic}
+                          onChange={handleChange}
+                          placeholder="DIČ"
+                          disabled={fetchingAres}
+                          className="rounded-xl border-primary/20 focus:border-primary focus:ring-primary/20"
+                        />
+                      </div>
+                    </div>
                     {fetchingAres && (
                       <p className="text-[10px] text-primary animate-pulse font-medium">Načítám data z ARES...</p>
                     )}
@@ -400,14 +420,20 @@ export function AddClientForm({ onClose, onClientAdded, editingClient }: AddClie
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="client_source" className="text-sm font-semibold">Zdroj klienta</Label>
-                  <Input
-                    id="client_source"
-                    name="client_source"
-                    placeholder="Např. Google, Doporučení"
+                  <Select
                     value={formData.client_source}
-                    onChange={handleChange}
-                    className="rounded-xl border-primary/20 focus:border-primary focus:ring-primary/20"
-                  />
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, client_source: value }))}
+                  >
+                    <SelectTrigger className="rounded-xl border-primary/20 focus:border-primary focus:ring-primary/20">
+                      <SelectValue placeholder="Vyberte zdroj..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Google">Google</SelectItem>
+                      <SelectItem value="AI">AI</SelectItem>
+                      <SelectItem value="Doporučení">Doporučení</SelectItem>
+                      <SelectItem value="Sociální Sítě">Sociální Sítě</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               <div className="space-y-2">

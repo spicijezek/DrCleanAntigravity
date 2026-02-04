@@ -34,14 +34,15 @@ export const ClientProtectedRoute: React.FC<ClientProtectedRouteProps> = ({ chil
       try {
         const { data, error } = await supabase
           .from('clients')
-          .select('client_source')
+          .select('client_source, onboarding_completed')
           .eq('user_id', user.id)
           .maybeSingle();
 
         if (error) throw error;
 
-        // Only allow access if client_source is explicitly 'App'
-        setIsAppClient(data?.client_source === 'App');
+        // Only allow access if client_source is explicitly 'App' AND onboarding is completed
+        const clientData = data as any;
+        setIsAppClient(clientData?.client_source === 'App' && clientData?.onboarding_completed === true);
       } catch (error) {
         console.error('Error checking client source:', error);
         setIsAppClient(false);

@@ -45,6 +45,7 @@ interface Job {
   client_city?: string;
   client_postal_code?: string;
   client_company_id?: string;
+  client_dic?: string;
   client_company_legal_name?: string;
   client_reliable_person?: string;
   client_notes?: string;
@@ -125,6 +126,7 @@ export default function Jobs() {
         client_city: job.clients?.city,
         client_postal_code: job.clients?.postal_code,
         client_company_id: job.clients?.company_id,
+        client_dic: job.clients?.dic,
         client_company_legal_name: job.clients?.company_legal_name,
         client_reliable_person: job.clients?.reliable_person,
         client_notes: job.clients?.notes,
@@ -295,6 +297,7 @@ export default function Jobs() {
       postal_code: job.client_postal_code,
       client_type: job.client_type || 'person',
       company_id: job.client_company_id,
+      dic: job.client_dic,
       company_legal_name: job.client_company_legal_name,
       reliable_person: job.client_reliable_person,
       notes: job.client_notes,
@@ -318,6 +321,7 @@ export default function Jobs() {
           client_city: updatedClient.city,
           client_postal_code: updatedClient.postal_code,
           client_company_id: updatedClient.company_id,
+          client_dic: updatedClient.dic,
           client_company_legal_name: updatedClient.company_legal_name,
           client_reliable_person: updatedClient.reliable_person,
           client_notes: updatedClient.notes,

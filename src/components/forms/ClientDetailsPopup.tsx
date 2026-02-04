@@ -23,6 +23,7 @@ interface Client {
   postal_code?: string;
   client_type: string;
   company_id?: string;
+  dic?: string;
   company_legal_name?: string;
   reliable_person?: string;
   notes?: string;
@@ -155,6 +156,7 @@ export function ClientDetailsPopup({ client, isOpen, onClose, onClientUpdated }:
           postal_code: formData.postal_code,
           client_type: formData.client_type,
           company_id: formData.company_id,
+          dic: formData.dic,
           company_legal_name: formData.company_legal_name,
           reliable_person: formData.reliable_person,
           notes: formData.notes,
@@ -319,14 +321,25 @@ export function ClientDetailsPopup({ client, isOpen, onClose, onClientUpdated }:
                   {formData.client_type === 'company' && (
                     <div className="space-y-4 pt-4 p-6 rounded-3xl bg-primary/5 border border-primary/10">
                       <div className="grid gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="company_id" className="text-sm font-semibold">IČO</Label>
-                          <Input
-                            id="company_id"
-                            value={formData.company_id || ''}
-                            onChange={(e) => handleInputChange('company_id', e.target.value)}
-                            className="rounded-xl border-primary/20 focus:border-primary focus:ring-primary/20 h-11 bg-background"
-                          />
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="company_id" className="text-sm font-semibold">IČO</Label>
+                            <Input
+                              id="company_id"
+                              value={formData.company_id || ''}
+                              onChange={(e) => handleInputChange('company_id', e.target.value)}
+                              className="rounded-xl border-primary/20 focus:border-primary focus:ring-primary/20 h-11 bg-background"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="dic" className="text-sm font-semibold">DIČ</Label>
+                            <Input
+                              id="dic"
+                              value={formData.dic || ''}
+                              onChange={(e) => handleInputChange('dic', e.target.value)}
+                              className="rounded-xl border-primary/20 focus:border-primary focus:ring-primary/20 h-11 bg-background"
+                            />
+                          </div>
                         </div>
 
                         <div className="space-y-2">
@@ -359,13 +372,20 @@ export function ClientDetailsPopup({ client, isOpen, onClose, onClientUpdated }:
                   <Label htmlFor="client_source" className="text-sm font-semibold flex items-center gap-2">
                     <Globe className="h-4 w-4 text-primary" /> Zdroj klienta
                   </Label>
-                  <Input
-                    id="client_source"
+                  <Select
                     value={formData.client_source || ''}
-                    onChange={(e) => handleInputChange('client_source', e.target.value)}
-                    placeholder="např. doporučení, web, reklama"
-                    className="rounded-xl border-primary/20 focus:border-primary focus:ring-primary/20 h-11"
-                  />
+                    onValueChange={(value) => handleInputChange('client_source', value)}
+                  >
+                    <SelectTrigger className="rounded-xl border-primary/20 focus:border-primary focus:ring-primary/20 h-11">
+                      <SelectValue placeholder="Vyberte zdroj..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Google">Google</SelectItem>
+                      <SelectItem value="AI">AI</SelectItem>
+                      <SelectItem value="Doporučení">Doporučení</SelectItem>
+                      <SelectItem value="Sociální Sítě">Sociální Sítě</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="space-y-2">

@@ -30,6 +30,7 @@ interface Client {
   created_at: string;
   client_type?: string;
   company_id?: string;
+  dic?: string;
   company_legal_name?: string;
   reliable_person?: string;
   client_source?: string;
@@ -57,10 +58,11 @@ export default function Clients() {
 
   const fetchClients = async () => {
     try {
-      // Fetch clients
+      // Fetch clients (excluding App-registered clients)
       const { data: clientsData, error: clientsError } = await supabase
         .from('clients')
         .select('*')
+        .neq('client_source', 'App')
         .order('created_at', { ascending: false });
 
       if (clientsError) throw clientsError;
@@ -327,12 +329,15 @@ export default function Clients() {
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full lg:w-auto">
                 <span className="text-sm font-bold whitespace-nowrap">Zdroj:</span>
                 <Select value={sourceFilter} onValueChange={setSourceFilter}>
-                  <SelectTrigger className="w-full sm:w-32">
-                    <SelectValue placeholder="Vše" />
+                  <SelectTrigger className="w-full sm:w-48">
+                    <SelectValue placeholder="Všechny" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Vše</SelectItem>
-                    <SelectItem value="App">Aplikace</SelectItem>
+                    <SelectItem value="all">Všechny</SelectItem>
+                    <SelectItem value="Google">Google</SelectItem>
+                    <SelectItem value="AI">AI</SelectItem>
+                    <SelectItem value="Doporučení">Doporučení</SelectItem>
+                    <SelectItem value="Sociální Sítě">Sociální Sítě</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -451,6 +456,12 @@ export default function Clients() {
                       <MapPin className="h-4 w-4 text-primary/70 mt-0.5" />
                       <span className="leading-snug">{client.address ? `${client.address}${client.city ? `, ${client.city}` : ''}${client.postal_code ? ` ${client.postal_code}` : ''}` : 'Adresa neuvedena'}</span>
                     </div>
+                    {client.client_type === 'company' && (
+                      <div className="flex flex-col gap-1 pl-7 pt-1">
+                        <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">IČO: {client.company_id || 'N/A'}</div>
+                        {client.dic && <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">DIČ: {client.dic}</div>}
+                      </div>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
@@ -519,6 +530,6 @@ export default function Clients() {
           )}
         </div>
       </div>
-    </Layout>
+    </Layout >
   );
 }

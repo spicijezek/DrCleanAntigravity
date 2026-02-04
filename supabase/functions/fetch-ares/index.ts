@@ -42,13 +42,13 @@ serve(async (req) => {
       }
 
       aresData = await aresResponse.json();
-    } 
+    }
     // Search by company name
     else if (name) {
       console.log('Searching ARES for company name:', name);
       const searchUrl = `https://ares.gov.cz/ekonomicke-subjekty-v-be/rest/ekonomicke-subjekty/vyhledat?obchodniJmeno=${encodeURIComponent(name)}`;
       console.log('Search URL:', searchUrl);
-      
+
       const searchResponse = await fetch(searchUrl, {
         headers: {
           'Accept': 'application/json',
@@ -56,7 +56,7 @@ serve(async (req) => {
       });
 
       console.log('Search response status:', searchResponse.status);
-      
+
       if (!searchResponse.ok) {
         const errorText = await searchResponse.text();
         console.error('ARES search error:', errorText);
@@ -68,7 +68,7 @@ serve(async (req) => {
 
       const searchData = await searchResponse.json();
       console.log('Search data:', JSON.stringify(searchData, null, 2));
-      
+
       // Get the first result from search
       if (!searchData.ekonomickeSubjekty || searchData.ekonomickeSubjekty.length === 0) {
         return new Response(
@@ -103,6 +103,7 @@ serve(async (req) => {
       name: aresData.obchodniJmeno || '',
       company_legal_name: aresData.obchodniJmeno || '',
       company_id: aresData.ico ? aresData.ico.toString() : '',
+      dic: aresData.dic || '',
       address: '',
       city: '',
       postal_code: '',
@@ -112,7 +113,7 @@ serve(async (req) => {
     if (aresData.sidlo) {
       const sidlo = aresData.sidlo;
       const addressParts: string[] = [];
-      
+
       if (sidlo.nazevUlice) {
         addressParts.push(sidlo.nazevUlice);
       }
@@ -122,7 +123,7 @@ serve(async (req) => {
       if (sidlo.cisloOrientacni) {
         addressParts.push(`/${sidlo.cisloOrientacni}`);
       }
-      
+
       companyData.address = addressParts.join(' ');
       companyData.city = sidlo.nazevObce || '';
       companyData.postal_code = sidlo.psc ? sidlo.psc.toString().replace(/(\d{3})(\d{2})/, '$1 $2') : '';

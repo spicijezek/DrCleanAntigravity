@@ -48,6 +48,7 @@ interface NewClientData {
   client_type: 'person' | 'company';
   date_of_birth: string;
   company_id: string;
+  dic: string;
   company_legal_name: string;
   reliable_person: string;
   date_added: string;
@@ -88,6 +89,7 @@ export function AddJobForm({ onClose, onJobAdded }: AddJobFormProps) {
     client_type: 'person',
     date_of_birth: '',
     company_id: '',
+    dic: '',
     company_legal_name: '',
     reliable_person: '',
     date_added: new Date().toISOString().split('T')[0],
@@ -245,6 +247,7 @@ export function AddJobForm({ onClose, onJobAdded }: AddJobFormProps) {
         ...prev,
         name: companyName,
         company_legal_name: legalName,
+        dic: dic,
         address,
         city,
         postal_code: postalCode,
@@ -676,6 +679,17 @@ export function AddJobForm({ onClose, onJobAdded }: AddJobFormProps) {
                                 onChange={handleNewClientChange}
                                 placeholder="Autofill z ARES"
                                 required
+                                className="rounded-xl h-11 border-primary/10"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="newClientDic" className="text-sm font-semibold">DIČ</Label>
+                              <Input
+                                id="newClientDic"
+                                name="dic"
+                                value={newClientData.dic}
+                                onChange={handleNewClientChange}
+                                placeholder="CZ12345678"
                                 className="rounded-xl h-11 border-primary/10"
                               />
                             </div>

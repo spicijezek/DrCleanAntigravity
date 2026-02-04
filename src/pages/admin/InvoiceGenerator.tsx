@@ -170,7 +170,7 @@ export default function InvoiceGenerator() {
         if (client) {
           setClientName(client.name);
           setClientIco(client.company_id || '');
-          setClientDic(client.vat_id || '');
+          setClientDic(client.dic || '');
           setClientAddress(client.address || booking.address);
           setClientEmail(client.email || '');
           setClientPhone(client.phone || '');
@@ -301,7 +301,7 @@ export default function InvoiceGenerator() {
     if (client) {
       setClientName(client.name || "");
       setClientIco(client.company_id || "");
-      setClientDic(client.vat_id || "");
+      setClientDic(client.dic || "");
       setClientEmail(client.email || "");
       setClientPhone(client.phone || "");
 

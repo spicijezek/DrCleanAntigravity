@@ -11,8 +11,20 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { LoadingOverlay } from '@/components/LoadingOverlay';
 import drcleanIcon from '@/assets/drclean-icon.png';
-import { Mail, Lock, User, Building2, MapPin, Phone, Calendar, FileText, ArrowLeft, ArrowRight, Check } from 'lucide-react';
+import { Mail, Lock, User, Building2, MapPin, Phone, Calendar, FileText, ArrowLeft, ArrowRight, Check, Info } from 'lucide-react';
 import { DatePicker } from '@/components/ui/date-time-picker';
+import { useLoadScript, Autocomplete } from '@react-google-maps/api';
+
+const GOOGLE_MAPS_API_KEY = 'AIzaSyATxE6HkAJcLTbYyLoOwVlYqEhak32DDCQ';
+const libraries: ('places')[] = ['places'];
+
+// Phone formatting helper
+const formatPhoneNumber = (value: string): string => {
+  const numbers = value.replace(/\D/g, '');
+  if (numbers.length <= 3) return numbers;
+  if (numbers.length <= 6) return `${numbers.slice(0, 3)} ${numbers.slice(3)}`;
+  return `${numbers.slice(0, 3)} ${numbers.slice(3, 6)} ${numbers.slice(6, 9)}`;
+};
 
 type ClientType = 'person' | 'company';
 
@@ -28,42 +40,140 @@ export default function ClientAuth() {
   const [signInPassword, setSignInPassword] = useState('');
 
   // Registration Multi-Step State
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem('registration_step');
+      const parsed = saved ? parseInt(saved) : 1;
+      return isNaN(parsed) ? 1 : parsed;
+    } catch {
+      return 1;
+    }
+  });
   const [clientType, setClientType] = useState<ClientType>('person');
   const [verificationCode, setVerificationCode] = useState('');
   const [resendTimer, setResendTimer] = useState(0);
   const [fetchingAres, setFetchingAres] = useState(false);
   const companyIdTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
 
-  const [formData, setFormData] = useState({
-    // Step 1
-    name: '',
-    email: '',
-    password: '',
-    company_id: '',
-
-    // Step 3
-    phone: '',
-    address: '',
-    city: '',
-    postal_code: '',
-    date_of_birth: '',
-    dic: '',
-    reliable_person: '',
-
-    // Step 4 (Osoba)
-    has_children: false,
-    has_pets: false,
-    allergies_notes: '',
-    special_instructions: '',
-    referral_code: ''
+  // Load Google Maps API
+  const { isLoaded } = useLoadScript({
+    googleMapsApiKey: GOOGLE_MAPS_API_KEY,
+    libraries,
   });
 
+  const [formData, setFormData] = useState<any>(() => {
+    // Session storage fallback for initial state, but we'll primarily rely on DB sync
+    try {
+      const saved = sessionStorage.getItem('registration_formData');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === 'object') {
+          return parsed;
+        }
+      }
+    } catch (err) {
+      console.error('Error parsing sessionStorage formData:', err);
+      // Clear corrupted data
+      sessionStorage.removeItem('registration_formData');
+      sessionStorage.removeItem('registration_step');
+    }
+    return {
+      // Step 1
+      name: '',
+      email: '',
+      password: '',
+      company_id: '',
+
+      // Step 3
+      phone: '',
+      address: '',
+      city: '',
+      postal_code: '',
+      dic: '',
+      reliable_person: '',
+
+      // Step 4 (Osoba)
+      has_children: false,
+      has_pets: false,
+      allergies_notes: '',
+      special_instructions: '',
+      referral_code: '',
+      referred_by_id: null
+    };
+  });
+
+  // Load progress from DB on mount/auth
   useEffect(() => {
-    if (user && profile?.roles?.includes('client')) {
+    const syncProgress = async () => {
+      if (!user) return;
+
+      try {
+        const { data: client, error } = await supabase
+          .from('clients')
+          .select('*')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (error) throw error;
+
+        if (client) {
+          // If already completed, redirect
+          if (client.onboarding_completed) {
+            navigate('/klient', { replace: true });
+            return;
+          }
+
+          // Sync DB data to form state (prioritize DB over session storage)
+          setFormData(prev => ({
+            ...prev,
+            name: client.name || prev.name,
+            email: client.email || prev.email,
+            phone: client.phone || prev.phone,
+            address: client.address || prev.address,
+            city: client.city || prev.city,
+            postal_code: client.postal_code || prev.postal_code,
+            company_id: client.company_id || prev.company_id,
+            dic: client.dic || prev.dic,
+            reliable_person: client.reliable_person || prev.reliable_person,
+            has_children: client.has_children || prev.has_children,
+            has_pets: client.has_pets || prev.has_pets,
+            allergies_notes: client.allergies_notes || prev.allergies_notes,
+            special_instructions: client.special_instructions || prev.special_instructions,
+            // Keep referral info if we have it in state, otherwise try to get from DB if we tracked it (we track referred_by_id)
+            referred_by_id: client.referred_by_id || prev.referred_by_id
+          }));
+
+          // Resume step
+          if (client.onboarding_step && client.onboarding_step > 1) {
+            setStep(client.onboarding_step);
+          }
+
+          // If we have data, we're likely past step 1/2 in reality, ensure proper client type
+          if (client.client_type) {
+            setClientType(client.client_type as ClientType);
+          }
+        }
+      } catch (err) {
+        console.error("Error syncing progress:", err);
+      }
+    };
+
+    syncProgress();
+  }, [user, navigate]);
+
+  // Persist state to sessionStorage
+  useEffect(() => {
+    sessionStorage.setItem('registration_step', step.toString());
+    sessionStorage.setItem('registration_formData', JSON.stringify(formData));
+  }, [step, formData]);
+
+  useEffect(() => {
+    // Only redirect if fully registered as a client
+    if (user && profile?.roles?.includes('client') && step === 1) {
       navigate('/klient', { replace: true });
     }
-  }, [user, profile, navigate]);
+  }, [user, profile, navigate, step]);
 
   // Handle referral code from URL
   useEffect(() => {
@@ -123,7 +233,7 @@ export default function ClientAuth() {
       const data = await response.json();
 
       const companyName = data.obchodniJmeno || '';
-      const dic = data.dic || '';
+      const vat_id = data.dic || '';
 
       const sidlo = data.sidlo;
       let fullAddress = '';
@@ -143,7 +253,7 @@ export default function ClientAuth() {
       setFormData(prev => ({
         ...prev,
         name: companyName || prev.name,
-        dic: dic || prev.dic,
+        dic: vat_id || prev.dic,
         address: fullAddress || prev.address,
         city: cityName || prev.city,
         postal_code: postal || prev.postal_code,
@@ -181,6 +291,20 @@ export default function ClientAuth() {
     }
   };
 
+  const checkSupabaseConnectivity = async () => {
+    try {
+      const supabaseUrl = (supabase as any).supabaseUrl;
+      // We don't check response.ok because auth/v1/health might return 401 or 404
+      // but receiving ANY response means the domain is not blocked.
+      await fetch(`${supabaseUrl}/auth/v1/health`, { method: 'GET' });
+      return true;
+    } catch (err) {
+      console.error('Supabase connectivity check failed:', err);
+      // Only return false if it's a network error (like TypeError: Failed to fetch)
+      return false;
+    }
+  };
+
   const handleStep1Submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -199,6 +323,12 @@ export default function ClientAuth() {
         throw new Error('Heslo musí mít alespoň 6 znaků');
       }
 
+      // Connectivity pre-check
+      const isConnected = await checkSupabaseConnectivity();
+      if (!isConnected) {
+        throw new Error('Nepodařilo se připojit k autentizačnímu serveru. Zkontrolujte prosím své internetové připojení nebo vypněte adblocker, který by mohl blokovat Supabase.');
+      }
+
       // Validate Referral Code if provided
       let referredById = null;
       if (formData.referral_code) {
@@ -212,23 +342,49 @@ export default function ClientAuth() {
         if (!referee) {
           throw new Error('Neplatný referral kód. Prosím zkontrolujte jej nebo nechte pole prázdné.');
         }
-        referredById = referee.id;
+        referredById = (referee as any).id;
       }
 
-      // Send OTP to email using Supabase
-      const { data, error } = await supabase.auth.signInWithOtp({
-        email: formData.email,
-        options: {
-          shouldCreateUser: false, // We'll create the user after verification
-          data: {
-            referred_by_id: referredById, // Temporarily store in metadata if needed, but we'll use local state
+      // Send OTP to email using Supabase signInWithOtp (which sends a 6-digit code)
+      let otpResult;
+      let lastError;
+      for (let i = 0; i < 2; i++) {
+        try {
+          otpResult = await supabase.auth.signInWithOtp({
+            email: formData.email,
+            options: {
+              shouldCreateUser: true,
+              data: {
+                full_name: formData.name,
+                is_client: true,
+                referred_by_id: referredById,
+              }
+            }
+          });
+          if (!otpResult.error) break;
+          lastError = otpResult.error;
+        } catch (err: any) {
+          lastError = err;
+          if (err.name === 'TypeError' && err.message.includes('Load failed')) {
+            await new Promise(resolve => setTimeout(resolve, i === 0 ? 1000 : 0));
+            continue;
           }
+          throw err;
         }
-      });
+      }
 
-      if (error) throw error;
+      const { data, error } = otpResult || { data: null, error: lastError };
+      if (error) {
+        if (error.message.includes('Load failed')) {
+          throw new Error('Chyba sítě při odesílání registrace. To je často způsobeno adblockerem nebo firewallem blokujícím doménu Supabase.');
+        }
+        throw error;
+      }
 
-      setResendTimer(60);
+      // Store referredById in formData for subsequent steps
+      setFormData(prev => ({ ...prev, referred_by_id: referredById }));
+
+      setResendTimer(180);
       setStep(2);
 
       toast({
@@ -247,6 +403,93 @@ export default function ClientAuth() {
     }
   };
 
+  const upsertClientData = async (currentFormData: any, userId: string) => {
+    if (!userId) {
+      console.error('upsertClientData: No userId provided');
+      return;
+    }
+
+    try {
+      console.log('Upserting client data for:', userId, currentFormData);
+
+      const clientPayload = {
+        user_id: userId,
+        client_type: clientType,
+        name: currentFormData.name,
+        email: currentFormData.email,
+        phone: currentFormData.phone,
+        address: currentFormData.address,
+        city: currentFormData.city,
+        postal_code: currentFormData.postal_code,
+        company_id: clientType === 'company' ? currentFormData.company_id : null,
+        dic: clientType === 'company' ? currentFormData.dic || null : null,
+        reliable_person: clientType === 'company' ? currentFormData.reliable_person : null,
+        has_children: clientType === 'person' ? !!currentFormData.has_children : false,
+        has_pets: clientType === 'person' ? !!currentFormData.has_pets : false,
+        allergies_notes: clientType === 'person' ? currentFormData.allergies_notes || null : null,
+        special_instructions: clientType === 'person' ? currentFormData.special_instructions || null : null,
+        referred_by_id: currentFormData.referred_by_id,
+        client_source: 'App',
+        onboarding_step: currentFormData.onboarding_step, // Pass this in
+        onboarding_completed: currentFormData.onboarding_completed // Pass this in
+      };
+
+      // Check if client record already exists
+      const { data: existingClient } = await supabase
+        .from('clients')
+        .select('id')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (existingClient) {
+        // Update existing client
+        const { error: clientError } = await supabase
+          .from('clients')
+          .update(clientPayload as any)
+          .eq('user_id', userId);
+
+        if (clientError) {
+          console.error('Client update error:', clientError);
+          throw clientError;
+        }
+      } else {
+        // Insert new client
+        const { error: clientError } = await supabase
+          .from('clients')
+          .insert(clientPayload as any);
+
+        if (clientError) {
+          console.error('Client insert error:', clientError);
+          throw clientError;
+        }
+      }
+
+      // Also ensure role is assigned (best effort - may fail due to RLS)
+      // Note: Role assignment should ideally be handled by a database trigger
+      try {
+        const { error: roleError } = await supabase
+          .from('user_roles')
+          .upsert({
+            user_id: userId,
+            role: 'client'
+          } as any, { onConflict: 'user_id,role' });
+
+        if (roleError && !roleError.message.includes('duplicate')) {
+          console.warn('Role upsert failed (expected if RLS is enabled):', roleError.message);
+          // Don't throw - the trigger or admin will handle role assignment
+        }
+      } catch (roleErr) {
+        console.warn('Role upsert exception:', roleErr);
+        // Don't throw - continue with registration
+      }
+
+      console.log('Upsert successful');
+    } catch (error) {
+      console.error('Error in upsertClientData:', error);
+      throw error;
+    }
+  };
+
   const handleVerifyCode = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -256,8 +499,8 @@ export default function ClientAuth() {
         throw new Error('Zadejte 6-místný kód');
       }
 
-      // Verify OTP with Supabase
-      const { error } = await supabase.auth.verifyOtp({
+      // CRITICAL: Verify OTP with Supabase
+      const { data, error } = await supabase.auth.verifyOtp({
         email: formData.email,
         token: verificationCode,
         type: 'email'
@@ -265,6 +508,32 @@ export default function ClientAuth() {
 
       if (error) throw error;
 
+      // OTP verified successfully - now do best-effort operations
+      if (data.user) {
+        // Set password (best effort - don't block on failure)
+        if (formData.password) {
+          try {
+            await supabase.auth.updateUser({ password: formData.password });
+          } catch (pwErr) {
+            console.error('Password update failed:', pwErr);
+          }
+        }
+
+        // Save initial data (best effort - don't block on failure)
+        try {
+          await upsertClientData({ ...formData, onboarding_step: 3 }, data.user.id);
+        } catch (dataErr: any) {
+          console.error('Data save failed:', dataErr);
+          toast({
+            variant: 'destructive',
+            title: 'Upozornění',
+            description: 'Nepodařilo se uložit některé údaje. Prosím zkontrolujte je v dalších krocích.',
+            duration: 4000,
+          });
+        }
+      }
+
+      // ALWAYS advance to step 3 after successful OTP verification
       setStep(3);
       toast({
         title: "Email ověřen!",
@@ -272,6 +541,7 @@ export default function ClientAuth() {
         duration: 1500,
       });
     } catch (error: any) {
+      console.error('Verification error:', error);
       toast({
         variant: "destructive",
         title: "Neplatný kód",
@@ -296,7 +566,7 @@ export default function ClientAuth() {
 
       if (error) throw error;
 
-      setResendTimer(60);
+      setResendTimer(180);
       toast({
         title: "Kód odeslán znovu",
         description: "Zkontrolujte svůj email",
@@ -313,7 +583,7 @@ export default function ClientAuth() {
     }
   };
 
-  const handleStep3Submit = (e: React.FormEvent) => {
+  const handleStep3Submit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // Validate Step 3 fields
@@ -335,88 +605,97 @@ export default function ClientAuth() {
       return;
     }
 
-    setStep(4);
+    setLoading(true);
+    try {
+      // Incremental save - get latest user from session if context is slow
+      let currentUserId = user?.id;
+      if (!currentUserId) {
+        const { data: sessionData } = await supabase.auth.getSession();
+        currentUserId = sessionData.session?.user?.id;
+      }
+
+      if (currentUserId) {
+        // Step 3 done -> moving to Step 4 (best effort save)
+        try {
+          await upsertClientData({ ...formData, onboarding_step: 4 }, currentUserId);
+        } catch (dataErr: any) {
+          console.error('Step 3 data save failed:', dataErr);
+          // Silent failure - data will be saved in final step
+        }
+      }
+
+      // ALWAYS advance to step 4 after validation passes
+      setStep(4);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleStep4Submit = (e: React.FormEvent) => {
+  const handleStep4Submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setStep(5); // Go to summary
+
+    setLoading(true);
+    try {
+      // Incremental save for step 4 data
+      let currentUserId = user?.id;
+      if (!currentUserId) {
+        const { data: sessionData } = await supabase.auth.getSession();
+        currentUserId = sessionData.session?.user?.id;
+      }
+
+      if (currentUserId) {
+        try {
+          // Save step 4 data with onboarding_completed flag
+          await upsertClientData({ ...formData, onboarding_step: 4, onboarding_completed: true }, currentUserId);
+        } catch (dataErr: any) {
+          console.error('Step 4 data save failed:', dataErr);
+        }
+      }
+
+      // Complete final registration
+      await handleFinalSubmit();
+
+    } catch (error: any) {
+      console.error('Step 4 submission error:', error);
+      toast({
+        variant: "destructive",
+        title: "Chyba při ukládání",
+        description: error.message || "Zkuste to prosím znovu.",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleFinalSubmit = async () => {
     setLoading(true);
 
     try {
-      // Create auth user
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/klient`,
-          data: {
-            full_name: formData.name,
-            is_client: true,
-          }
-        }
-      });
+      // Password was already set in handleVerifyCode (step 2)
+      // No need to update it again here
 
-      // Look up referred_by_id again for the final step
-      let finalReferredById = null;
-      if (formData.referral_code) {
-        const { data: referee } = await supabase
-          .from('clients')
-          .select('id')
-          .eq('referral_code', formData.referral_code.toUpperCase())
-          .maybeSingle();
-        finalReferredById = referee?.id;
+      let finalUserId = user?.id;
+
+      // If user is not detected yet, try to get the session again or wait
+      if (!finalUserId) {
+        const { data: sessionData } = await supabase.auth.getSession();
+        finalUserId = sessionData.session?.user?.id;
       }
 
-      if (authError) throw authError;
-      if (!authData.user) throw new Error('Nepodařilo se vytvořit uživatele');
+      if (!finalUserId) throw new Error('Nepodařilo se zjistit ID uživatele. Zkuste prosím stránku obnovit.');
 
-      // Create client record
-      const { error: clientError } = await supabase
-        .from('clients')
-        .insert({
-          user_id: authData.user.id,
-          client_type: clientType,
-          name: formData.name,
-          email: formData.email,
-          phone: formData.phone,
-          address: formData.address,
-          city: formData.city,
-          postal_code: formData.postal_code,
-          date_of_birth: clientType === 'person' ? formData.date_of_birth || null : null,
-          company_id: clientType === 'company' ? formData.company_id : null,
-          dic: clientType === 'company' ? formData.dic || null : null,
-          reliable_person: clientType === 'company' ? formData.reliable_person : null,
-          has_children: clientType === 'person' ? formData.has_children : false,
-          has_pets: clientType === 'person' ? formData.has_pets : false,
-          allergies_notes: clientType === 'person' ? formData.allergies_notes || null : null,
-          special_instructions: clientType === 'person' ? formData.special_instructions || null : null,
-          referred_by_id: finalReferredById,
-          client_source: 'App'
-        });
-
-      if (clientError) throw clientError;
-
-      // Assign client role
-      const { error: roleError } = await supabase
-        .from('user_roles')
-        .insert({
-          user_id: authData.user.id,
-          role: 'client'
-        });
-
-      if (roleError && !roleError.message.includes('duplicate')) {
-        throw roleError;
-      }
+      // Update client record one last time - COMPLETED
+      await upsertClientData({ ...formData, onboarding_step: 5, onboarding_completed: true }, finalUserId);
 
       toast({
         title: "Registrace dokončena!",
         description: "Vítejte v DrClean",
         duration: 1500,
       });
+
+      // Clear session storage on success
+      sessionStorage.removeItem('registration_step');
+      sessionStorage.removeItem('registration_formData');
 
       // Navigate to client dashboard
       navigate('/klient');
@@ -432,38 +711,23 @@ export default function ClientAuth() {
   };
 
   const renderStepIndicator = () => {
-    const totalSteps = 5;
-    const stepLabels = ['Typ', 'Ověření', 'Údaje', clientType === 'person' ? 'Prefer.' : 'Detail', 'Shrnutí'];
+    const totalSteps = 4;
+    const progress = (step / totalSteps) * 100;
 
     return (
-      <div className="mb-10 w-full px-1">
-        <div
-          className="grid grid-cols-5 w-full gap-0 mb-5"
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(5, 1fr)',
-            width: '100%'
-          }}
-        >
-          {stepLabels.map((label, index) => (
-            <div key={index} className="flex flex-col items-center min-w-0">
-              <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center text-lg sm:text-2xl font-black transition-all ${step > index + 1 ? 'bg-white text-slate-950' :
-                step === index + 1 ? 'bg-primary text-white ring-2 sm:ring-4 ring-primary/20 shadow-lg shadow-primary/20' :
-                  'bg-white/10 text-white/40'
-                }`}>
-                {step > index + 1 ? <Check className="w-7 h-7 sm:w-9 sm:h-9" /> : index + 1}
-              </div>
-              <span className={`text-[13px] sm:text-xl mt-2.5 font-black text-center leading-none truncate w-full px-0.5 tracking-tight ${step === index + 1 ? 'text-white' : 'text-white/40'
-                }`}>
-                {label}
-              </span>
-            </div>
-          ))}
+      <div className="mb-8 w-full space-y-2">
+        <div className="flex justify-between items-end">
+          <span className="text-xs font-bold text-white uppercase tracking-wider">
+            Krok {step}/{totalSteps}
+          </span>
+          <span className="text-sm font-medium text-white/60 whitespace-nowrap ml-2">
+            {Math.round(progress)}% hotovo
+          </span>
         </div>
-        <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+        <div className="h-2 bg-white/10 rounded-full overflow-hidden">
           <div
             className="h-full bg-gradient-to-r from-primary to-primary-light transition-all duration-500"
-            style={{ width: `${(step / totalSteps) * 100}%` }}
+            style={{ width: `${progress}%` }}
           />
         </div>
       </div>
@@ -478,10 +742,10 @@ export default function ClientAuth() {
         <div className="grid grid-cols-2 gap-3 p-1 bg-white/5 rounded-xl border border-white/10">
           <Button
             type="button"
-            variant={clientType === 'person' ? 'default' : 'ghost'}
+            variant={clientType === 'person' ? 'default' : 'outline'}
             className={`h-12 rounded-lg transition-all duration-300 ${clientType === 'person'
-              ? 'bg-white text-slate-950 shadow-lg hover:bg-primary/10'
-              : 'text-white/70 hover:text-white hover:bg-white/5'
+              ? 'bg-white text-slate-950 shadow-lg hover:bg-white/90 border-2 border-white'
+              : 'bg-white/10 text-white/70 hover:text-white hover:bg-white/15 border-2 border-white/20'
               }`}
             onClick={() => setClientType('person')}
           >
@@ -490,10 +754,10 @@ export default function ClientAuth() {
           </Button>
           <Button
             type="button"
-            variant={clientType === 'company' ? 'default' : 'ghost'}
+            variant={clientType === 'company' ? 'default' : 'outline'}
             className={`h-12 rounded-lg transition-all duration-300 ${clientType === 'company'
-              ? 'bg-white text-slate-950 shadow-lg hover:bg-primary/10'
-              : 'text-white/70 hover:text-white hover:bg-white/5'
+              ? 'bg-white text-slate-950 shadow-lg hover:bg-white/90 border-2 border-white'
+              : 'bg-white/10 text-white/70 hover:text-white hover:bg-white/15 border-2 border-white/20'
               }`}
             onClick={() => setClientType('company')}
           >
@@ -639,23 +903,18 @@ export default function ClientAuth() {
         />
       </div>
 
-      <div className="flex gap-3">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => setStep(1)}
-          className="flex-1 h-12 bg-white/5 border-white/10 text-white hover:bg-white/10 rounded-xl"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Zpět
-        </Button>
+      <div className="flex flex-col gap-3">
         <PremiumButton
           type="submit"
-          className="flex-1 h-12 rounded-xl shadow-lg"
+          className="w-full h-12 rounded-xl shadow-lg"
           disabled={loading || verificationCode.length !== 6}
         >
           {loading ? "Ověřuji..." : "Ověřit kód"}
         </PremiumButton>
+        <div className="flex items-center gap-2 text-white/60 text-xs justify-center">
+          <Info className="h-3.5 w-3.5" />
+          <p>Doručení kódu trvá okolo 2 minut.</p>
+        </div>
       </div>
 
       <Button
@@ -689,6 +948,7 @@ export default function ClientAuth() {
             <FileText className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40 group-focus-within:text-white transition-colors" />
             <Input
               id="dic"
+              name="dic"
               value={formData.dic}
               onChange={(e) => setFormData({ ...formData, dic: e.target.value })}
               placeholder="CZ12345678"
@@ -704,15 +964,22 @@ export default function ClientAuth() {
         <Label htmlFor="phone" className="text-white/80 text-xs font-bold uppercase tracking-wider ml-1">Telefon *</Label>
         <div className="relative group">
           <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40 group-focus-within:text-white transition-colors" />
-          <Input
-            id="phone"
-            type="tel"
-            value={formData.phone}
-            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-            required
-            placeholder="+420 777 123 456"
-            className="h-12 bg-white/5 border-white/10 text-white placeholder:text-white/20 pl-11 rounded-2xl focus-visible:ring-white/20 focus-visible:border-white/20 transition-all"
-          />
+          <div className="flex items-center h-12 bg-white/5 border border-white/10 rounded-2xl focus-within:ring-2 focus-within:ring-white/20 focus-within:border-white/20 transition-all">
+            <span className="pl-11 pr-2 text-white/60 text-sm">+420</span>
+            <Input
+              id="phone"
+              type="tel"
+              inputMode="numeric"
+              value={formatPhoneNumber(formData.phone.replace(/^\+420\s*/, ''))}
+              onChange={(e) => {
+                const numbers = e.target.value.replace(/\D/g, '').slice(0, 9);
+                setFormData({ ...formData, phone: numbers });
+              }}
+              required
+              placeholder="123 456 789"
+              className="flex-1 h-full bg-transparent border-0 text-white placeholder:text-white/20 rounded-r-2xl focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none"
+            />
+          </div>
         </div>
       </div>
 
@@ -720,16 +987,52 @@ export default function ClientAuth() {
       <div className="space-y-2.5">
         <Label htmlFor="address" className="text-white/80 text-xs font-bold uppercase tracking-wider ml-1">Adresa *</Label>
         <div className="relative group">
-          <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40 group-focus-within:text-white transition-colors" />
-          <Input
-            id="address"
-            value={formData.address}
-            onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-            required
-            disabled={fetchingAres && clientType === 'company'}
-            placeholder="Ulice a číslo popisné"
-            className="h-12 bg-white/5 border-white/10 text-white placeholder:text-white/20 pl-11 rounded-2xl focus-visible:ring-white/20 focus-visible:border-white/20 transition-all"
-          />
+          <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40 group-focus-within:text-white transition-colors z-10" />
+          {isLoaded ? (
+            <Autocomplete
+              onLoad={(autocomplete) => {
+                autocompleteRef.current = autocomplete;
+              }}
+              onPlaceChanged={() => {
+                if (autocompleteRef.current) {
+                  const place = autocompleteRef.current.getPlace();
+                  if (place.formatted_address) {
+                    setFormData({
+                      ...formData,
+                      address: place.formatted_address,
+                      city: place.address_components?.find(c => c.types.includes('locality'))?.long_name || '',
+                      postal_code: place.address_components?.find(c => c.types.includes('postal_code'))?.long_name || ''
+                    });
+                  }
+                }
+              }}
+              options={{
+                componentRestrictions: { country: 'cz' },
+                types: ['address']
+              }}
+            >
+              <input
+                id="address"
+                type="text"
+                value={formData.address}
+                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                required
+                disabled={fetchingAres && clientType === 'company'}
+                placeholder="Začněte psát adresu..."
+                className="w-full h-12 bg-white/5 border border-white/10 text-white placeholder:text-white/20 pl-11 rounded-2xl focus:ring-2 focus:ring-white/20 focus:border-white/20 transition-all outline-none"
+              />
+            </Autocomplete>
+          ) : (
+            <Input
+              id="address"
+              value={formData.address}
+              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+              required
+              disabled={fetchingAres && clientType === 'company'}
+              placeholder="Ulice a číslo popisné"
+              className="h-12 bg-white/5 border-white/10 text-white placeholder:text-white/20 pl-11 rounded-2xl focus-visible:ring-white/20 focus-visible:border-white/20 transition-all"
+            />
+          )}
         </div>
       </div>
 
@@ -761,25 +1064,7 @@ export default function ClientAuth() {
         </div>
       </div>
 
-      {/* Date of Birth - Only for persons */}
-      {clientType === 'person' && (
-        <div className="space-y-2.5">
-          <Label htmlFor="dob" className="text-white/80 text-xs font-bold uppercase tracking-wider ml-1">
-            Datum narození
-          </Label>
-          <div className="relative">
-            <DatePicker
-              value={formData.date_of_birth ? new Date(formData.date_of_birth) : undefined}
-              onChange={(date) => setFormData({
-                ...formData,
-                date_of_birth: date ? date.toISOString().split('T')[0] : ''
-              })}
-              placeholder="Vyberte datum"
-              disabledDates={(date) => date > new Date()}
-            />
-          </div>
-        </div>
-      )}
+
 
       {/* Contact Person - Only for companies */}
       {clientType === 'company' && (
@@ -801,21 +1086,13 @@ export default function ClientAuth() {
         </div>
       )}
 
-      <div className="flex gap-3 pt-2">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => setStep(2)}
-          className="flex-1 h-12 bg-white/5 border-white/10 text-white hover:bg-white/10 rounded-xl"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Zpět
-        </Button>
+      <div className="pt-2">
         <PremiumButton
           type="submit"
-          className="flex-1 h-12 rounded-xl shadow-lg"
+          disabled={loading}
+          className="w-full h-12 rounded-xl shadow-lg"
         >
-          Pokračovat
+          {loading ? 'Ukládám...' : 'Pokračovat'}
           <ArrowRight className="ml-2 h-4 w-4" />
         </PremiumButton>
       </div>
@@ -844,25 +1121,17 @@ export default function ClientAuth() {
             </div>
           </div>
 
-          <div className="flex gap-3">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setStep(3)}
-              className="flex-1 h-12 bg-white/5 border-white/10 text-white hover:bg-white/10 rounded-xl"
-            >
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Zpět
-            </Button>
+          <div className="pt-2">
             <PremiumButton
               type="submit"
-              className="flex-1 h-12 rounded-xl shadow-lg"
+              disabled={loading}
+              className="w-full h-12 rounded-xl shadow-lg bg-green-600 hover:bg-green-700"
             >
-              Pokračovat
-              <ArrowRight className="ml-2 h-4 w-4" />
+              {loading ? 'Dokončuji registraci...' : 'Dokončit registraci'}
+              <Check className="ml-2 h-4 w-4" />
             </PremiumButton>
           </div>
-        </form>
+        </form >
       );
     }
 
@@ -882,10 +1151,10 @@ export default function ClientAuth() {
           <div className="grid grid-cols-2 gap-3 p-1 bg-white/5 rounded-xl border border-white/10">
             <Button
               type="button"
-              variant={formData.has_children ? 'default' : 'ghost'}
+              variant={formData.has_children ? 'default' : 'outline'}
               className={`h-10 rounded-lg transition-all ${formData.has_children
-                ? 'bg-white text-slate-950 shadow-md'
-                : 'text-white/70 hover:text-white hover:bg-white/5'
+                ? 'bg-white text-slate-950 shadow-md border-2 border-white'
+                : 'bg-white/10 text-white/70 hover:text-white hover:bg-white/15 border-2 border-white/20'
                 }`}
               onClick={() => setFormData({ ...formData, has_children: true })}
             >
@@ -893,10 +1162,10 @@ export default function ClientAuth() {
             </Button>
             <Button
               type="button"
-              variant={!formData.has_children ? 'default' : 'ghost'}
+              variant={!formData.has_children ? 'default' : 'outline'}
               className={`h-10 rounded-lg transition-all ${!formData.has_children
-                ? 'bg-white text-slate-950 shadow-md'
-                : 'text-white/70 hover:text-white hover:bg-white/5'
+                ? 'bg-white text-slate-950 shadow-md border-2 border-white'
+                : 'bg-white/10 text-white/70 hover:text-white hover:bg-white/15 border-2 border-white/20'
                 }`}
               onClick={() => setFormData({ ...formData, has_children: false })}
             >
@@ -913,10 +1182,10 @@ export default function ClientAuth() {
           <div className="grid grid-cols-2 gap-3 p-1 bg-white/5 rounded-xl border border-white/10">
             <Button
               type="button"
-              variant={formData.has_pets ? 'default' : 'ghost'}
+              variant={formData.has_pets ? 'default' : 'outline'}
               className={`h-10 rounded-lg transition-all ${formData.has_pets
-                ? 'bg-white text-slate-950 shadow-md'
-                : 'text-white/70 hover:text-white hover:bg-white/5'
+                ? 'bg-white text-slate-950 shadow-md border-2 border-white'
+                : 'bg-white/10 text-white/70 hover:text-white hover:bg-white/15 border-2 border-white/20'
                 }`}
               onClick={() => setFormData({ ...formData, has_pets: true })}
             >
@@ -924,10 +1193,10 @@ export default function ClientAuth() {
             </Button>
             <Button
               type="button"
-              variant={!formData.has_pets ? 'default' : 'ghost'}
+              variant={!formData.has_pets ? 'default' : 'outline'}
               className={`h-10 rounded-lg transition-all ${!formData.has_pets
-                ? 'bg-white text-slate-950 shadow-md'
-                : 'text-white/70 hover:text-white hover:bg-white/5'
+                ? 'bg-white text-slate-950 shadow-md border-2 border-white'
+                : 'bg-white/10 text-white/70 hover:text-white hover:bg-white/15 border-2 border-white/20'
                 }`}
               onClick={() => setFormData({ ...formData, has_pets: false })}
             >
@@ -966,22 +1235,13 @@ export default function ClientAuth() {
           />
         </div>
 
-        <div className="flex gap-3 pt-2">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => setStep(3)}
-            className="flex-1 h-12 bg-white/5 border-white/10 text-white hover:bg-white/10 rounded-xl"
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Zpět
-          </Button>
+        <div className="pt-2">
           <PremiumButton
             type="submit"
-            className="flex-1 h-12 rounded-xl shadow-lg"
+            className="w-full h-12 rounded-xl shadow-lg"
           >
-            Pokračovat
-            <ArrowRight className="ml-2 h-4 w-4" />
+            Dokončit registraci
+            <Check className="ml-2 h-4 w-4" />
           </PremiumButton>
         </div>
       </form>
@@ -1029,10 +1289,10 @@ export default function ClientAuth() {
                   <p className="text-white/60 text-xs">IČO</p>
                   <p className="text-white font-medium">{formData.company_id}</p>
                 </div>
-                {formData.dic && (
+                {formData.vat_id && (
                   <div>
                     <p className="text-white/60 text-xs">DIČ</p>
-                    <p className="text-white font-medium">{formData.dic}</p>
+                    <p className="text-white font-medium">{formData.vat_id}</p>
                   </div>
                 )}
               </>
@@ -1221,7 +1481,6 @@ export default function ClientAuth() {
               {step === 2 && renderStep2()}
               {step === 3 && renderStep3()}
               {step === 4 && renderStep4()}
-              {step === 5 && renderStep5Summary()}
 
               <div className="relative my-6">
                 <div className="absolute inset-0 flex items-center">

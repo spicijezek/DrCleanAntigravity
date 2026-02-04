@@ -39,7 +39,6 @@ export default function ClientProfile() {
     address: '',
     city: '',
     postal_code: '',
-    date_of_birth: '',
     company_id: '',
     dic: '',
     reliable_person: '',
@@ -59,11 +58,15 @@ export default function ClientProfile() {
     if (!user) return;
 
     try {
-      const { data: client } = await supabase
+      const { data, error } = await supabase
         .from('clients')
         .select('*')
         .eq('user_id', user.id)
         .single();
+
+      if (error) throw error;
+
+      const client = data as any;
 
       if (client) {
         setClientType(client.client_type || 'person');
@@ -74,14 +77,13 @@ export default function ClientProfile() {
           address: client.address || '',
           city: client.city || '',
           postal_code: client.postal_code || '',
-          date_of_birth: client.date_of_birth || '',
           company_id: client.company_id || '',
           dic: client.dic || '',
           reliable_person: client.reliable_person || '',
           has_children: client.has_children || false,
           has_pets: client.has_pets || false,
-          children_notes: client.notes?.includes('Children:') ? client.notes.split('Children:')[1].split('\n')[0].trim() : '',
-          pets_notes: client.notes?.includes('Pets:') ? client.notes.split('Pets:')[1].split('\n')[0].trim() : '',
+          children_notes: '', // Legacy notes not needed if has_children is boolean
+          pets_notes: '', // Legacy notes not needed if has_pets is boolean
           allergies_notes: client.allergies_notes || '',
           special_instructions: client.special_instructions || ''
         });
@@ -103,7 +105,7 @@ export default function ClientProfile() {
       const data = await response.json();
 
       const companyName = data.obchodniJmeno || '';
-      const dic = data.dic || '';
+      const vat_id = data.dic || '';
 
       const sidlo = data.sidlo;
       let fullAddress = '';
@@ -123,7 +125,7 @@ export default function ClientProfile() {
       setProfileData(prev => ({
         ...prev,
         name: companyName || prev.name,
-        dic: dic || prev.dic,
+        dic: vat_id || prev.dic,
         address: fullAddress || prev.address,
         city: cityName || prev.city,
         postal_code: postal || prev.postal_code,
@@ -193,7 +195,7 @@ export default function ClientProfile() {
 
     setLoading(true);
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('clients')
         .update({
           client_type: clientType,
@@ -203,7 +205,6 @@ export default function ClientProfile() {
           address: profileData.address,
           city: profileData.city,
           postal_code: profileData.postal_code,
-          date_of_birth: clientType === 'person' ? profileData.date_of_birth : null,
           company_id: clientType === 'company' ? profileData.company_id : null,
           dic: clientType === 'company' ? profileData.dic : null,
           reliable_person: clientType === 'company' ? profileData.reliable_person : null,
@@ -425,23 +426,6 @@ export default function ClientProfile() {
                       />
                     </div>
 
-                    {clientType === 'person' && (
-                      <div className="space-y-2">
-                        <Label className="flex items-center gap-2">
-                          <Calendar className="w-4 h-4 text-primary" />
-                          Datum narození
-                        </Label>
-                        <DatePicker
-                          value={profileData.date_of_birth ? new Date(profileData.date_of_birth) : undefined}
-                          onChange={(date) => setProfileData({
-                            ...profileData,
-                            date_of_birth: date ? date.toISOString().split('T')[0] : ''
-                          })}
-                          placeholder=""
-                          disabledDates={(date) => date > new Date()}
-                        />
-                      </div>
-                    )}
 
                     <div className="space-y-2 md:col-span-2">
                       <Label className="flex items-center gap-2">
@@ -677,6 +661,6 @@ export default function ClientProfile() {
           </PremiumButton>
         </div>
       </div>
-    </div>
+    </div >
   );
 }
