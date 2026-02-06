@@ -78,12 +78,12 @@ function PremiumCelebration({ show }: { show: boolean }) {
   // Increased particle count (135) for a dense, long-lasting magical effect
   const particles = Array.from({ length: 135 }, (_, i) => ({
     id: i,
-    delay: i * 40, // Spread out over ~5.4 seconds
+    delay: i * 20, // Faster spread
     color: colors[i % colors.length],
     scale: 0.3 + Math.random() * 0.8,
     left: 2 + Math.random() * 96,
-    top: 30 + Math.random() * 60,
-    duration: 3 + Math.random() * 3 // Longer travel time
+    top: 100 + Math.random() * 20, // All start from bottom
+    duration: 1.5 + Math.random() * 1.5 // Faster move
   }));
 
   return (
@@ -209,8 +209,33 @@ export default function ClientLoyalty() {
   useEffect(() => {
     if (clientData?.id) {
       loadTransactionsAndRedemptions();
+
+      // AUTO-ENSURE REFERRAL CODE: 
+      // If code is missing, call the database function to generate it immediately
+      if (!clientData.referral_code) {
+        ensureCodeExists();
+      }
     }
-  }, [clientData?.id]);
+  }, [clientData?.id, clientData?.referral_code]);
+
+  const ensureCodeExists = async () => {
+    try {
+      console.log('Ensuring referral code exists for client:', clientData?.id);
+      const { data: newCode, error } = await supabase.rpc('ensure_referral_code', {
+        p_client_id: clientData?.id
+      });
+
+      if (error) throw error;
+
+      if (newCode) {
+        console.log('Referral code generated:', newCode);
+        // Refresh the client data in cache
+        queryClient.invalidateQueries({ queryKey: ['clientProfiles'] });
+      }
+    } catch (err) {
+      console.error('Error ensuring referral code:', err);
+    }
+  };
 
   // Sync loading state with hook
   useEffect(() => {
@@ -594,72 +619,84 @@ export default function ClientLoyalty() {
         </div>
       </div>
 
-      <Card className="relative overflow-hidden border-2 border-amber-200 dark:border-amber-700 shadow-lg">
-        <div className="relative z-10 bg-gradient-to-r from-amber-100 to-orange-200 dark:from-amber-900/50 dark:to-orange-900/50 p-5 space-y-4">
-          {/* Animated decorative bubbles - 11 bubbles matching dashboard refinement */}
-          <div className="absolute right-4 top-3 h-20 w-20 rounded-full bg-white/38 dark:bg-amber-300/40 animate-float-circle-1" />
-          <div className="absolute right-8 top-14 h-14 w-14 rounded-full bg-orange-600/38 dark:bg-orange-300/42 animate-float-circle-2" />
-          <div className="absolute left-4 bottom-3 h-16 w-16 rounded-full bg-white/40 dark:bg-amber-400/38 animate-float-circle-1" />
-          <div className="absolute left-12 top-10 h-10 w-10 rounded-full bg-amber-600/38 dark:bg-orange-400/40 animate-float-circle-2" />
-          <div className="absolute right-12 bottom-6 h-18 w-18 rounded-full bg-white/35 dark:bg-amber-300/38 animate-float-circle-1" />
-          <div className="absolute left-1/2 top-8 h-12 w-12 rounded-full bg-orange-600/38 dark:bg-orange-300/40 animate-float-circle-2" />
-          <div className="absolute left-8 bottom-12 h-14 w-14 rounded-full bg-white/38 dark:bg-amber-400/38 animate-float-circle-1" />
-          <div className="absolute right-16 top-1/2 h-11 w-11 rounded-full bg-amber-700/38 dark:bg-orange-300/40 animate-float-circle-2" />
-          <div className="absolute left-20 top-14 h-9 w-9 rounded-full bg-white/40 dark:bg-amber-300/38 animate-float-circle-1" />
-          <div className="absolute right-10 top-10 h-12 w-12 rounded-full bg-orange-600/38 dark:bg-orange-300/42 animate-float-circle-2" />
-          <div className="absolute left-6 top-6 h-10 w-10 rounded-full bg-white/38 dark:bg-amber-400/38 animate-float-circle-1" />
+      <Card className="relative overflow-hidden border-[3px] border-primary shadow-2xl rounded-[2.5rem] group transition-all duration-500">
+        <div className="relative z-10 bg-gradient-to-br from-white via-slate-50/80 to-slate-100/50 dark:from-slate-900 dark:via-slate-900/90 dark:to-slate-800/80 p-6 space-y-6">
+          {/* Subtle decorative elements - matching premium dashboard style but with primary/slate tones */}
+          <div className="absolute right-4 top-3 h-24 w-24 rounded-full bg-primary/5 dark:bg-primary/10 blur-2xl animate-float-circle-1" />
+          <div className="absolute left-6 bottom-4 h-20 w-20 rounded-full bg-slate-200/20 dark:bg-slate-700/10 blur-xl animate-float-circle-2" />
 
-          {/* Sparkle decorations */}
-          <Sparkles className="absolute right-12 top-2 h-3 w-3 text-amber-600/70 dark:text-amber-300/60 animate-pulse" />
+          {/* Micro bubbles for depth */}
+          <div className="absolute right-12 top-10 h-3 w-3 rounded-full bg-primary/20 dark:bg-primary/30 animate-pulse" />
+          <div className="absolute left-1/4 bottom-12 h-2 w-2 rounded-full bg-slate-300 dark:bg-slate-600 animate-pulse" style={{ animationDelay: '1s' }} />
 
           <div className="relative z-10 flex items-center gap-4">
-            <div className="p-3 rounded-2xl bg-amber-100 dark:bg-amber-900/50 shadow-sm">
-              <Share2 className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+            <div className="relative">
+              <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full scale-150 animate-pulse" />
+              <div className="relative p-3.5 rounded-2xl bg-gradient-to-br from-primary to-primary-foreground shadow-lg border-2 border-white/20">
+                <Share2 className="h-6 w-6 text-white" />
+              </div>
             </div>
             <div className="flex-1">
-              <h3 className="text-lg font-black text-foreground tracking-tight">Doporučte nás přátelům</h3>
-              <p className="text-sm text-muted-foreground font-medium">Získejte 2x body pro oba za první úklid</p>
+              <h3 className="text-xl font-black text-foreground tracking-tight">Doporučte nás přátelům</h3>
+              <p className="text-sm text-muted-foreground font-medium">Získejte bonusové body pro oba za první úklid</p>
             </div>
           </div>
 
-          <div className="relative z-10 bg-white/50 dark:bg-amber-900/20 rounded-2xl p-4 border border-amber-200/50 dark:border-amber-800/50 space-y-3">
-            <div className="flex flex-col items-center justify-center p-3 py-6 bg-white dark:bg-slate-900 rounded-xl border-2 border-dashed border-amber-300 dark:border-amber-700 relative overflow-hidden">
-              <p className="text-[10px] uppercase tracking-[0.2em] font-black text-amber-600 dark:text-amber-400 mb-1">Váš unikátní kód</p>
-              {referralCode ? (
-                <p className="text-4xl font-black tracking-[0.1em] text-foreground font-mono transition-all animate-in fade-in duration-500">{referralCode}</p>
-              ) : (
-                <p className="text-sm text-muted-foreground font-medium italic py-2">Kód bude k dispozici po první objednávce</p>
-              )}
+          <div className="relative z-10 space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-5 gap-4 items-center">
+              {/* Unique Code Display - Sleek and subtle */}
+              <div className="sm:col-span-3 relative overflow-hidden flex flex-col items-center justify-center p-6 bg-slate-50 dark:bg-slate-950/40 rounded-[2rem] border-2 border-slate-100 dark:border-slate-800 shadow-inner group-hover:border-primary/20 transition-all duration-500">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+                <p className="text-[10px] uppercase tracking-[0.25em] font-black text-primary/60 dark:text-primary/70 mb-2 relative z-10">Váš unikátní kód</p>
+                {referralCode ? (
+                  <p className="text-4xl font-black tracking-widest text-foreground font-mono transition-all animate-in zoom-in duration-500 relative z-10">{referralCode}</p>
+                ) : (
+                  <div className="flex flex-col items-center gap-2 py-2 relative z-10">
+                    <p className="text-sm text-muted-foreground font-medium italic animate-pulse">Generujeme váš kód...</p>
+                    <p className="text-[10px] text-muted-foreground/60 italic uppercase tracking-widest">Měl by se brzy objevit</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Action Buttons */}
+              <div className="sm:col-span-2 flex flex-row sm:flex-col gap-2 h-full">
+                <Button
+                  className="flex-1 sm:h-auto h-16 rounded-2xl text-base shadow-md bg-amber-100 hover:bg-amber-200 text-amber-900 border-2 border-amber-200 font-black transition-all active:scale-[0.98]"
+                  onClick={handleShare}
+                  disabled={!referralCode}
+                >
+                  <Share2 className="h-4 w-4 mr-2 text-amber-700" />
+                  Sdílet
+                </Button>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-16 sm:w-full sm:h-12 h-16 rounded-2xl border-2 transition-all duration-300",
+                    isCopied
+                      ? "bg-green-50 border-green-200 text-green-600 dark:bg-green-900/20 dark:border-green-800 dark:text-green-400"
+                      : "bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 hover:border-primary/30"
+                  )}
+                  onClick={handleCopyCode}
+                  disabled={!referralCode}
+                >
+                  {isCopied ? (
+                    <CheckCircle2 className="h-6 w-6 animate-in zoom-in spin-in-90 duration-300" />
+                  ) : (
+                    <Copy className="h-5 w-5 text-slate-500" />
+                  )}
+                  <span className="sr-only">Kopírovat kód</span>
+                </Button>
+              </div>
             </div>
 
-            <div className="space-y-2 pt-2">
+            <div className="p-4 rounded-2xl bg-primary/5 border border-primary/10 flex gap-3 items-start">
+              <div className="h-5 w-5 rounded-full bg-primary/20 flex items-center justify-center shrink-0 mt-0.5">
+                <div className="h-2 w-2 rounded-full bg-primary" />
+              </div>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                Sdílejte svůj kód s přáteli. Jakmile jej použijí při registraci a zaplatí svou první fakturu, **získáte oba bonusové body** (v hodnotě jejich prvního úklidu).
+                Sdílejte svůj kód s přáteli. Jakmile jej použijí při registraci a dokončí svůj první úklid, **získáte oba bonusové body** ve výši ceny tohoto úklidu.
               </p>
             </div>
-          </div>
-
-          <div className="relative z-10 flex gap-2">
-            <PremiumButton
-              className="flex-1 h-12 rounded-xl"
-              onClick={handleShare}
-              disabled={!referralCode}
-            >
-              <Share2 className="h-4 w-4 mr-2" />
-              Sdílet s přáteli
-            </PremiumButton>
-            <Button
-              variant="outline"
-              className={`h-12 w-12 rounded-xl border-amber-200 dark:border-amber-800 transition-all ${isCopied ? 'bg-amber-50 dark:bg-amber-900/20' : ''}`}
-              onClick={handleCopyCode}
-              disabled={!referralCode}
-            >
-              {isCopied ? (
-                <CheckCircle2 className="h-5 w-5 text-amber-600 animate-in zoom-in duration-300" />
-              ) : (
-                <Copy className="h-5 w-5 text-amber-600" />
-              )}
-            </Button>
           </div>
         </div>
       </Card>

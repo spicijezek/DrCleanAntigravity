@@ -9,8 +9,8 @@ const navItems = [
   { icon: Home, label: 'Domů', path: '/klient' },
   { type: 'clock' as const, label: 'Úklidy', path: '/klient/fakturace' },
   { type: 'plus' as const, path: '/klient/sluzby' },
-  { type: 'checklist' as const, label: 'Checklist', path: '/klient/checklist' },
-  { icon: Gift, label: 'Věrnost', path: '/klient/vernost' },
+  { type: 'checklist' as const, label: 'Úkoly', path: '/klient/checklist' },
+  { icon: Gift, label: 'Body', path: '/klient/vernost' },
 ];
 
 export function ClientBottomNav() {

@@ -89,18 +89,18 @@ export function Header() {
 
     <>
       <header className="sticky top-0 z-[10100] w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-sm transition-all duration-300">
-        <div className="w-full mx-auto px-4 md:px-2 flex h-16 items-center justify-between">
-          {/* Left Side: Hamburger & Logo */}
-          <div className="flex items-center -ml-1">
+        <div className="relative h-16 w-full max-w-7xl mx-auto flex items-center justify-center md:justify-between md:px-4">
+          {/* Left: Hamburger Menu - Absolutely Positioned on Mobile */}
+          <div className="absolute left-4 top-1/2 -translate-y-1/2 z-20 md:relative md:left-auto md:top-auto md:translate-y-0">
             {/* Hamburger Trigger - Mobile ONLY */}
-            <div className="md:hidden mr-2">
+            <div className="md:hidden">
               <Sheet>
                 <SheetTrigger asChild>
                   <Button variant="ghost" size="icon" aria-label="Open menu" className="text-muted-foreground hover:text-foreground">
                     <Menu className="h-6 w-6" />
                   </Button>
                 </SheetTrigger>
-                <SheetContent side="left" className="w-[300px] sm:w-[350px] p-0 border-r-0">
+                <SheetContent side="left" className="w-[300px] sm:w-[350px] p-0 border-r-0 z-[10200]">
                   <div className="flex flex-col h-full bg-background animate-in slide-in-from-left duration-300">
                     {/* Menu Header with Bubble Animation */}
                     <div className="relative overflow-hidden bg-gradient-to-br from-blue-600 to-indigo-700 p-6 text-white">
@@ -123,7 +123,6 @@ export function Header() {
 
                     {/* Menu Items */}
                     <div className="flex-1 py-6 px-4 space-y-2 overflow-y-auto">
-                      <div className="text-xs font-semibold text-muted-foreground px-4 mb-2 uppercase tracking-wider">Menu</div>
                       {navigationItems.map((item) => (
                         <SheetClose key={item.href} asChild>
                           <div
@@ -144,7 +143,6 @@ export function Header() {
                       {/* Admin Items */}
                       {profile?.is_admin && (
                         <>
-                          <div className="text-xs font-semibold text-muted-foreground px-4 mt-6 mb-2 uppercase tracking-wider">Admin</div>
                           {adminItems.map((item) => (
                             <SheetClose key={item.href} asChild>
                               <div
@@ -163,7 +161,6 @@ export function Header() {
                           ))}
 
                           {/* Invoices Sub-section */}
-                          <div className="text-xs font-semibold text-muted-foreground px-4 mt-6 mb-2 uppercase tracking-wider">Invoices</div>
                           {invoiceItems.map((item) => (
                             <SheetClose key={item.href} asChild>
                               <div
@@ -233,8 +230,8 @@ export function Header() {
               </Sheet>
             </div>
 
-            {/* Company logo */}
-            <div className="flex items-center gap-3 cursor-pointer group" onClick={() => navigate('/')}>
+            {/* Company logo - Desktop only */}
+            <div className="hidden md:flex items-center gap-3 cursor-pointer group" onClick={() => navigate('/')}>
               <div className="relative">
                 <img
                   src={drcleanIcon}
@@ -249,10 +246,11 @@ export function Header() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 ml-auto">
+          {/* Right: Profile - Absolutely Positioned on Mobile */}
+          <div className="absolute right-4 top-1/2 -translate-y-1/2 z-20 md:relative md:right-auto md:top-auto md:translate-y-0 md:ml-auto">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="rounded-full h-10 w-10 border border-input/50 bg-background/50 backdrop-blur-sm shadow-sm hover:bg-accent hover:text-accent-foreground transition-all">
+                <Button variant="ghost" size="icon" className="flex items-center justify-center rounded-full h-10 w-10 border border-input/50 bg-background/50 backdrop-blur-sm shadow-sm hover:bg-accent hover:text-accent-foreground transition-all">
                   <Avatar className="h-8 w-8">
                     <AvatarImage src={avatarUrl} />
                     <AvatarFallback className="bg-gradient-to-br from-blue-500 to-indigo-600 text-white">

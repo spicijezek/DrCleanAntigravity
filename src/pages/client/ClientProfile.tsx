@@ -12,10 +12,15 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { LogOut, Save, Check, ChevronDown, FileText, User, Lock, MessageSquare, Info, Building2, MapPin, Mail, Phone, Calendar } from 'lucide-react';
+import { LogOut, Save, Check, ChevronDown, FileText, User, Lock, MessageSquare, Info, Building2, MapPin, Mail, Phone, Calendar, HelpCircle } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { ClientHeroHeader } from '@/components/client/ClientHeroHeader';
 import { DatePicker } from '@/components/ui/date-time-picker';
 import { LoadingOverlay } from "@/components/LoadingOverlay";
+import { useLoadScript, Autocomplete } from '@react-google-maps/api';
+
+const GOOGLE_MAPS_API_KEY = 'AIzaSyATxE6HkAJcLTbYyLoOwVlYqEhak32DDCQ';
+const libraries: ('places')[] = ['places'];
 
 export default function ClientProfile() {
   const { user, signOut } = useAuth();
@@ -24,6 +29,26 @@ export default function ClientProfile() {
   const [fetchingAres, setFetchingAres] = useState(false);
   const [clientType, setClientType] = useState<string>('person');
   const companyNameTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
+
+  const { isLoaded, loadError } = useLoadScript({
+    id: 'google-map-script',
+    googleMapsApiKey: GOOGLE_MAPS_API_KEY,
+    libraries,
+    language: 'cs',
+    region: 'CZ',
+  });
+
+  useEffect(() => {
+    if (loadError) {
+      console.error("Google Maps load error:", loadError);
+      toast({
+        variant: "destructive",
+        title: "Chyba Google Maps",
+        description: "Nepodařilo se načíst mapy. Zkontrolujte připojení nebo nastavení API klíče.",
+      });
+    }
+  }, [loadError, toast]);
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
     newPassword: '',
@@ -432,12 +457,66 @@ export default function ClientProfile() {
                         <MapPin className="w-4 h-4 text-primary" />
                         Adresa *
                       </Label>
-                      <Input
-                        required
-                        value={profileData.address}
-                        onChange={(e) => setProfileData({ ...profileData, address: e.target.value })}
-                        className="bg-muted/30 border-muted-foreground/20 focus:border-primary/50 transition-colors"
-                      />
+                      {isLoaded ? (
+                        <Autocomplete
+                          onLoad={(autocomplete) => {
+                            autocompleteRef.current = autocomplete;
+                          }}
+                          onPlaceChanged={() => {
+                            if (autocompleteRef.current) {
+                              const place = autocompleteRef.current.getPlace();
+                              if (place.formatted_address) {
+                                let street = '';
+                                let houseNumber = '';
+                                let city = '';
+                                let postalCode = '';
+
+                                place.address_components?.forEach(component => {
+                                  if (component.types.includes('route')) {
+                                    street = component.long_name;
+                                  } else if (component.types.includes('street_number')) {
+                                    houseNumber = component.long_name;
+                                  } else if (component.types.includes('locality')) {
+                                    city = component.long_name;
+                                  } else if (component.types.includes('postal_code')) {
+                                    postalCode = component.long_name;
+                                  }
+                                });
+
+                                const fullStreetAddress = street ? `${street} ${houseNumber}`.trim() : (place.name || '');
+
+                                setProfileData(prev => ({
+                                  ...prev,
+                                  address: fullStreetAddress || prev.address,
+                                  city: city || prev.city,
+                                  postal_code: postalCode || prev.postal_code
+                                }));
+                              }
+                            }
+                          }}
+                          options={{
+                            componentRestrictions: { country: 'cz' },
+                            types: ['address'],
+                            fields: ["address_components", "formatted_address", "geometry", "name"]
+                          }}
+                        >
+                          <Input
+                            required
+                            value={profileData.address}
+                            onChange={(e) => setProfileData({ ...profileData, address: e.target.value })}
+                            placeholder="Začněte psát adresu..."
+                            className="bg-muted/30 border-muted-foreground/20 focus:border-primary/50 transition-colors"
+                          />
+                        </Autocomplete>
+                      ) : (
+                        <Input
+                          required
+                          value={profileData.address}
+                          onChange={(e) => setProfileData({ ...profileData, address: e.target.value })}
+                          className="bg-muted/30 border-muted-foreground/20 focus:border-primary/50 transition-colors"
+                          placeholder="Ulice a číslo popisné"
+                        />
+                      )}
                     </div>
 
                     <div className="space-y-2">
@@ -651,6 +730,21 @@ export default function ClientProfile() {
               </CollapsibleContent>
             </Card>
           </Collapsible>
+
+          {/* FAQ Link */}
+          <Link to="/klient/faq">
+            <Card className="border-2 border-slate-200/60 dark:border-slate-800 hover:border-primary/40 transition-all duration-300 rounded-2xl overflow-hidden group shadow-sm hover:shadow-md">
+              <CardContent className="p-5 flex items-center gap-4">
+                <div className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+                  <HelpCircle className="h-6 w-6" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-bold text-base">Potřebujete pomoc?</h3>
+                  <p className="text-xs text-muted-foreground">Časté dotazy a odpovědi (FAQ)</p>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
 
           <PremiumButton
             className="w-full py-4 text-base rounded-2xl"

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useLoadScript, Autocomplete } from '@react-google-maps/api';
 import { format } from 'date-fns';
 import { cs } from 'date-fns/locale';
 import { useSearchParams } from 'react-router-dom';
@@ -45,6 +46,7 @@ import windowCleaningStep2Image from '@/assets/window-cleaning-step-2.png';
 import windowCleaningStep3Image from '@/assets/window-cleaning-step-3.png';
 import upholsteryStep1Image from '@/assets/upholstery-step-1.png';
 import upholsteryStep2Image from '@/assets/upholstery-step-2.png';
+import uklidVideo from '@/assets/uklid-video.mp4';
 
 
 
@@ -57,8 +59,8 @@ const services = [{
   icon: Sparkles,
   description: 'Kompletní úklid domácnosti nebo firmy',
   category: 'home_cleaning',
-  media: uklidImage,
-  mediaType: 'image' as const,
+  media: uklidVideo,
+  mediaType: 'video' as const,
   painPoints: ['Nemáte čas na pravidelný úklid?', 'Unavuje Vás neustálé mytí a lešení?', 'Chybí Vám síla po práci?'],
   benefits: ['Úspora času na rodinu a koníčky', 'Profesionální výsledek za skvělou cenu', 'Ekologické čisticí prostředky']
 }, {
@@ -294,6 +296,52 @@ export default function ClientServices() {
   } = useToast();
   const isMobile = useIsMobile();
   const isAdminBooking = user?.email === 'stepan.tomov5@seznam.cz';
+
+  // Google Maps API for address autocomplete
+  const GOOGLE_MAPS_API_KEY = 'AIzaSyATxE6HkAJcLTbYyLoOwVlYqEhak32DDCQ';
+  const libraries: ('places')[] = ['places'];
+  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
+
+  const { isLoaded: isGoogleMapsLoaded } = useLoadScript({
+    id: 'google-map-script',
+    googleMapsApiKey: GOOGLE_MAPS_API_KEY,
+    libraries,
+    language: 'cs',
+    region: 'CZ',
+  });
+
+  const handlePlaceChanged = () => {
+    if (autocompleteRef.current) {
+      const place = autocompleteRef.current.getPlace();
+      if (place.formatted_address) {
+        let street = '';
+        let houseNumber = '';
+        let city = '';
+        let postalCode = '';
+
+        place.address_components?.forEach(component => {
+          if (component.types.includes('route')) {
+            street = component.long_name;
+          } else if (component.types.includes('street_number')) {
+            houseNumber = component.long_name;
+          } else if (component.types.includes('locality')) {
+            city = component.long_name;
+          } else if (component.types.includes('postal_code')) {
+            postalCode = component.long_name;
+          }
+        });
+
+        const fullStreetAddress = street ? `${street} ${houseNumber}`.trim() : (place.name || '');
+
+        setBookingData(prev => ({
+          ...prev,
+          street: fullStreetAddress || prev.street,
+          city: city || prev.city,
+          postal_code: postalCode || prev.postal_code
+        }));
+      }
+    }
+  };
 
   // Fetch all clients for admin or current client address
   useEffect(() => {
@@ -1451,13 +1499,35 @@ export default function ClientServices() {
                           <div className="space-y-3">
                             <div className="space-y-1.5">
                               <Label htmlFor="street" className="text-xs">Ulice a číslo popisné</Label>
-                              <Input
-                                id="street"
-                                placeholder="např. Hlavní 123"
-                                className="h-12 bg-background border-2"
-                                value={bookingData.street}
-                                onChange={e => setBookingData({ ...bookingData, street: e.target.value })}
-                              />
+                              {isGoogleMapsLoaded ? (
+                                <Autocomplete
+                                  onLoad={(autocomplete) => {
+                                    autocompleteRef.current = autocomplete;
+                                  }}
+                                  onPlaceChanged={handlePlaceChanged}
+                                  options={{
+                                    componentRestrictions: { country: 'cz' },
+                                    types: ['address'],
+                                    fields: ["address_components", "formatted_address", "geometry", "name"]
+                                  }}
+                                >
+                                  <Input
+                                    id="street"
+                                    placeholder="Začněte psát adresu..."
+                                    className="h-12 bg-background border-2"
+                                    value={bookingData.street}
+                                    onChange={e => setBookingData({ ...bookingData, street: e.target.value })}
+                                  />
+                                </Autocomplete>
+                              ) : (
+                                <Input
+                                  id="street"
+                                  placeholder="např. Hlavní 123"
+                                  className="h-12 bg-background border-2"
+                                  value={bookingData.street}
+                                  onChange={e => setBookingData({ ...bookingData, street: e.target.value })}
+                                />
+                              )}
                             </div>
                             <div className="grid grid-cols-2 gap-3">
                               <div className="space-y-1.5">
@@ -1626,7 +1696,7 @@ export default function ClientServices() {
                                 </span>
                               </div>
                               <p className="text-xs text-muted-foreground/60 text-center leading-normal mt-2 font-medium">
-                                *Konečná cena bude upřesněna po tel. dohodě
+                                *Konečná cena bude upřesněna po tel. dohodě, kde vytvoříme plán úkolů - Na míru pro Váš prostor.
                               </p>
                             </div>
                           </div>
@@ -1800,13 +1870,35 @@ export default function ClientServices() {
                           <div className="grid grid-cols-1 gap-4">
                             <div className="space-y-2">
                               <Label htmlFor="win-street" className="text-xs uppercase font-bold text-muted-foreground ml-1">Ulice a číslo popisné</Label>
-                              <Input
-                                id="win-street"
-                                placeholder="např. Hlavní 123"
-                                className="h-12 rounded-xl bg-background border-2 border-primary/10 focus:border-primary"
-                                value={bookingData.street}
-                                onChange={e => setBookingData({ ...bookingData, street: e.target.value })}
-                              />
+                              {isGoogleMapsLoaded ? (
+                                <Autocomplete
+                                  onLoad={(autocomplete) => {
+                                    autocompleteRef.current = autocomplete;
+                                  }}
+                                  onPlaceChanged={handlePlaceChanged}
+                                  options={{
+                                    componentRestrictions: { country: 'cz' },
+                                    types: ['address'],
+                                    fields: ["address_components", "formatted_address", "geometry", "name"]
+                                  }}
+                                >
+                                  <Input
+                                    id="win-street"
+                                    placeholder="Začněte psát adresu..."
+                                    className="h-12 rounded-xl bg-background border-2 border-primary/10 focus:border-primary"
+                                    value={bookingData.street}
+                                    onChange={e => setBookingData({ ...bookingData, street: e.target.value })}
+                                  />
+                                </Autocomplete>
+                              ) : (
+                                <Input
+                                  id="win-street"
+                                  placeholder="např. Hlavní 123"
+                                  className="h-12 rounded-xl bg-background border-2 border-primary/10 focus:border-primary"
+                                  value={bookingData.street}
+                                  onChange={e => setBookingData({ ...bookingData, street: e.target.value })}
+                                />
+                              )}
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                               <div className="space-y-2">
@@ -1909,7 +2001,7 @@ export default function ClientServices() {
                                 </span>
                               </div>
                               <p className="text-xs text-muted-foreground/60 text-center leading-normal mt-2 font-medium">
-                                *Konečná cena bude upřesněna po tel. dohodě
+                                *Konečná cena bude upřesněna po tel. dohodě, kde vytvoříme plán úkolů - Na míru pro Váš prostor.
                               </p>
                             </div>
                           </div>
@@ -2243,7 +2335,23 @@ export default function ClientServices() {
                         <div className="space-y-4">
                           <Label className="text-sm font-semibold text-primary/80 uppercase tracking-wide">Lokalita úklidu</Label>
                           <div className="space-y-3">
-                            <Input placeholder="Ulice a číslo popisné" value={bookingData.street} onChange={e => setBookingData({ ...bookingData, street: e.target.value })} required className="h-11 rounded-lg border-2" />
+                            {isGoogleMapsLoaded ? (
+                              <Autocomplete
+                                onLoad={(autocomplete) => {
+                                  autocompleteRef.current = autocomplete;
+                                }}
+                                onPlaceChanged={handlePlaceChanged}
+                                options={{
+                                  componentRestrictions: { country: 'cz' },
+                                  types: ['address'],
+                                  fields: ["address_components", "formatted_address", "geometry", "name"]
+                                }}
+                              >
+                                <Input placeholder="Začněte psát adresu..." value={bookingData.street} onChange={e => setBookingData({ ...bookingData, street: e.target.value })} required className="h-11 rounded-lg border-2" />
+                              </Autocomplete>
+                            ) : (
+                              <Input placeholder="Ulice a číslo popisné" value={bookingData.street} onChange={e => setBookingData({ ...bookingData, street: e.target.value })} required className="h-11 rounded-lg border-2" />
+                            )}
                             <div className="grid grid-cols-2 gap-3">
                               <Input placeholder="Město" value={bookingData.city} onChange={e => setBookingData({ ...bookingData, city: e.target.value })} required className="h-11 rounded-lg border-2" />
                               <Input placeholder="PSČ" value={bookingData.postal_code} onChange={e => setBookingData({ ...bookingData, postal_code: e.target.value })} required className="h-11 rounded-lg border-2" />
@@ -2365,7 +2473,7 @@ export default function ClientServices() {
 
                             <div className="flex items-center justify-center gap-2 text-xs text-emerald-700/80 font-medium">
                               <Info className="h-3.5 w-3.5" />
-                              <span>Konečná cena bude upřesněna po telefonické konzultaci</span>
+                              <span>Konečná cena bude upřesněna po tel. dohodě, kde vytvoříme plán úkolů - Na míru pro Váš prostor.</span>
                             </div>
                           </div>
                         </div>

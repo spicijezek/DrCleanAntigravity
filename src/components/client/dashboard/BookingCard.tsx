@@ -126,6 +126,8 @@ export function BookingCard({ booking, onRatingSubmit, onDecline, currentLoyalty
                         <div className="space-y-1.5 flex-1 min-w-0">
                             <h3 className="text-xl font-bold text-foreground/90 tracking-tight leading-none">
                                 {(() => {
+                                    if (details?.service_title) return details.service_title;
+
                                     const type = booking.service_type;
 
                                     if (type === 'home_cleaning') return 'Úklid domácnosti';
@@ -140,7 +142,7 @@ export function BookingCard({ booking, onRatingSubmit, onDecline, currentLoyalty
                                         return 'Úklid domácnosti';
                                     }
 
-                                    return details?.service_title || booking.service_type;
+                                    return booking.service_type;
                                 })()}
                             </h3>
                             <div className="flex items-center gap-2 text-[13px] text-muted-foreground font-medium">
@@ -189,35 +191,29 @@ export function BookingCard({ booking, onRatingSubmit, onDecline, currentLoyalty
                         {(isCompleted || booking.invoice || booking.skip_invoice) && !isPaid && (
                             <div className="space-y-4">
                                 {(booking.invoice) ? (
-                                    <div className="relative overflow-hidden p-5 rounded-3xl bg-gradient-to-r from-amber-100 to-orange-200 dark:from-amber-900/50 dark:to-orange-900/50 border-2 border-amber-200 dark:border-amber-800 space-y-4 shadow-lg animate-in fade-in slide-in-from-top-2 duration-700 transition-all hover:shadow-xl">
-                                        {/* Animated decorative bubbles - 11 bubbles matching dashboard refinement */}
-                                        <div className="absolute right-4 top-3 h-20 w-20 rounded-full bg-white/38 dark:bg-amber-300/40 animate-float-circle-1" />
-                                        <div className="absolute right-8 top-14 h-14 w-14 rounded-full bg-orange-600/38 dark:bg-orange-300/42 animate-float-circle-2" />
-                                        <div className="absolute left-4 bottom-3 h-16 w-16 rounded-full bg-white/40 dark:bg-amber-400/38 animate-float-circle-1" />
-                                        <div className="absolute left-12 top-10 h-10 w-10 rounded-full bg-amber-600/38 dark:bg-orange-400/40 animate-float-circle-2" />
-                                        <div className="absolute right-12 bottom-6 h-18 w-18 rounded-full bg-white/35 dark:bg-amber-300/38 animate-float-circle-1" />
-                                        <div className="absolute left-1/2 top-8 h-12 w-12 rounded-full bg-orange-600/38 dark:bg-orange-300/40 animate-float-circle-2" />
-                                        <div className="absolute left-8 bottom-12 h-14 w-14 rounded-full bg-white/38 dark:bg-amber-400/38 animate-float-circle-1" />
-                                        <div className="absolute right-16 top-1/2 h-11 w-11 rounded-full bg-amber-700/38 dark:bg-orange-300/40 animate-float-circle-2" />
-                                        <div className="absolute left-20 top-14 h-9 w-9 rounded-full bg-white/40 dark:bg-amber-300/38 animate-float-circle-1" />
-                                        <div className="absolute right-10 top-10 h-12 w-12 rounded-full bg-orange-600/38 dark:bg-orange-300/42 animate-float-circle-2" />
-                                        <div className="absolute left-6 top-6 h-10 w-10 rounded-full bg-white/38 dark:bg-amber-400/38 animate-float-circle-1" />
-
-                                        {/* Sparkle decoration */}
-                                        <Sparkles className="absolute right-12 top-2 h-3 w-3 text-amber-600/70 dark:text-amber-300/60 animate-pulse" />
+                                    <div className="relative overflow-hidden p-5 rounded-3xl bg-gradient-to-br from-slate-50 via-white to-primary/5 dark:from-slate-900 dark:via-slate-800/80 dark:to-primary/10 border border-slate-200/80 dark:border-slate-700/50 space-y-4 shadow-lg backdrop-blur-sm animate-in fade-in slide-in-from-top-2 duration-700 transition-all hover:shadow-xl">
+                                        {/* Subtle decorative elements */}
+                                        <div className="absolute right-6 top-4 h-16 w-16 rounded-full bg-primary/5 dark:bg-primary/10 animate-float-circle-1" />
+                                        <div className="absolute left-4 bottom-4 h-12 w-12 rounded-full bg-slate-200/50 dark:bg-slate-700/30 animate-float-circle-2" />
+                                        <div className="absolute right-1/4 top-1/2 h-8 w-8 rounded-full bg-primary/8 dark:bg-primary/15 animate-float-circle-1" />
 
                                         <div className="grid grid-cols-[auto_1fr] items-center gap-2 mb-4">
                                             <div className="flex flex-row items-center gap-2 min-w-0">
-                                                <div className="h-9 w-9 rounded-xl bg-white/80 dark:bg-amber-900/40 flex items-center justify-center shadow-sm text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-800 shrink-0">
-                                                    <Banknote className={`h-5 w-5 ${booking.invoice.status === 'overdue' ? 'text-red-600' : 'text-amber-600'}`} />
+                                                <div className={cn(
+                                                    "h-9 w-9 rounded-xl flex items-center justify-center shadow-sm shrink-0 border",
+                                                    booking.invoice.status === 'overdue'
+                                                        ? "bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800"
+                                                        : "bg-primary/10 dark:bg-primary/20 text-primary border-primary/20 dark:border-primary/30"
+                                                )}>
+                                                    <Banknote className="h-5 w-5" />
                                                 </div>
-                                                <span className="text-sm font-bold uppercase tracking-wider text-amber-800 dark:text-amber-200 whitespace-nowrap truncate">Platební údaje</span>
+                                                <span className="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200 whitespace-nowrap truncate">Platební údaje</span>
                                             </div>
                                             <Badge variant="secondary" className={cn(
                                                 "px-2.5 py-0.5 text-[10px] font-bold rounded-full border shadow-sm w-fit justify-self-end whitespace-nowrap",
-                                                booking.invoice.status === 'paid' ? 'bg-green-100 text-green-800 border-green-200' :
-                                                    booking.invoice.status === 'overdue' ? 'bg-red-100 text-red-800 border-red-200 shadow-sm animate-pulse' :
-                                                        'bg-amber-100 text-amber-800 border-amber-200 shadow-sm'
+                                                booking.invoice.status === 'paid' ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800' :
+                                                    booking.invoice.status === 'overdue' ? 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800 animate-pulse' :
+                                                        'bg-primary/10 text-primary border-primary/20 dark:bg-primary/20 dark:text-primary-foreground dark:border-primary/30'
                                             )}>
                                                 {booking.invoice.status === 'paid' ? 'Zaplaceno' : booking.invoice.status === 'overdue' ? 'Po splatnosti' : 'K úhradě'}
                                             </Badge>
@@ -225,29 +221,29 @@ export function BookingCard({ booking, onRatingSubmit, onDecline, currentLoyalty
                                         <div className="relative space-y-2 text-sm">
                                             {booking.company_info?.bank_account && (
                                                 <div className="grid grid-cols-[auto_1fr] items-center gap-2 py-0.5">
-                                                    <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800/80 dark:text-amber-200/80 whitespace-nowrap pl-1">Číslo účtu</span>
-                                                    <span className="text-sm font-bold tabular-nums text-amber-950 dark:text-amber-50 whitespace-nowrap text-right uppercase">{booking.company_info.bank_account}/{booking.company_info.bank_code}</span>
+                                                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 whitespace-nowrap pl-1">Číslo účtu</span>
+                                                    <span className="text-sm font-bold tabular-nums text-slate-800 dark:text-slate-100 whitespace-nowrap text-right uppercase">{booking.company_info.bank_account}/{booking.company_info.bank_code}</span>
                                                 </div>
                                             )}
                                             {booking.invoice.variable_symbol && (
                                                 <div className="grid grid-cols-[auto_1fr] items-center gap-2 py-0.5">
-                                                    <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800/80 dark:text-amber-200/80 whitespace-nowrap pl-1">Variabilní symbol</span>
-                                                    <span className="text-sm font-bold tabular-nums text-amber-950 dark:text-amber-50 whitespace-nowrap text-right">{booking.invoice.variable_symbol}</span>
+                                                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 whitespace-nowrap pl-1">Variabilní symbol</span>
+                                                    <span className="text-sm font-bold tabular-nums text-slate-800 dark:text-slate-100 whitespace-nowrap text-right">{booking.invoice.variable_symbol}</span>
                                                 </div>
                                             )}
                                             {booking.invoice.date_due && (
                                                 <div className="grid grid-cols-[auto_1fr] items-center gap-2 py-0.5">
-                                                    <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800/80 dark:text-amber-200/80 whitespace-nowrap pl-1">Splatnost do</span>
-                                                    <span className="text-sm font-bold tabular-nums text-amber-950 dark:text-amber-50 whitespace-nowrap text-right">
+                                                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 whitespace-nowrap pl-1">Splatnost do</span>
+                                                    <span className="text-sm font-bold tabular-nums text-slate-800 dark:text-slate-100 whitespace-nowrap text-right">
                                                         {format(new Date(booking.invoice.date_due), 'd. M. yyyy', { locale: cs })}
                                                     </span>
                                                 </div>
                                             )}
-                                            <div className="grid grid-cols-[auto_1fr] items-center gap-2 border-t border-amber-200/50 dark:border-amber-700/30 pt-4 mt-2">
-                                                <div className="backdrop-blur-sm rounded-lg px-2 py-1.5 bg-amber-900/10 dark:bg-amber-100/10 border border-amber-900/20 dark:border-amber-100/20 w-fit">
-                                                    <span className="text-[10px] font-black uppercase tracking-widest text-amber-900 dark:text-amber-100 whitespace-nowrap">Celkem k úhradě</span>
+                                            <div className="grid grid-cols-[auto_1fr] items-center gap-2 border-t border-slate-200/80 dark:border-slate-700/50 pt-4 mt-2">
+                                                <div className="backdrop-blur-sm rounded-lg px-2 py-1.5 bg-primary/10 dark:bg-primary/20 border border-primary/20 dark:border-primary/30 w-fit">
+                                                    <span className="text-[10px] font-black uppercase tracking-widest text-primary dark:text-primary-foreground whitespace-nowrap">Celkem k úhradě</span>
                                                 </div>
-                                                <span className="font-black text-2xl text-amber-950 dark:text-amber-50 whitespace-nowrap text-right tracking-tighter drop-shadow-sm">
+                                                <span className="font-black text-2xl text-slate-800 dark:text-slate-50 whitespace-nowrap text-right tracking-tighter drop-shadow-sm">
                                                     {(booking.invoice.total || 0).toLocaleString('cs-CZ')} Kč
                                                 </span>
                                             </div>
@@ -266,69 +262,45 @@ export function BookingCard({ booking, onRatingSubmit, onDecline, currentLoyalty
                                         </div>
                                     </div>
                                 ) : (isCompleted && !booking.invoice && !booking.skip_invoice) ? (
-                                    <div className="relative overflow-hidden p-5 rounded-3xl bg-gradient-to-r from-amber-100 to-orange-200 dark:from-amber-900/50 dark:to-orange-900/50 border-2 border-amber-200 dark:border-amber-800 space-y-4 shadow-lg animate-in fade-in slide-in-from-top-2 duration-700 transition-all hover:shadow-xl">
-                                        {/* Animated decorative bubbles - 11 bubbles matching dashboard refinement */}
-                                        <div className="absolute right-4 top-3 h-20 w-20 rounded-full bg-white/38 dark:bg-amber-300/40 animate-float-circle-1" />
-                                        <div className="absolute right-8 top-14 h-14 w-14 rounded-full bg-orange-600/38 dark:bg-orange-300/42 animate-float-circle-2" />
-                                        <div className="absolute left-4 bottom-3 h-16 w-16 rounded-full bg-white/40 dark:bg-amber-400/38 animate-float-circle-1" />
-                                        <div className="absolute left-12 top-10 h-10 w-10 rounded-full bg-amber-600/38 dark:bg-orange-400/40 animate-float-circle-2" />
-                                        <div className="absolute right-12 bottom-6 h-18 w-18 rounded-full bg-white/35 dark:bg-amber-300/38 animate-float-circle-1" />
-                                        <div className="absolute left-1/2 top-8 h-12 w-12 rounded-full bg-orange-600/38 dark:bg-orange-300/40 animate-float-circle-2" />
-                                        <div className="absolute left-8 bottom-12 h-14 w-14 rounded-full bg-white/38 dark:bg-amber-400/38 animate-float-circle-1" />
-                                        <div className="absolute right-16 top-1/2 h-11 w-11 rounded-full bg-amber-700/38 dark:bg-orange-300/40 animate-float-circle-2" />
-                                        <div className="absolute left-20 top-14 h-9 w-9 rounded-full bg-white/40 dark:bg-amber-300/38 animate-float-circle-1" />
-                                        <div className="absolute right-10 top-10 h-12 w-12 rounded-full bg-orange-600/38 dark:bg-orange-300/42 animate-float-circle-2" />
-                                        <div className="absolute left-6 top-6 h-10 w-10 rounded-full bg-white/38 dark:bg-amber-400/38 animate-float-circle-1" />
-
-                                        {/* Sparkle decoration */}
-                                        <Sparkles className="absolute right-12 top-2 h-3 w-3 text-amber-600/70 dark:text-amber-300/60 animate-pulse" />
+                                    <div className="relative overflow-hidden p-5 rounded-3xl bg-gradient-to-br from-slate-50 via-white to-primary/5 dark:from-slate-900 dark:via-slate-800/80 dark:to-primary/10 border border-slate-200/80 dark:border-slate-700/50 space-y-4 shadow-lg backdrop-blur-sm animate-in fade-in slide-in-from-top-2 duration-700 transition-all hover:shadow-xl">
+                                        {/* Subtle decorative elements */}
+                                        <div className="absolute right-6 top-4 h-16 w-16 rounded-full bg-primary/5 dark:bg-primary/10 animate-float-circle-1" />
+                                        <div className="absolute left-4 bottom-4 h-12 w-12 rounded-full bg-slate-200/50 dark:bg-slate-700/30 animate-float-circle-2" />
 
                                         <div className="relative flex items-center justify-between">
                                             <div className="flex items-center gap-2">
-                                                <div className="h-9 w-9 rounded-xl bg-white/80 dark:bg-amber-900/40 flex items-center justify-center shadow-sm text-amber-600/50 dark:text-amber-400/50 border border-amber-100/50 dark:border-amber-800/50">
+                                                <div className="h-9 w-9 rounded-xl bg-primary/10 dark:bg-primary/20 flex items-center justify-center shadow-sm text-primary/60 dark:text-primary/70 border border-primary/20 dark:border-primary/30">
                                                     <Banknote className="h-5 w-5" />
                                                 </div>
-                                                <span className="text-sm font-bold uppercase tracking-wider text-amber-800/70 dark:text-amber-200/70">Platební údaje</span>
+                                                <span className="text-sm font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">Platební údaje</span>
                                             </div>
-                                            <Badge variant="outline" className="px-3 py-1 text-[11px] font-bold rounded-full border-amber-200 text-amber-700/70 bg-white/50 backdrop-blur-sm">
+                                            <Badge variant="outline" className="px-3 py-1 text-[11px] font-bold rounded-full border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 bg-white/80 dark:bg-slate-800/50 backdrop-blur-sm">
                                                 Čeká na vystavení
                                             </Badge>
                                         </div>
                                         <div className="relative text-center py-4 space-y-2">
-                                            <div className="h-12 w-12 rounded-full bg-white/80 dark:bg-amber-900/40 flex items-center justify-center mx-auto mb-2 text-amber-600 dark:text-amber-400 shadow-sm border border-amber-100/50">
+                                            <div className="h-12 w-12 rounded-full bg-primary/10 dark:bg-primary/20 flex items-center justify-center mx-auto mb-2 text-primary dark:text-primary/80 shadow-sm border border-primary/20 dark:border-primary/30">
                                                 <FileText className="h-6 w-6 animate-pulse" />
                                             </div>
-                                            <p className="font-bold text-amber-900 dark:text-amber-100">Faktura se připravuje</p>
-                                            <p className="text-sm text-amber-800/70 dark:text-amber-400/70 max-w-[250px] mx-auto leading-relaxed">
+                                            <p className="font-bold text-slate-800 dark:text-slate-100">Faktura se připravuje</p>
+                                            <p className="text-sm text-slate-500 dark:text-slate-400 max-w-[250px] mx-auto leading-relaxed">
                                                 Zde najdete platební údaje a fakturu ihned po jejím vystavení.
                                             </p>
                                         </div>
                                     </div>
                                 ) : (isCompleted && booking.skip_invoice) ? (
-                                    <div className="relative overflow-hidden p-5 rounded-3xl bg-gradient-to-r from-amber-100 to-orange-200 dark:from-amber-900/50 dark:to-orange-900/50 border-2 border-amber-200 dark:border-amber-800 shadow-lg animate-in fade-in slide-in-from-top-2 duration-700 transition-all hover:shadow-xl">
-                                        {/* Animated decorative bubbles */}
-                                        <div className="absolute right-4 top-3 h-20 w-20 rounded-full bg-white/38 dark:bg-amber-300/40 animate-float-circle-1" />
-                                        <div className="absolute right-8 top-14 h-14 w-14 rounded-full bg-orange-600/38 dark:bg-orange-300/42 animate-float-circle-2" />
-                                        <div className="absolute left-4 bottom-3 h-16 w-16 rounded-full bg-white/40 dark:bg-amber-400/38 animate-float-circle-1" />
-                                        <div className="absolute left-12 top-10 h-10 w-10 rounded-full bg-amber-600/38 dark:bg-orange-400/40 animate-float-circle-2" />
-                                        <div className="absolute right-12 bottom-6 h-18 w-18 rounded-full bg-white/35 dark:bg-amber-300/38 animate-float-circle-1" />
-                                        <div className="absolute left-1/2 top-8 h-12 w-12 rounded-full bg-orange-600/38 dark:bg-orange-300/40 animate-float-circle-2" />
-                                        <div className="absolute left-8 bottom-12 h-14 w-14 rounded-full bg-white/38 dark:bg-amber-400/38 animate-float-circle-1" />
-                                        <div className="absolute right-16 top-1/2 h-11 w-11 rounded-full bg-amber-700/38 dark:bg-orange-300/40 animate-float-circle-2" />
-                                        <div className="absolute left-20 top-14 h-9 w-9 rounded-full bg-white/40 dark:bg-amber-300/38 animate-float-circle-1" />
-                                        <div className="absolute right-10 top-10 h-12 w-12 rounded-full bg-orange-600/38 dark:bg-orange-300/42 animate-float-circle-2" />
-                                        <div className="absolute left-6 top-6 h-10 w-10 rounded-full bg-white/38 dark:bg-amber-400/38 animate-float-circle-1" />
-
-                                        {/* Sparkle decoration */}
-                                        <Sparkles className="absolute right-12 top-2 h-3 w-3 text-amber-600/70 dark:text-amber-300/60 animate-pulse" />
+                                    <div className="relative overflow-hidden p-5 rounded-3xl bg-gradient-to-br from-emerald-50/50 via-white to-slate-50 dark:from-emerald-900/20 dark:via-slate-800/80 dark:to-slate-900/50 border border-emerald-200/60 dark:border-emerald-800/30 shadow-lg backdrop-blur-sm animate-in fade-in slide-in-from-top-2 duration-700 transition-all hover:shadow-xl">
+                                        {/* Subtle decorative elements */}
+                                        <div className="absolute right-6 top-4 h-14 w-14 rounded-full bg-emerald-100/50 dark:bg-emerald-900/20 animate-float-circle-1" />
+                                        <div className="absolute left-4 bottom-4 h-10 w-10 rounded-full bg-slate-200/40 dark:bg-slate-700/20 animate-float-circle-2" />
 
                                         <div className="relative flex items-center gap-4 animate-in fade-in slide-in-from-top-2 duration-700">
-                                            <div className="h-10 w-10 rounded-full bg-white/80 dark:bg-amber-900/40 flex items-center justify-center shadow-sm text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-800 shrink-0">
+                                            <div className="h-10 w-10 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center shadow-sm text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 shrink-0">
                                                 <CheckCircle2 className="h-5 w-5" />
                                             </div>
                                             <div>
-                                                <p className="font-bold text-amber-900 dark:text-amber-100">Hotovo</p>
-                                                <p className="text-sm text-amber-800/70 dark:text-amber-300/70">Fakturace k tomuto úklidu byla přeskočena.</p>
+                                                <p className="font-bold text-slate-800 dark:text-slate-100">Hotovo</p>
+                                                <p className="text-sm text-slate-500 dark:text-slate-400">Fakturace k tomuto úklidu byla přeskočena.</p>
                                             </div>
                                         </div>
                                     </div>
@@ -368,60 +340,49 @@ export function BookingCard({ booking, onRatingSubmit, onDecline, currentLoyalty
                     <CollapsibleContent className="space-y-4 pt-2 animate-in fade-in slide-in-from-top-4 duration-500">
                         {/* Move Payment Info here if PAID */}
                         {isPaid && booking.invoice && (
-                            <div className="relative overflow-hidden p-5 rounded-3xl bg-gradient-to-r from-amber-100 to-orange-200 dark:from-amber-900/50 dark:to-orange-900/50 border-2 border-amber-200 dark:border-amber-800 space-y-4 shadow-lg animate-in fade-in slide-in-from-top-2 duration-700 transition-all hover:shadow-xl">
-                                {/* Animated decorative bubbles - 11 bubbles matching dashboard refinement */}
-                                <div className="absolute right-4 top-3 h-20 w-20 rounded-full bg-white/38 dark:bg-amber-300/40 animate-float-circle-1" />
-                                <div className="absolute right-8 top-14 h-14 w-14 rounded-full bg-orange-600/38 dark:bg-orange-300/42 animate-float-circle-2" />
-                                <div className="absolute left-4 bottom-3 h-16 w-16 rounded-full bg-white/40 dark:bg-amber-400/38 animate-float-circle-1" />
-                                <div className="absolute left-12 top-10 h-10 w-10 rounded-full bg-amber-600/38 dark:bg-orange-400/40 animate-float-circle-2" />
-                                <div className="absolute right-12 bottom-6 h-18 w-18 rounded-full bg-white/35 dark:bg-amber-300/38 animate-float-circle-1" />
-                                <div className="absolute left-1/2 top-8 h-12 w-12 rounded-full bg-orange-600/38 dark:bg-orange-300/40 animate-float-circle-2" />
-                                <div className="absolute left-8 bottom-12 h-14 w-14 rounded-full bg-white/38 dark:bg-amber-400/38 animate-float-circle-1" />
-                                <div className="absolute right-16 top-1/2 h-11 w-11 rounded-full bg-amber-700/38 dark:bg-orange-300/40 animate-float-circle-2" />
-                                <div className="absolute left-20 top-14 h-9 w-9 rounded-full bg-white/40 dark:bg-amber-300/38 animate-float-circle-1" />
-                                <div className="absolute right-10 top-10 h-12 w-12 rounded-full bg-orange-600/38 dark:bg-orange-300/42 animate-float-circle-2" />
-                                <div className="absolute left-6 top-6 h-10 w-10 rounded-full bg-white/38 dark:bg-amber-400/38 animate-float-circle-1" />
-
-                                {/* Sparkle decoration */}
-                                <Sparkles className="absolute right-12 top-2 h-3 w-3 text-amber-600/70 dark:text-amber-300/60 animate-pulse" />
+                            <div className="relative overflow-hidden p-5 rounded-3xl bg-gradient-to-br from-emerald-50/50 via-white to-slate-50 dark:from-emerald-900/20 dark:via-slate-800/80 dark:to-slate-900/50 border border-emerald-200/60 dark:border-emerald-800/30 space-y-4 shadow-lg backdrop-blur-sm animate-in fade-in slide-in-from-top-2 duration-700 transition-all hover:shadow-xl">
+                                {/* Subtle decorative elements */}
+                                <div className="absolute right-6 top-4 h-16 w-16 rounded-full bg-emerald-100/50 dark:bg-emerald-900/20 animate-float-circle-1" />
+                                <div className="absolute left-4 bottom-4 h-12 w-12 rounded-full bg-slate-200/40 dark:bg-slate-700/20 animate-float-circle-2" />
+                                <div className="absolute right-1/4 top-1/2 h-8 w-8 rounded-full bg-emerald-100/30 dark:bg-emerald-900/15 animate-float-circle-1" />
 
                                 <div className="grid grid-cols-[auto_1fr] items-center gap-2 mb-4">
                                     <div className="flex flex-row items-center gap-2 min-w-0">
-                                        <div className="h-9 w-9 rounded-xl bg-white/80 dark:bg-amber-900/40 flex items-center justify-center shadow-sm text-green-600 dark:text-green-400 border border-green-100 dark:border-green-900/30 shrink-0">
+                                        <div className="h-9 w-9 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center shadow-sm text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 shrink-0">
                                             <Banknote className="h-5 w-5" />
                                         </div>
-                                        <span className="text-sm font-bold uppercase tracking-wider text-amber-800 dark:text-amber-200 whitespace-nowrap truncate">Platební údaje</span>
+                                        <span className="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200 whitespace-nowrap truncate">Platební údaje</span>
                                     </div>
-                                    <Badge variant="secondary" className="px-2.5 py-0.5 text-[10px] font-bold rounded-full border shadow-sm bg-green-100 text-green-800 border-green-200 w-fit justify-self-end whitespace-nowrap">
+                                    <Badge variant="secondary" className="px-2.5 py-0.5 text-[10px] font-bold rounded-full border shadow-sm bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800 w-fit justify-self-end whitespace-nowrap">
                                         Zaplaceno
                                     </Badge>
                                 </div>
                                 <div className="relative space-y-2 text-sm">
                                     {booking.company_info?.bank_account && (
                                         <div className="grid grid-cols-[auto_1fr] items-center gap-2 py-0.5">
-                                            <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800/80 dark:text-amber-200/80 whitespace-nowrap pl-1">Číslo účtu</span>
-                                            <span className="text-sm font-bold tabular-nums text-amber-950 dark:text-amber-50 whitespace-nowrap text-right uppercase">{booking.company_info.bank_account}/{booking.company_info.bank_code}</span>
+                                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 whitespace-nowrap pl-1">Číslo účtu</span>
+                                            <span className="text-sm font-bold tabular-nums text-slate-800 dark:text-slate-100 whitespace-nowrap text-right uppercase">{booking.company_info.bank_account}/{booking.company_info.bank_code}</span>
                                         </div>
                                     )}
                                     {booking.invoice.variable_symbol && (
                                         <div className="grid grid-cols-[auto_1fr] items-center gap-2 py-0.5">
-                                            <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800/80 dark:text-amber-200/80 whitespace-nowrap pl-1">Variabilní symbol</span>
-                                            <span className="text-sm font-bold tabular-nums text-amber-950 dark:text-amber-50 whitespace-nowrap text-right">{booking.invoice.variable_symbol}</span>
+                                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 whitespace-nowrap pl-1">Variabilní symbol</span>
+                                            <span className="text-sm font-bold tabular-nums text-slate-800 dark:text-slate-100 whitespace-nowrap text-right">{booking.invoice.variable_symbol}</span>
                                         </div>
                                     )}
                                     {booking.invoice.date_due && (
                                         <div className="grid grid-cols-[auto_1fr] items-center gap-2 py-0.5">
-                                            <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800/80 dark:text-amber-200/80 whitespace-nowrap pl-1">Splatnost</span>
-                                            <span className="text-sm font-bold tabular-nums text-amber-950 dark:text-amber-50 whitespace-nowrap text-right">
+                                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 whitespace-nowrap pl-1">Splatnost</span>
+                                            <span className="text-sm font-bold tabular-nums text-slate-800 dark:text-slate-100 whitespace-nowrap text-right">
                                                 {format(new Date(booking.invoice.date_due), 'd. M. yyyy', { locale: cs })}
                                             </span>
                                         </div>
                                     )}
-                                    <div className="grid grid-cols-[auto_1fr] items-center gap-2 border-t border-amber-200/50 dark:border-amber-700/30 pt-4 mt-2">
-                                        <div className="backdrop-blur-sm rounded-lg px-2 py-1.5 bg-green-900/10 dark:bg-green-100/10 border border-green-900/20 dark:border-green-100/20 w-fit">
-                                            <span className="text-[10px] font-black uppercase tracking-widest text-green-900 dark:text-green-100 whitespace-nowrap">Celkem uhrazeno</span>
+                                    <div className="grid grid-cols-[auto_1fr] items-center gap-2 border-t border-emerald-200/50 dark:border-emerald-800/30 pt-4 mt-2">
+                                        <div className="backdrop-blur-sm rounded-lg px-2 py-1.5 bg-emerald-100/80 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 w-fit">
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-emerald-800 dark:text-emerald-200 whitespace-nowrap">Celkem uhrazeno</span>
                                         </div>
-                                        <span className="font-black text-2xl text-emerald-950 dark:text-emerald-50 whitespace-nowrap text-right tracking-tighter drop-shadow-sm">
+                                        <span className="font-black text-2xl text-emerald-700 dark:text-emerald-300 whitespace-nowrap text-right tracking-tighter drop-shadow-sm">
                                             {(booking.invoice.total || 0).toLocaleString('cs-CZ')} Kč
                                         </span>
                                     </div>
@@ -577,52 +538,63 @@ export function BookingCard({ booking, onRatingSubmit, onDecline, currentLoyalty
                             </div>
                         )}
 
-                        {/* Household & Preferences Section */}
-                        <div className="space-y-4 pt-4 border-t">
-                            <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-                                <User className="h-4 w-4" /> Vaše preference
+                        <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                            <h4 className="text-[11px] font-black text-primary/60 uppercase tracking-[0.2em] flex items-center gap-2 px-1">
+                                <div className="h-6 w-6 rounded-lg bg-primary/10 flex items-center justify-center">
+                                    <User className="h-3.5 w-3.5 text-primary" />
+                                </div>
+                                Vaše preference
                             </h4>
 
                             <div className="grid grid-cols-1 gap-3">
                                 {(booking.client?.has_children || booking.client?.has_pets) && (
-                                    <div className="flex flex-wrap gap-2">
+                                    <div className="flex flex-wrap gap-2 px-1">
                                         {booking.client?.has_children && (
-                                            <Badge variant="outline" className="bg-blue-50/50 text-blue-700 border-blue-100 flex items-center gap-1">
-                                                <Baby className="h-3.5 w-3.5" /> <span>Děti</span>
+                                            <Badge variant="outline" className="bg-blue-50/50 text-blue-700 border-blue-100/50 flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold shadow-sm">
+                                                <Baby className="h-3.5 w-3.5" /> <span>Děti v domácnosti</span>
                                             </Badge>
                                         )}
                                         {booking.client?.has_pets && (
-                                            <Badge variant="outline" className="bg-orange-50/50 text-orange-700 border-orange-100 flex items-center gap-1">
-                                                <Dog className="h-3.5 w-3.5" /> <span>Mazlíčci</span>
+                                            <Badge variant="outline" className="bg-orange-50/50 text-orange-700 border-orange-100/50 flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold shadow-sm">
+                                                <Dog className="h-3.5 w-3.5" /> <span>Domácí mazlíčci</span>
                                             </Badge>
                                         )}
                                     </div>
                                 )}
 
                                 {booking.client?.has_allergies && (
-                                    <div className="p-3 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-800 text-xs shadow-sm">
-                                        <p className="font-semibold text-slate-900 dark:text-slate-200 mb-1 flex items-center gap-1">
-                                            <HeartPulse className="h-3 w-3 text-red-500" /> Alergie:
+                                    <div className="group/pref p-4 bg-gradient-to-br from-red-50/30 to-white dark:from-red-900/10 dark:to-slate-900/50 rounded-[1.5rem] border border-red-100/50 dark:border-red-900/20 text-xs shadow-sm hover:shadow-md transition-all duration-300">
+                                        <p className="font-bold text-red-700 dark:text-red-400 mb-1.5 flex items-center gap-1.5">
+                                            <div className="h-5 w-5 rounded-md bg-red-100 dark:bg-red-900/30 flex items-center justify-center group-hover/pref:scale-110 transition-transform">
+                                                <HeartPulse className="h-3 w-3" />
+                                            </div>
+                                            Alergie a omezení:
                                         </p>
-                                        <p className="text-muted-foreground italic leading-relaxed">"{booking.client.allergies_notes || 'Bez popisu'}"</p>
+                                        <p className="text-muted-foreground italic leading-relaxed pl-6.5">"{booking.client.allergies_notes || 'Bez popisu'}"</p>
                                     </div>
                                 )}
 
                                 {booking.client?.special_instructions && (
-                                    <div className="p-3 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-800 text-xs shadow-sm">
-                                        <p className="font-semibold text-slate-900 dark:text-slate-200 mb-1 flex items-center gap-1">
-                                            <Sparkles className="h-3 w-3 text-primary" /> Osobní preference:
+                                    <div className="group/pref p-4 bg-gradient-to-br from-primary/5 to-white dark:from-primary/10 dark:to-slate-900/50 rounded-[1.5rem] border border-primary/10 dark:border-primary/20 text-xs shadow-sm hover:shadow-md transition-all duration-300">
+                                        <p className="font-bold text-primary dark:text-primary-400 mb-1.5 flex items-center gap-1.5">
+                                            <div className="h-5 w-5 rounded-md bg-primary/10 dark:bg-primary/20 flex items-center justify-center group-hover/pref:scale-110 transition-transform">
+                                                <Sparkles className="h-3 w-3" />
+                                            </div>
+                                            Osobní preference:
                                         </p>
-                                        <p className="text-muted-foreground italic leading-relaxed">"{booking.client.special_instructions}"</p>
+                                        <p className="text-muted-foreground italic leading-relaxed pl-6.5">"{booking.client.special_instructions}"</p>
                                     </div>
                                 )}
 
                                 {(details?.notes || details?.poznamky) && (
-                                    <div className="p-3 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-800 text-xs shadow-sm">
-                                        <p className="font-semibold text-slate-900 dark:text-slate-200 mb-1 flex items-center gap-1">
-                                            <FileText className="h-3 w-3 text-blue-500" /> Poznámka k úklidu:
+                                    <div className="group/pref p-4 bg-gradient-to-br from-slate-50 to-white dark:from-slate-900/50 dark:to-slate-800/30 rounded-[1.5rem] border border-slate-100 dark:border-slate-800/50 text-xs shadow-sm hover:shadow-md transition-all duration-300">
+                                        <p className="font-bold text-slate-900 dark:text-slate-200 mb-1.5 flex items-center gap-1.5">
+                                            <div className="h-5 w-5 rounded-md bg-slate-100 dark:bg-slate-800 flex items-center justify-center group-hover/pref:scale-110 transition-transform">
+                                                <FileText className="h-3 w-3 text-blue-500" />
+                                            </div>
+                                            Poznámka k tomuto úklidu:
                                         </p>
-                                        <p className="text-muted-foreground italic">"{details.notes || details.poznamky}"</p>
+                                        <p className="text-muted-foreground italic leading-relaxed pl-6.5">"{details.notes || details.poznamky}"</p>
                                     </div>
                                 )}
                             </div>

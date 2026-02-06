@@ -2,9 +2,10 @@ import React from 'react';
 import { useState } from 'react';
 import { ClientBottomNav } from './ClientBottomNav';
 import { useAuth } from '@/contexts/AuthContext';
-import { User, Menu, Home, PlusCircle, FileText, Award, CheckSquare, LogOut, Phone } from 'lucide-react';
+import { User, Menu, Home, PlusCircle, FileText, Award, CheckSquare, LogOut, Phone, Coins, ChevronRight } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { useClientDashboardData } from '@/hooks/useClientDashboardData';
 import phoneBadgeIcon from '@/assets/phone-badge-icon.png';
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
@@ -23,13 +24,15 @@ export function ClientLayout({ children }: ClientLayoutProps) {
   const fullName = user?.user_metadata?.full_name || 'Klient';
   const isProfileActive = location.pathname === '/klient/profil';
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { loyaltyCredits } = useClientDashboardData();
+  const currentPoints = loyaltyCredits?.current_credits || 0;
 
   const menuItems = [
     { icon: Home, label: 'Přehled', path: '/klient' },
     { icon: PlusCircle, label: 'Nová rezervace', path: '/klient/sluzby' },
-    { icon: FileText, label: 'Fakturace', path: '/klient/fakturace' },
-    { icon: Award, label: 'Věrnostní program', path: '/klient/vernost' },
-    { icon: CheckSquare, label: 'Checklisty', path: '/klient/checklist' },
+    { icon: FileText, label: 'Historie úklidů', path: '/klient/fakturace' },
+    { icon: Award, label: 'Body', path: '/klient/vernost' },
+    { icon: CheckSquare, label: 'Úkoly', path: '/klient/checklist' },
     { icon: User, label: 'Můj profil', path: '/klient/profil' },
   ];
 
@@ -112,6 +115,23 @@ export function ClientLayout({ children }: ClientLayoutProps) {
                   {/* Footer Actions */}
                   <div className="p-6 border-t space-y-4 bg-muted/20">
                     <SheetClose asChild>
+                      <Link
+                        to="/klient/vernost"
+                        className="flex items-center p-3.5 rounded-xl bg-orange-50 border border-orange-200 dark:bg-orange-900/20 dark:border-orange-900/50 shadow-sm group hover:shadow-md transition-all active:scale-[0.98]"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 rounded-lg bg-orange-100 dark:bg-orange-900/40">
+                            <Coins className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                          </div>
+                          <div>
+                            <p className="text-[10px] uppercase tracking-wider font-bold text-orange-600/70 dark:text-orange-400/70 leading-none mb-1">Váš stav</p>
+                            <p className="text-sm font-black text-orange-900 dark:text-orange-100">Máte {currentPoints.toLocaleString('cs-CZ')} bodů</p>
+                          </div>
+                        </div>
+                      </Link>
+                    </SheetClose>
+
+                    <SheetClose asChild>
                       <a
                         href="tel:+420777645610"
                         className="flex items-center gap-3 px-4 py-3 rounded-xl bg-green-50 text-green-700 border border-green-100 dark:bg-green-900/20 dark:text-green-400 dark:border-green-900/50"
@@ -147,11 +167,15 @@ export function ClientLayout({ children }: ClientLayoutProps) {
             <Link
               to="/klient/profil"
               className={cn(
-                "flex items-center justify-center h-10 w-10 rounded-full transition-colors hover:bg-muted/50",
-                isProfileActive && "bg-primary/5"
+                "flex items-center justify-center h-10 w-10 rounded-full transition-all duration-300 border-2",
+                isProfileActive
+                  ? "bg-primary text-white border-primary shadow-lg scale-105"
+                  : "bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 hover:scale-105"
               )}
             >
-              <img src={customProfileIcon} alt="Profil" className="h-[19px] w-[19px] object-contain opacity-90" />
+              <span className="text-sm font-bold uppercase">
+                {fullName[0]}
+              </span>
             </Link>
           </div>
         </div>

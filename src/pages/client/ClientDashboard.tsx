@@ -9,6 +9,7 @@ import { HiddenInvoiceContainer } from '@/components/invoices/HiddenInvoiceConta
 import { toast } from 'sonner';
 import { ClientHeroHeader } from '@/components/client/ClientHeroHeader';
 import { CalendarIcon } from 'lucide-react';
+import { QuickContact } from '@/components/client/dashboard/QuickContact';
 
 export default function ClientDashboard() {
   const { user } = useAuth();
@@ -135,6 +136,11 @@ export default function ClientDashboard() {
                 currentLoyaltyPoints={loyaltyCredits?.current_credits}
               />
             ))}
+          </div>
+
+          {/* Quick Contact for active users */}
+          <div className="pt-8">
+            <QuickContact />
           </div>
         </div>
       )}

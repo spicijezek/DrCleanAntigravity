@@ -805,13 +805,13 @@ All colors MUST be HSL.
     opacity: 0;
   }
 
-  20% {
+  10% {
     opacity: 1;
-    transform: translateY(-20px) scale(1);
+    transform: translateY(-10vh) scale(1.2);
   }
 
   100% {
-    transform: translateY(-100px) scale(0);
+    transform: translateY(-120vh) scale(0.5);
     opacity: 0;
   }
 }
@@ -837,54 +837,67 @@ All colors MUST be HSL.
   animation: glow-pulse 2s ease-in-out infinite;
 }
 
-/* Google Maps Places Autocomplete Dropdown Styling */
+/* Glassmorphism Google Maps Places Autocomplete Dropdown Styling */
 .pac-container {
-  background-color: #1e293b !important;
+  background-color: rgba(17, 24, 39, 0.85) !important;
+  /* Slate-900 with transparency */
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  border-radius: 16px !important;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4) !important;
   font-family: inherit !important;
-  margin-top: 8px !important;
+  margin-top: 10px !important;
   z-index: 99999 !important;
+  padding: 8px 0 !important;
 }
 
 .pac-item {
-  padding: 12px 16px !important;
+  padding: 12px 20px !important;
   border-top: 1px solid rgba(255, 255, 255, 0.05) !important;
   cursor: pointer !important;
-  color: rgba(255, 255, 255, 0.9) !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+  font-size: 14px !important;
+  transition: all 0.2s ease !important;
+  display: flex !important;
+  align-items: center !important;
 }
 
 .pac-item:first-child {
   border-top: none !important;
-  border-radius: 16px 16px 0 0 !important;
-}
-
-.pac-item:last-child {
-  border-radius: 0 0 16px 16px !important;
 }
 
 .pac-item:hover,
 .pac-item.pac-item-selected {
   background-color: rgba(255, 255, 255, 0.1) !important;
+  color: #ffffff !important;
 }
 
 .pac-item-query {
-  color: white !important;
+  color: #ffffff !important;
   font-weight: 600 !important;
+  font-size: 15px !important;
+  margin-right: 6px !important;
 }
 
 .pac-matched {
   font-weight: 700 !important;
-  color: hsl(200, 32%, 50%) !important;
+  color: #3b82f6 !important;
+  /* Blue-500 for matching text */
 }
 
+/* Updated icon styling for a cleaner look */
 .pac-icon {
-  filter: invert(1) !important;
-  opacity: 0.7;
+  filter: invert(1) brightness(2) !important;
+  opacity: 0.6;
+  margin-right: 12px !important;
 }
 
-/* Hide Google branding */
+.pac-item:hover .pac-icon {
+  opacity: 1;
+}
+
+/* Hide the powered by Google at the bottom to maintain the premium feel */
 .pac-container::after {
   display: none !important;
 }

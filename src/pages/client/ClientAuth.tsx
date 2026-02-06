@@ -57,10 +57,24 @@ export default function ClientAuth() {
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
 
   // Load Google Maps API
-  const { isLoaded } = useLoadScript({
+  const { isLoaded, loadError } = useLoadScript({
+    id: 'google-map-script',
     googleMapsApiKey: GOOGLE_MAPS_API_KEY,
     libraries,
+    language: 'cs',
+    region: 'CZ',
   });
+
+  useEffect(() => {
+    if (loadError) {
+      console.error("Google Maps load error:", loadError);
+      toast({
+        variant: "destructive",
+        title: "Chyba Google Maps",
+        description: "Nepodařilo se načíst mapy. Zkontrolujte připojení nebo nastavení API klíče.",
+      });
+    }
+  }, [loadError, toast]);
 
   const [formData, setFormData] = useState<any>(() => {
     // Session storage fallback for initial state, but we'll primarily rely on DB sync
@@ -118,8 +132,9 @@ export default function ClientAuth() {
         if (error) throw error;
 
         if (client) {
+          const c = client as any;
           // If already completed, redirect
-          if (client.onboarding_completed) {
+          if (c.onboarding_completed) {
             navigate('/klient', { replace: true });
             return;
           }
@@ -127,31 +142,31 @@ export default function ClientAuth() {
           // Sync DB data to form state (prioritize DB over session storage)
           setFormData(prev => ({
             ...prev,
-            name: client.name || prev.name,
-            email: client.email || prev.email,
-            phone: client.phone || prev.phone,
-            address: client.address || prev.address,
-            city: client.city || prev.city,
-            postal_code: client.postal_code || prev.postal_code,
-            company_id: client.company_id || prev.company_id,
-            dic: client.dic || prev.dic,
-            reliable_person: client.reliable_person || prev.reliable_person,
-            has_children: client.has_children || prev.has_children,
-            has_pets: client.has_pets || prev.has_pets,
-            allergies_notes: client.allergies_notes || prev.allergies_notes,
-            special_instructions: client.special_instructions || prev.special_instructions,
+            name: c.name || prev.name,
+            email: c.email || prev.email,
+            phone: c.phone || prev.phone,
+            address: c.address || prev.address,
+            city: c.city || prev.city,
+            postal_code: c.postal_code || prev.postal_code,
+            company_id: c.company_id || prev.company_id,
+            dic: c.dic || prev.dic,
+            reliable_person: c.reliable_person || prev.reliable_person,
+            has_children: c.has_children || prev.has_children,
+            has_pets: c.has_pets || prev.has_pets,
+            allergies_notes: c.allergies_notes || prev.allergies_notes,
+            special_instructions: c.special_instructions || prev.special_instructions,
             // Keep referral info if we have it in state, otherwise try to get from DB if we tracked it (we track referred_by_id)
-            referred_by_id: client.referred_by_id || prev.referred_by_id
+            referred_by_id: c.referred_by_id || prev.referred_by_id
           }));
 
           // Resume step
-          if (client.onboarding_step && client.onboarding_step > 1) {
-            setStep(client.onboarding_step);
+          if (c.onboarding_step && c.onboarding_step > 1) {
+            setStep(c.onboarding_step);
           }
 
           // If we have data, we're likely past step 1/2 in reality, ensure proper client type
-          if (client.client_type) {
-            setClientType(client.client_type as ClientType);
+          if (c.client_type) {
+            setClientType(c.client_type as ClientType);
           }
         }
       } catch (err) {
@@ -472,7 +487,7 @@ export default function ClientAuth() {
           .upsert({
             user_id: userId,
             role: 'client'
-          } as any, { onConflict: 'user_id,role' });
+          } as any, { onConflict: 'user_id,role' } as any);
 
         if (roleError && !roleError.message.includes('duplicate')) {
           console.warn('Role upsert failed (expected if RLS is enabled):', roleError.message);
@@ -521,7 +536,7 @@ export default function ClientAuth() {
 
         // Save initial data (best effort - don't block on failure)
         try {
-          await upsertClientData({ ...formData, onboarding_step: 3 }, data.user.id);
+          await upsertClientData({ ...formData, onboarding_step: 3 } as any, data.user.id);
         } catch (dataErr: any) {
           console.error('Data save failed:', dataErr);
           toast({
@@ -997,21 +1012,41 @@ export default function ClientAuth() {
                 if (autocompleteRef.current) {
                   const place = autocompleteRef.current.getPlace();
                   if (place.formatted_address) {
+                    let street = '';
+                    let houseNumber = '';
+                    let city = '';
+                    let postalCode = '';
+
+                    place.address_components?.forEach(component => {
+                      if (component.types.includes('route')) {
+                        street = component.long_name;
+                      } else if (component.types.includes('street_number')) {
+                        houseNumber = component.long_name;
+                      } else if (component.types.includes('locality')) {
+                        city = component.long_name;
+                      } else if (component.types.includes('postal_code')) {
+                        postalCode = component.long_name;
+                      }
+                    });
+
+                    const fullStreetAddress = street ? `${street} ${houseNumber}`.trim() : (place.name || '');
+
                     setFormData({
                       ...formData,
-                      address: place.formatted_address,
-                      city: place.address_components?.find(c => c.types.includes('locality'))?.long_name || '',
-                      postal_code: place.address_components?.find(c => c.types.includes('postal_code'))?.long_name || ''
+                      address: fullStreetAddress || formData.address,
+                      city: city || formData.city,
+                      postal_code: postalCode || formData.postal_code
                     });
                   }
                 }
               }}
               options={{
                 componentRestrictions: { country: 'cz' },
-                types: ['address']
+                types: ['address'],
+                fields: ["address_components", "formatted_address", "geometry", "name"]
               }}
             >
-              <input
+              <Input
                 id="address"
                 type="text"
                 value={formData.address}
@@ -1019,7 +1054,7 @@ export default function ClientAuth() {
                 required
                 disabled={fetchingAres && clientType === 'company'}
                 placeholder="Začněte psát adresu..."
-                className="w-full h-12 bg-white/5 border border-white/10 text-white placeholder:text-white/20 pl-11 rounded-2xl focus:ring-2 focus:ring-white/20 focus:border-white/20 transition-all outline-none"
+                className="w-full h-12 bg-white/5 border border-white/10 text-white placeholder:text-white/20 pl-11 rounded-2xl focus-visible:ring-white/20 focus-visible:border-white/20 transition-all"
               />
             </Autocomplete>
           ) : (

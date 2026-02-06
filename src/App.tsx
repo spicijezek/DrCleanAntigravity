@@ -27,6 +27,7 @@ import ClientProfile from "./pages/client/ClientProfile";
 import ClientBilling from "./pages/client/ClientBilling";
 import ClientLoyalty from "./pages/client/ClientLoyalty";
 import ClientChecklistManager from "./pages/client/ClientChecklistManager";
+import ClientFAQ from "./pages/client/ClientFAQ";
 import { ClientLayout } from "./components/client/ClientLayout";
 import CleanerAuth from "./pages/cleaner/CleanerAuth";
 import CleanerDashboard from "./pages/cleaner/CleanerDashboard";
@@ -98,6 +99,13 @@ const App = () => (
               <ClientProtectedRoute>
                 <ClientLayout>
                   <ClientChecklistManager />
+                </ClientLayout>
+              </ClientProtectedRoute>
+            } />
+            <Route path="/klient/faq" element={
+              <ClientProtectedRoute>
+                <ClientLayout>
+                  <ClientFAQ />
                 </ClientLayout>
               </ClientProtectedRoute>
             } />

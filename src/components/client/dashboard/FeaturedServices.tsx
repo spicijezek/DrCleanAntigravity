@@ -13,7 +13,7 @@ import {
 
 import uklidVideo from "@/assets/uklid-video.mp4";
 import windowCleaningImage from "@/assets/window-cleaning-image.jpg";
-import upholsteryImage from "@/assets/upholstery-image.jpg";
+import upholsteryImage from "@/assets/upholstery-image-new.jpg";
 
 const services = [
   {

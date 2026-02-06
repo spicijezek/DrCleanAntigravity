@@ -59,8 +59,8 @@ const generateMockupBooking = (): Booking => {
         priceMin: null,
         priceMax: null
       },
-      service_title: 'Úklid domácnosti',
-      notes: 'Ukázkový popis úklidu - zde uvidíte své poznámky k objednávce.',
+      service_title: 'Můj První Úklid',
+      notes: 'Pravidelný úklid se zaměřením na kuchyň a koupelnu. Prosím o opatrnost u klavíru v obývacím pokoji.',
       manual_loyalty_points: 486
     },
     invoice_id: null,
@@ -93,11 +93,11 @@ const generateMockupBooking = (): Booking => {
       }
     ],
     client: {
-      has_allergies: false,
-      allergies_notes: null,
-      has_pets: false,
-      has_children: false,
-      special_instructions: null
+      has_allergies: true,
+      allergies_notes: 'Alergie na agresivní čisticí prostředky s vůní citronu.',
+      has_pets: true,
+      has_children: true,
+      special_instructions: 'Prosím o zvýšený důraz na utírání prachu ve výškách a pod postelí.'
     }
   };
 };
@@ -158,7 +158,7 @@ export function ClientEmptyState({
               key={mockupBooking.id}
               booking={mockupBooking}
               onRatingSubmit={async () => { }}
-              currentLoyaltyPoints={currentCredits}
+              currentLoyaltyPoints={486}
             />
           </div>
         </div>

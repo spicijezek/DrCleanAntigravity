@@ -15,6 +15,14 @@ import { useInvoiceDownload } from '@/hooks/useInvoiceDownload';
 import { HiddenInvoiceContainer } from '@/components/invoices/HiddenInvoiceContainer';
 import maidImage from '@/assets/maid.png';
 import { PremiumButton } from '@/components/ui/PremiumButton';
+import { Search, ChevronRight } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger
+} from '@/components/ui/accordion';
 
 export default function ClientBilling() {
   const { user } = useAuth();
@@ -30,8 +38,9 @@ export default function ClientBilling() {
 
   const { downloadInvoice, generatingInvoiceId, invoiceItems, previewInvoice } = useInvoiceDownload();
 
-  // Status filter state
+  // Status and Search filter state
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     loadData();
@@ -231,9 +240,32 @@ export default function ClientBilling() {
   ];
 
   const filteredBookings = bookings.filter(b => {
-    if (selectedStatus === 'all') return true;
-    if (selectedStatus === 'paid') return b.invoice?.status === 'paid';
-    return b.status === selectedStatus;
+    // Status filter
+    const matchesStatus = selectedStatus === 'all' ||
+      (selectedStatus === 'paid' ? b.invoice?.status === 'paid' : b.status === selectedStatus);
+
+    if (!matchesStatus) return false;
+
+    // Search filter
+    if (!searchQuery) return true;
+
+    const query = searchQuery.toLowerCase();
+    const dateStr = format(new Date(b.scheduled_date), 'd. M. yyyy', { locale: cs }).toLowerCase();
+    const serviceTitle = (b.booking_details?.service_title || '').toLowerCase();
+    const serviceType = b.service_type.toLowerCase();
+    const address = b.address.toLowerCase();
+
+    // Map localized categories for searching
+    const localizedCategory =
+      b.service_type === 'home_cleaning' ? 'úklid domova' :
+        b.service_type === 'upholstery_cleaning' ? 'čištění čalounění' :
+          b.service_type === 'window_cleaning' ? 'mytí oken' : '';
+
+    return dateStr.includes(query) ||
+      serviceTitle.includes(query) ||
+      serviceType.includes(query) ||
+      address.includes(query) ||
+      localizedCategory.includes(query);
   }).sort((a, b) => {
     // Helper to determine priority tier
     const getPriority = (booking: Booking) => {
@@ -260,6 +292,14 @@ export default function ClientBilling() {
     return new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime();
   });
 
+  // Group bookings by Month/Year
+  const groupedBookings = filteredBookings.reduce((acc: Record<string, Booking[]>, booking) => {
+    const monthYear = format(new Date(booking.scheduled_date), 'MMMM yyyy', { locale: cs });
+    if (!acc[monthYear]) acc[monthYear] = [];
+    acc[monthYear].push(booking);
+    return acc;
+  }, {});
+
   const getDaysDiffLabel = (dateStr: string) => {
     const diff = Math.ceil((new Date(dateStr).getTime() - new Date().setHours(0, 0, 0, 0)) / (1000 * 60 * 60 * 24));
     if (diff <= 0) return 'Dnes';
@@ -270,24 +310,23 @@ export default function ClientBilling() {
 
   // Generate mockup booking for clients with no history
   const generateMockupBooking = (): Booking => {
-    const futureDate = new Date();
-    futureDate.setDate(futureDate.getDate() + 7);
-    futureDate.setHours(10, 0, 0, 0);
+    const pastDate = new Date();
+    pastDate.setDate(pastDate.getDate() - 7);
+    pastDate.setHours(10, 0, 0, 0);
 
-    // Set started_at to show in-progress status with 75% completion
-    const startedAt = new Date();
-    startedAt.setHours(startedAt.getHours() - 2); // Started 2 hours ago
+    const completedAt = new Date(pastDate);
+    completedAt.setHours(completedAt.getHours() + 4); // Completed after 4 hours
 
     return {
       id: 'mockup-preview',
       address: 'Příkladová 123, Praha 1',
-      scheduled_date: futureDate.toISOString(),
-      started_at: startedAt.toISOString(),
-      completed_at: null,
-      created_at: new Date().toISOString(),
-      client_viewed_at: null,
+      scheduled_date: pastDate.toISOString(),
+      started_at: pastDate.toISOString(),
+      completed_at: completedAt.toISOString(),
+      created_at: new Date(pastDate.getTime() - 86400000 * 2).toISOString(),
+      client_viewed_at: new Date().toISOString(),
       service_type: 'home_cleaning',
-      status: 'in_progress',
+      status: 'completed',
       booking_details: {
         cleaning_type: 'osobni',
         typ_domacnosti: 'byt',
@@ -300,11 +339,11 @@ export default function ClientBilling() {
           priceMin: null,
           priceMax: null
         },
-        service_title: 'Úklid domácnosti',
-        notes: 'Ukázkový popis úklidu - zde uvidíte své poznámky k objednávce.',
+        service_title: 'Můj První Úklid',
+        notes: 'Pravidelný úklid se zaměřením na kuchyň a koupelnu. Prosím o opatrnost u klavíru v obývacím pokoji.',
         manual_loyalty_points: 486
       },
-      invoice_id: null,
+      invoice_id: 'mockup-invoice-1',
       skip_invoice: false,
       team_member_ids: ['mockup-team-1'],
       checklist: {
@@ -313,15 +352,29 @@ export default function ClientBilling() {
         city: 'Praha 1',
         postal_code: '110 00',
         rooms: [
-          { id: 'room-1', room_name: 'Obývací pokoj', is_completed: true, completed_at: new Date().toISOString() },
-          { id: 'room-2', room_name: 'Kuchyň', is_completed: true, completed_at: new Date().toISOString() },
-          { id: 'room-3', room_name: 'Ložnice', is_completed: true, completed_at: new Date().toISOString() },
-          { id: 'room-4', room_name: 'Koupelna', is_completed: false, completed_at: null }
+          { id: 'room-1', room_name: 'Obývací pokoj', is_completed: true, completed_at: new Date(pastDate.getTime() + 3600000).toISOString() },
+          { id: 'room-2', room_name: 'Kuchyň', is_completed: true, completed_at: new Date(pastDate.getTime() + 7200000).toISOString() },
+          { id: 'room-3', room_name: 'Ložnice', is_completed: true, completed_at: new Date(pastDate.getTime() + 9000000).toISOString() },
+          { id: 'room-4', room_name: 'Koupelna', is_completed: true, completed_at: new Date(pastDate.getTime() + 10800000).toISOString() }
         ]
       },
-      invoice: null,
+      invoice: {
+        id: 'mockup-invoice-1',
+        status: 'paid',
+        total: 1800,
+        variable_symbol: '2024001',
+        date_due: pastDate.toISOString(),
+        pdf_path: null,
+        created_at: pastDate.toISOString(),
+        items: []
+      } as any,
       company_info: companyInfo,
-      feedback: null,
+      feedback: {
+        id: 'mockup-feedback-1',
+        rating: 10,
+        comment: 'Úklid byl naprosto perfektní, Anička je velmi šikovná!',
+        declined: false
+      },
       team_members: [
         {
           name: 'Anička',
@@ -334,11 +387,11 @@ export default function ClientBilling() {
         }
       ],
       client: {
-        has_allergies: false,
-        allergies_notes: null,
-        has_pets: false,
-        has_children: false,
-        special_instructions: null
+        has_allergies: true,
+        allergies_notes: 'Alergie na agresivní čisticí prostředky s vůní citronu.',
+        has_pets: true,
+        has_children: true,
+        special_instructions: 'Prosím o zvýšený důraz na utírání prachu ve výškách a pod postelí.'
       }
     };
   };
@@ -359,17 +412,31 @@ export default function ClientBilling() {
         ]}
       />
 
-      <div className="-mx-4 px-4 overflow-x-auto pb-2 scrollbar-hide">
-        <div className="flex gap-2">
-          {statusFilters.map(f => (
-            <button
-              key={f.key}
-              onClick={() => setSelectedStatus(f.key)}
-              className={`px-5 py-2.5 rounded-full font-bold text-sm transition-all ${selectedStatus === f.key ? 'bg-primary text-primary-foreground shadow-lg' : 'bg-muted/50 text-muted-foreground'}`}
-            >
-              {f.label}
-            </button>
-          ))}
+      <div className="flex flex-col md:flex-row gap-4">
+        {/* Search Input Filter */}
+        <div className="relative flex-1 group">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+          <Input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Hledat podle data, služby nebo adresy..."
+            className="pl-11 h-12 rounded-2xl bg-muted/30 border-muted-foreground/10 focus:border-primary/30 transition-all shadow-sm"
+          />
+        </div>
+
+        {/* Status Filters Slider */}
+        <div className="-mx-4 px-4 overflow-x-auto pb-2 scrollbar-hide md:mx-0 md:px-0">
+          <div className="flex gap-2 min-w-max">
+            {statusFilters.map(f => (
+              <button
+                key={f.key}
+                onClick={() => setSelectedStatus(f.key)}
+                className={`px-5 py-2.5 rounded-full font-bold text-sm transition-all ${selectedStatus === f.key ? 'bg-primary text-primary-foreground shadow-lg' : 'bg-muted/50 text-muted-foreground hover:bg-muted'}`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -418,7 +485,7 @@ export default function ClientBilling() {
                     onRatingSubmit={handleRatingSubmit}
                     onDownload={downloadInvoice}
                     isCollapsible={true}
-                    currentLoyaltyPoints={loyaltyCredits}
+                    currentLoyaltyPoints={486}
                   />
                 </div>
 
@@ -493,9 +560,28 @@ export default function ClientBilling() {
             </Card>
           );
         })() : (
-          filteredBookings.map(booking => (
-            <BookingCard key={booking.id} booking={booking} onRatingSubmit={handleRatingSubmit} onDownload={downloadInvoice} isCollapsible={true} currentLoyaltyPoints={loyaltyCredits} />
-          ))
+          <Accordion type="multiple" defaultValue={[Object.keys(groupedBookings)[0]]} className="space-y-4 border-none">
+            {Object.entries(groupedBookings).map(([monthYear, monthBookings]) => (
+              <AccordionItem key={monthYear} value={monthYear} className="border-none">
+                <AccordionTrigger className="flex items-center gap-4 py-3 px-6 rounded-[1.5rem] bg-slate-50 dark:bg-slate-900/40 border border-slate-200/60 transition-all hover:bg-slate-100 dark:hover:bg-slate-800/60 no-underline hover:no-underline group">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-white dark:bg-slate-800 shadow-sm flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+                      <Calendar className="h-5 w-5" />
+                    </div>
+                    <div className="text-left">
+                      <h3 className="font-black text-lg capitalize">{monthYear}</h3>
+                      <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">{monthBookings.length} úklidů celkem</p>
+                    </div>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="pt-4 space-y-4 px-1">
+                  {monthBookings.map(booking => (
+                    <BookingCard key={booking.id} booking={booking} onRatingSubmit={handleRatingSubmit} onDownload={downloadInvoice} isCollapsible={true} currentLoyaltyPoints={loyaltyCredits} />
+                  ))}
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
         )}
       </div>
 
