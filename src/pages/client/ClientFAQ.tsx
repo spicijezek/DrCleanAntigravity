@@ -92,14 +92,14 @@ export default function ClientFAQ() {
                     Náš tým podpory je vám k dispozici každý pracovní den od 8:00 do 18:00.
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                    <Button asChild variant="outline" className="rounded-xl border-primary/20 hover:bg-primary/10 gap-2 h-12">
+                    <Button asChild variant="outline" className="rounded-xl border-primary/20 hover:bg-primary/10 gap-2">
                         <a href="tel:+420777645610">
                             <Phone className="h-4 w-4" />
                             Zavolat nám
                         </a>
                     </Button>
-                    <Button asChild variant="outline" className="rounded-xl border-primary/20 hover:bg-primary/10 gap-2 h-12">
-                        <a href="mailto:uklid@drclean.cz">
+                    <Button asChild variant="outline" className="rounded-xl border-primary/20 hover:bg-primary/10 gap-2">
+                        <a href="mailto:uklid@klinr.cz">
                             <Mail className="h-4 w-4" />
                             Napsat email
                         </a>

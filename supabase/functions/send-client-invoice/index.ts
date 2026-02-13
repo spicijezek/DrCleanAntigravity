@@ -53,8 +53,8 @@ const handler = async (req: Request): Promise<Response> => {
                     <br/>
                     <p>S pozdravem,</p>
                     <p><strong>Tým Dr.Clean</strong><br/>
-                    <a href="https://drclean.cz">www.drclean.cz</a><br/>
-                    <a href="mailto:uklid@drclean.cz">uklid@drclean.cz</a></p>
+                    <a href="https://klinr.cz">www.klinr.cz</a><br/>
+                    <a href="mailto:uklid@klinr.cz">uklid@klinr.cz</a></p>
                 </div>
             `,
             pdfUrl: pdf_url,

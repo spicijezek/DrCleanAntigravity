@@ -2933,11 +2933,13 @@ export default function ClientServices({
                 <span className="font-medium">+420 777 645 610</span>
               </a>
               <a
-                href="mailto:uklid@drclean.cz"
-                className="flex items-center justify-center gap-2 p-3 rounded-lg bg-background border border-border hover:border-primary/50 transition-colors"
+                href="mailto:uklid@klinr.cz"
+                className="flex items-center gap-3 px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 hover:border-primary/30 hover:bg-white transition-all group"
               >
-                <Mail className="h-4 w-4 text-primary" />
-                <span className="font-medium">uklid@drclean.cz</span>
+                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Mail className="h-5 w-5 text-primary" />
+                </div>
+                <span className="font-medium">uklid@klinr.cz</span>
               </a>
             </div>
           </div>

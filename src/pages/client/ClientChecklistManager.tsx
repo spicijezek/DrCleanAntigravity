@@ -457,7 +457,7 @@ export default function ClientChecklistManager() {
                 <Button
                   onClick={createChecklist}
                   disabled={!newChecklistAddress.trim()}
-                  className="h-12 px-8 text-base font-semibold"
+                  className="px-8 text-base font-semibold"
                 >
                   Vytvořit plán
                 </Button>
@@ -545,8 +545,8 @@ export default function ClientChecklistManager() {
                               }}
                             />
                             <Button
-                              size="icon"
-                              className="h-8 w-8 shrink-0 bg-green-500 hover:bg-green-600"
+                              size="sm"
+                              className="shrink-0 bg-green-500 hover:bg-green-600"
                               onClick={() => handleRenameRoom(room.id)}
                             >
                               <Check className="h-4 w-4" />
@@ -574,8 +574,8 @@ export default function ClientChecklistManager() {
                     </div>
                     <Button
                       variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
+                      size="sm"
+                      className="text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
                       onClick={() => removeRoom(room.id)}
                     >
                       <Trash2 className="h-4 w-4" />
@@ -587,7 +587,7 @@ export default function ClientChecklistManager() {
                       <div key={task.id} className="group/task flex items-center gap-2 text-sm text-muted-foreground bg-muted/30 p-2 rounded-lg hover:bg-muted/50 transition-colors">
                         <CheckCircle2 className="h-3.5 w-3.5 text-primary/40 shrink-0" />
                         <span className="flex-1 break-words">{task.task_text}</span>
-                        <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover/task:opacity-100 transition-opacity text-destructive hover:bg-destructive/10 shrink-0" onClick={() => handleDeleteTask(task.id)}>
+                        <Button variant="ghost" size="icon" className="h-12 w-12 opacity-0 group-hover/task:opacity-100 transition-opacity text-destructive hover:bg-destructive/10 shrink-0" onClick={() => handleDeleteTask(task.id)}>
                           <Trash2 className="h-3 w-3" />
                         </Button>
                       </div>
@@ -603,10 +603,10 @@ export default function ClientChecklistManager() {
                           autoFocus
                           onKeyDown={e => e.key === 'Enter' && handleAddTask(room.id)}
                         />
-                        <Button size="icon" className="h-8 w-8 shrink-0" onClick={() => handleAddTask(room.id)}>
+                        <Button size="icon" className="h-12 w-12 shrink-0" onClick={() => handleAddTask(room.id)}>
                           <Plus className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => setAddingTaskRoomId(null)}>
+                        <Button variant="ghost" size="icon" className="h-12 w-12 shrink-0" onClick={() => setAddingTaskRoomId(null)}>
                           <X className="h-4 w-4" />
                         </Button>
                       </div>
@@ -663,7 +663,7 @@ export default function ClientChecklistManager() {
               </div>
 
               <PremiumButton
-                className="w-full py-2.5 rounded-2xl text-base"
+                className="w-full rounded-2xl text-base"
                 onClick={() => window.location.href = 'tel:+420777645610'}
               >
                 <Phone className="h-4 w-4" />

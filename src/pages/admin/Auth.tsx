@@ -197,7 +197,7 @@ export default function Auth() {
                     />
                   </div>
                 </div>
-                <Button type="submit" className="w-full h-14 bg-white text-blue-900 hover:bg-blue-50 font-bold rounded-[1.25rem] shadow-xl hover:shadow-2xl transition-all hover:scale-[1.02] active:scale-[0.98]">
+                <Button type="submit" className="w-full bg-white text-blue-900 hover:bg-blue-50 font-bold rounded-[1.25rem] shadow-xl hover:shadow-2xl transition-all hover:scale-[1.02] active:scale-[0.98]">
                   Sign Into Dashboard
                 </Button>
               </form>
@@ -250,7 +250,7 @@ export default function Auth() {
                     />
                   </div>
                 </div>
-                <Button type="submit" className="w-full h-14 bg-white text-blue-900 hover:bg-blue-50 font-bold rounded-[1.25rem] shadow-xl hover:shadow-2xl transition-all hover:scale-[1.02] active:scale-[0.98]">
+                <Button type="submit" className="w-full bg-white text-blue-900 hover:bg-blue-50 font-bold rounded-[1.25rem] shadow-xl hover:shadow-2xl transition-all hover:scale-[1.02] active:scale-[0.98]">
                   Request Registration
                 </Button>
               </form>

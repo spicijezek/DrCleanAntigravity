@@ -510,7 +510,7 @@ export default function Clients() {
                 {searchTerm ? 'Zkuste upravit hledaný výraz.' : 'Začněte přidáním prvního klienta.'}
               </p>
               {!searchTerm && (
-                <Button onClick={() => setShowAddForm(true)} className="rounded-xl h-12 px-8 font-semibold transition-all hover:shadow-medium">
+                <Button onClick={() => setShowAddForm(true)} className="h-12 px-8 font-semibold transition-all hover:shadow-lg">
                   <Plus className="h-5 w-5 mr-2" />
                   Přidat klienta
                 </Button>

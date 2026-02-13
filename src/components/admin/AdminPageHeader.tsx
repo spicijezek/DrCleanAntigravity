@@ -18,7 +18,7 @@ export function AdminPageHeader({ title, description, action, className, titleCl
         <div className={cn(
             "flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 p-6 rounded-3xl backdrop-blur-sm border shadow-sm transition-all duration-700",
             isLuxurious
-                ? "bg-gradient-to-br from-[#14293C] via-[#1e1b4b] to-[#4c1d95] border-white/10 shadow-xl shadow-primary/20"
+                ? "bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 border-white/10 shadow-xl shadow-slate-900/20"
                 : "bg-white/50 dark:bg-slate-900/50",
             className
         )}>

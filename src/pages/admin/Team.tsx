@@ -146,7 +146,7 @@ export default function Team() {
             <Button
               onClick={() => setShowAddForm(true)}
               variant="default"
-              className="shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all rounded-xl h-11 px-6 font-bold"
+              className="shadow-lg hover:shadow-xl transition-all h-11 px-6 font-bold"
             >
               <Plus className="h-5 w-5 mr-2" />
               Přidat člena týmu
@@ -177,7 +177,7 @@ export default function Team() {
               <p className="text-muted-foreground mb-8 max-w-sm mx-auto text-sm leading-relaxed">
                 Začněte přidáním prvního člena týmu do systému.
               </p>
-              <Button onClick={() => setShowAddForm(true)} className="rounded-xl h-12 px-8 font-semibold transition-all hover:shadow-medium">
+              <Button onClick={() => setShowAddForm(true)} className="px-8 font-semibold transition-all hover:shadow-lg">
                 <Plus className="h-5 w-5 mr-2" />
                 Přidat člena týmu
               </Button>

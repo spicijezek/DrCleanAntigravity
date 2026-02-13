@@ -462,7 +462,7 @@ export function AddClientForm({ onClose, onClientAdded, editingClient }: AddClie
                 <Button
                   type="submit"
                   disabled={loading}
-                  className="rounded-xl bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 px-8"
+                  className="px-8 shadow-lg"
                 >
                   {loading ? (editingClient ? 'Ukládám...' : 'Přidávám...') : (editingClient ? 'Uložit změny' : 'Přidat klienta')}
                 </Button>

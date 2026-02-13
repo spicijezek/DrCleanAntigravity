@@ -1,10 +1,10 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
+import { Toaster as Sonner, toast } from "sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { ClientProtectedRoute } from "@/components/ClientProtectedRoute";
 import { CleanerProtectedRoute } from "@/components/CleanerProtectedRoute";
@@ -15,6 +15,7 @@ import AdminApproval from "./pages/admin/AdminApproval";
 import Clients from "./pages/admin/Clients";
 import Jobs from "./pages/admin/Jobs";
 import Team from "./pages/admin/Team";
+import { LoadingOverlay } from "@/components/LoadingOverlay";
 
 import Finances from "./pages/admin/Finances";
 import InvoiceGenerator from "./pages/admin/InvoiceGenerator";
@@ -53,6 +54,103 @@ import CookiesPage from "./pages/Cookies";
 
 import CookieConsent from "./components/CookieConsent";
 
+const DomainRedirect = () => {
+  const { pathname, search } = useLocation();
+  const hostname = window.location.hostname;
+
+  useEffect(() => {
+    const isLocalhost = hostname.includes('localhost') || hostname.includes('127.0.0.1');
+    const searchParams = new URLSearchParams(search);
+    const testDomain = searchParams.get('test_domain');
+
+    // Only apply logic on production domains or if manually testing on localhost
+    if (isLocalhost && !testDomain) return;
+
+    // Use the test domain if provided and on localhost, otherwise real hostname
+    const effectiveHostname = (isLocalhost && testDomain) ? testDomain : hostname;
+
+    const landingPaths = ['/', '/landing', '/rezervace', '/vop', '/zasady-ochrany-osobnich-udaju', '/cookies'];
+    const isLandingPath = landingPaths.includes(pathname) || pathname.startsWith('/rezervace-');
+
+    // Determine the target domains
+    const isLandingDomain = effectiveHostname === 'klinr.cz' || effectiveHostname === 'www.klinr.cz';
+    const isAppDomain = effectiveHostname === 'app.klinr.cz';
+    const isVercelPreview = effectiveHostname.endsWith('.vercel.app') && !effectiveHostname.includes('klinr.cz');
+
+    const handleRedirect = (url: string) => {
+      if (isLocalhost) {
+        toast.info(`[Testing] Would redirect to: ${url}`);
+        console.log(`[DomainRedirect] Would redirect to: ${url}`);
+      } else {
+        window.location.href = url;
+      }
+    };
+
+    if (isLandingDomain) {
+      // If on landing domain but accessing app route
+      if (!isLandingPath) {
+        handleRedirect(`https://app.klinr.cz${pathname}${search}`);
+      } else if (pathname === '/landing') {
+        handleRedirect(`https://klinr.cz/${search}`);
+      }
+    } else if (isAppDomain) {
+      // If on app domain but accessing landing route
+      if (isLandingPath && pathname !== '/') {
+        const targetPath = pathname === '/landing' ? '/' : pathname;
+        handleRedirect(`https://klinr.cz${targetPath}${search}`);
+      }
+    } else if (isVercelPreview) {
+      // OPTIONAL: On Vercel preview, we allow both app and landing without redirects
+      // This enables full testing of changes on preview deployments
+    }
+  }, [pathname, search, hostname]);
+
+  return null;
+};
+
+const HomeRoute = () => {
+  const { search } = useLocation();
+  const { user, loading } = useAuth();
+  const hostname = window.location.hostname;
+  const isLocalhost = hostname.includes('localhost') || hostname.includes('127.0.0.1');
+
+  // Check for test override
+  const searchParams = new URLSearchParams(search);
+  const testDomain = searchParams.get('test_domain');
+  const effectiveHostname = (isLocalhost && testDomain) ? testDomain : hostname;
+
+  if (loading) {
+    return <LoadingOverlay />;
+  }
+
+  // Explicitly check for app domain
+  if (effectiveHostname === 'app.klinr.cz') {
+    return (
+      <ProtectedRoute>
+        <Index />
+      </ProtectedRoute>
+    );
+  }
+
+  // Explicitly check for landing domain
+  if (effectiveHostname === 'klinr.cz' || effectiveHostname === 'www.klinr.cz') {
+    return <LandingPage />;
+  }
+
+  // Fallback for Vercel Preview / Localhost / Other
+  // If logged in, show Dashboard (Index) for convenience
+  if (user) {
+    return (
+      <ProtectedRoute>
+        <Index />
+      </ProtectedRoute>
+    );
+  }
+
+  // Default to Landing Page otherwise
+  return <LandingPage />;
+};
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -60,8 +158,9 @@ const App = () => (
     <AuthProvider>
       <TooltipProvider>
         <Toaster />
-        <Sonner position="top-center" duration={2000} />
+        <Sonner position="top-center" duration={4000} />
         <BrowserRouter>
+          <DomainRedirect />
           <ScrollToTop />
           <Routes>
             <Route path="/auth" element={<Auth />} />
@@ -190,11 +289,7 @@ const App = () => (
                 <AdminLoyalty />
               </ProtectedRoute>
             } />
-            <Route path="/" element={
-              <ProtectedRoute>
-                <Index />
-              </ProtectedRoute>
-            } />
+            <Route path="/" element={<HomeRoute />} />
             <Route path="/clients" element={
               <ProtectedRoute>
                 <Clients />

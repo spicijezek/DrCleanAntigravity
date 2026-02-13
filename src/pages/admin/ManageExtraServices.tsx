@@ -345,7 +345,7 @@ export default function ManageExtraServices() {
               </div>
 
               <div className="flex gap-3 pt-2">
-                <Button type="submit" className="flex-1 h-12 bg-primary hover:bg-primary/90 text-white font-bold rounded-2xl shadow-lg border-0 transition-all">
+                <Button type="submit" className="flex-1 bg-primary hover:bg-primary/90 text-white font-bold rounded-2xl shadow-lg border-0 transition-all">
                   {editingId ? 'Aktualizovat Službu' : 'Vytvořit Službu'}
                 </Button>
                 <Button

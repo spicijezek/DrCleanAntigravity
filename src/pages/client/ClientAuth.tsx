@@ -767,8 +767,8 @@ export default function ClientAuth() {
             type="button"
             variant={clientType === 'person' ? 'default' : 'outline'}
             className={`h-12 rounded-lg transition-all duration-300 ${clientType === 'person'
-              ? 'bg-white text-slate-950 shadow-lg hover:bg-white/90 border-2 border-white'
-              : 'bg-white/10 text-white/70 hover:text-white hover:bg-white/15 border-2 border-white/20'
+              ? 'bg-white text-slate-950 shadow-lg hover:bg-white/90 border-2 border-white font-bold'
+              : 'bg-transparent text-white border-2 border-white/20 hover:bg-white/10'
               }`}
             onClick={() => setClientType('person')}
           >
@@ -779,8 +779,8 @@ export default function ClientAuth() {
             type="button"
             variant={clientType === 'company' ? 'default' : 'outline'}
             className={`h-12 rounded-lg transition-all duration-300 ${clientType === 'company'
-              ? 'bg-white text-slate-950 shadow-lg hover:bg-white/90 border-2 border-white'
-              : 'bg-white/10 text-white/70 hover:text-white hover:bg-white/15 border-2 border-white/20'
+              ? 'bg-white text-slate-950 shadow-lg hover:bg-white/90 border-2 border-white font-bold'
+              : 'bg-transparent text-white border-2 border-white/20 hover:bg-white/10'
               }`}
             onClick={() => setClientType('company')}
           >
@@ -949,7 +949,7 @@ export default function ClientAuth() {
       <div className="flex flex-col gap-3">
         <PremiumButton
           type="submit"
-          className="w-full h-12 rounded-xl shadow-lg"
+          className="w-full h-12 rounded-xl shadow-lg bg-white text-blue-950 hover:bg-white/90"
           disabled={loading || verificationCode.length !== 6}
         >
           {loading ? "Ověřuji..." : "Ověřit kód"}
@@ -1153,7 +1153,7 @@ export default function ClientAuth() {
         <PremiumButton
           type="submit"
           disabled={loading}
-          className="w-full h-12 rounded-xl shadow-lg"
+          className="w-full h-12 rounded-xl shadow-lg bg-white text-slate-950 hover:bg-white/90"
         >
           {loading ? 'Ukládám...' : 'Pokračovat'}
           <ArrowRight className="ml-2 h-4 w-4" />
@@ -1188,7 +1188,7 @@ export default function ClientAuth() {
             <PremiumButton
               type="submit"
               disabled={loading}
-              className="w-full h-12 rounded-xl shadow-lg bg-green-600 hover:bg-green-700"
+              className="w-full h-12 rounded-xl shadow-lg bg-white text-slate-950 hover:bg-white/90"
             >
               {loading ? 'Dokončuji registraci...' : 'Dokončit registraci'}
               <Check className="ml-2 h-4 w-4" />
@@ -1301,7 +1301,7 @@ export default function ClientAuth() {
         <div className="pt-2">
           <PremiumButton
             type="submit"
-            className="w-full h-12 rounded-xl shadow-lg"
+            className="w-full h-12 rounded-xl shadow-lg bg-white text-blue-950 hover:bg-white/90"
           >
             Dokončit registraci
             <Check className="ml-2 h-4 w-4" />
@@ -1426,7 +1426,7 @@ export default function ClientAuth() {
         </Button>
         <PremiumButton
           onClick={handleFinalSubmit}
-          className="flex-1 h-14 rounded-xl shadow-xl"
+          className="flex-1 h-14 rounded-xl shadow-xl bg-white text-slate-950 hover:bg-white/90"
           disabled={loading || !gdprConsent}
         >
           {loading ? "Dokončuji..." : "Dokončit registraci"}
@@ -1441,7 +1441,7 @@ export default function ClientAuth() {
   }
 
   return (
-    <div className="min-h-screen flex items-start md:items-center justify-center bg-[url('https://images.unsplash.com/photo-1527515673516-9b552e6aeeb4?ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80')] bg-cover bg-center relative p-4 pt-8 overflow-hidden">
+    <div className="min-h-screen flex items-start md:items-center justify-center bg-[url('https://images.unsplash.com/photo-1527515673516-9b552e6aeeb4?ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80')] bg-cover bg-center relative p-4 pt-16 overflow-hidden">
       {/* Dynamic Overlay */}
       <div className="absolute inset-0 bg-gradient-to-br from-slate-950/90 via-black/95 to-black" />
 
@@ -1484,7 +1484,7 @@ export default function ClientAuth() {
 
           {/* Login/Signup Form Section */}
           <div>
-            <CardHeader className="text-center space-y-24 md:space-y-8 pt-24 md:pt-[64px] pb-10">
+            <CardHeader className="text-center space-y-8 pt-12 pb-10">
               <div className="mx-auto flex items-center justify-center transform hover:scale-105 transition-transform duration-500 group relative">
                 <div className="absolute inset-0 bg-primary/20 rounded-full blur-3xl opacity-30" />
                 <div className="relative z-10 bg-white/95 backdrop-blur-md p-6 rounded-[2.5rem] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] border border-white/40">
@@ -1539,7 +1539,7 @@ export default function ClientAuth() {
                     </div>
                     <Button
                       type="submit"
-                      className="w-full h-14 bg-white text-blue-900 hover:bg-blue-50 font-bold rounded-[1.25rem] shadow-xl hover:shadow-2xl transition-all hover:scale-[1.02] active:scale-[0.98]"
+                      className="w-full h-14 bg-none bg-white text-slate-900 hover:bg-slate-50 font-bold rounded-[1.25rem] shadow-xl hover:shadow-2xl transition-all hover:scale-[1.02] active:scale-[0.98]"
                       disabled={loading}
                     >
                       {loading ? "Přihlašování..." : "Přihlásit se"}
@@ -1563,7 +1563,7 @@ export default function ClientAuth() {
                       setIsSignIn(false);
                       setStep(1);
                     }}
-                    className="w-full h-12 bg-white/5 border-white/10 text-white hover:bg-white/10 hover:text-white rounded-xl transition-all"
+                    className="w-full h-12 bg-white border-white text-slate-950 hover:bg-white/90 rounded-xl transition-all font-bold"
                   >
                     Vytvořit nový účet
                   </Button>
@@ -1594,7 +1594,7 @@ export default function ClientAuth() {
                       setIsSignIn(true);
                       setStep(1);
                     }}
-                    className="w-full h-12 bg-white/5 border-white/10 text-white hover:bg-white/10 hover:text-white rounded-xl transition-all"
+                    className="w-full h-12 bg-white border-white text-slate-950 hover:bg-white/90 rounded-xl transition-all font-bold"
                   >
                     Přihlásit se
                   </Button>

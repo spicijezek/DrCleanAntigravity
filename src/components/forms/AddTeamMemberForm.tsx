@@ -117,7 +117,7 @@ export function AddTeamMemberForm({ onClose, onMemberAdded }: AddTeamMemberFormP
                     type="email"
                     value={formData.email}
                     onChange={handleChange}
-                    placeholder="email@drclean.cz"
+                    placeholder="email@klinr.cz"
                     className="rounded-xl border-primary/20 focus:border-primary focus:ring-primary/20 h-11"
                   />
                 </div>

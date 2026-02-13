@@ -462,7 +462,7 @@ export default function AdminChecklistManager() {
                                                         <div key={task.id} className="group/task flex items-center gap-2 text-sm text-muted-foreground bg-muted/30 p-2 rounded-lg hover:bg-muted/50 transition-colors">
                                                             <CheckCircle2 className="h-3.5 w-3.5 text-primary/40 shrink-0" />
                                                             <span className="flex-1 break-words">{task.task_text}</span>
-                                                            <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover/task:opacity-100 transition-opacity text-destructive hover:bg-destructive/10 shrink-0" onClick={() => handleDeleteTask(task.id)}>
+                                                            <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover/task:opacity-100 transition-opacity text-destructive hover:bg-destructive/10 shrink-0" onClick={() => handleDeleteTask(task.id)}>
                                                                 <Trash2 className="h-3 w-3" />
                                                             </Button>
                                                         </div>

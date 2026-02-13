@@ -103,7 +103,7 @@ export function Header() {
                 <SheetContent side="left" className="w-[300px] sm:w-[350px] p-0 border-r-0 z-[10200]">
                   <div className="flex flex-col h-full bg-background animate-in slide-in-from-left duration-300">
                     {/* Menu Header with Bubble Animation */}
-                    <div className="relative overflow-hidden bg-gradient-to-br from-blue-600 to-indigo-700 p-6 text-white">
+                    <div className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 p-6 text-white">
                       <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-white/10 blur-2xl" />
                       <div className="absolute bottom-0 left-0 -mb-4 -ml-4 h-20 w-20 rounded-full bg-white/10 blur-xl" />
 

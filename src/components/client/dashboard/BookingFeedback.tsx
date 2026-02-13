@@ -94,7 +94,7 @@ export function BookingFeedback({ bookingId, onSubmit, onDecline }: BookingFeedb
                             <PremiumButton
                                 onClick={handleSubmit}
                                 disabled={isSubmitting}
-                                className="h-10 px-4"
+                                className="px-4"
                             >
                                 {isSubmitting ? 'Odesílání...' : 'Odeslat hodnocení'}
                             </PremiumButton>

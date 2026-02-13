@@ -812,7 +812,7 @@ export default function InvoiceGenerator() {
             <div className="flex justify-between items-center bg-white p-2 rounded-t-lg -m-4 mb-2 border-b">
               <span className="font-bold text-xs uppercase tracking-wider text-muted-foreground ml-2">Položka {index + 1}</span>
               {items.length > 1 && (
-                <Button variant="ghost" size="sm" onClick={() => removeItem(item.id)} className="text-destructive h-7 px-2">
+                <Button variant="ghost" size="sm" onClick={() => removeItem(item.id)} className="text-destructive px-2">
                   <Trash2 className="h-4 w-4 mr-1" />
                   Smazat
                 </Button>
@@ -999,7 +999,7 @@ export default function InvoiceGenerator() {
               <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-lg border-t z-50 lg:hidden shadow-[0_-4px_10px_rgba(0,0,0,0.05)]">
                 <Button
                   onClick={saveInvoice}
-                  className="w-full h-12 text-lg font-bold rounded-xl shadow-lg shadow-primary/20"
+                  className="w-full text-lg font-bold rounded-xl shadow-lg shadow-primary/20"
                   variant="default"
                   disabled={loading || !clientName || items.some(i => !i.description) || isInvoiceUser}
                 >

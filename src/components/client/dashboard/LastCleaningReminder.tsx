@@ -235,7 +235,7 @@ export function LastCleaningReminder({ clientId, onBookingCreated }: LastCleanin
           <PremiumButton
             onClick={handleRebook}
             disabled={submitting || !selectedDate}
-            className="w-full h-12"
+            className="w-full"
           >
             {submitting ? (
               <>

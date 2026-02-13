@@ -1,7 +1,7 @@
 import { Home, Gift } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import plusIconTransparent from '@/assets/plus-icon-transparent.png';
+import plusIconNew from '@/assets/client-dashboard-nav-bottom.png';
 import { AnimatedClockIcon } from './AnimatedClockIcon';
 import { AnimatedChecklistIcon } from './AnimatedChecklistIcon';
 
@@ -28,9 +28,9 @@ export function ClientBottomNav() {
                 className="flex items-center justify-center"
               >
                 <img
-                  src={plusIconTransparent}
+                  src={plusIconNew}
                   alt="Nová objednávka"
-                  className="h-12 w-12 object-contain animate-breathe brightness-[0.6]"
+                  className="h-12 w-12 object-contain animate-breathe"
                 />
               </Link>
             );

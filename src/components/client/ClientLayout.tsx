@@ -49,7 +49,7 @@ export function ClientLayout({ children }: ClientLayoutProps) {
           <div className="absolute left-4 top-1/2 -translate-y-1/2 z-20">
             <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="flex items-center justify-center h-10 w-10 rounded-full transition-colors hover:bg-muted/50">
+                <Button variant="ghost" size="icon" className="flex items-center justify-center rounded-full transition-colors hover:bg-muted/50">
                   <img src={customMenuIcon} alt="Menu" className="h-[19px] w-[19px] object-contain opacity-90" />
                   <span className="sr-only">Otevřít menu</span>
                 </Button>
@@ -57,7 +57,7 @@ export function ClientLayout({ children }: ClientLayoutProps) {
               <SheetContent side="left" className="w-[300px] sm:w-[350px] p-0 border-r-0">
                 <div className="flex flex-col h-full bg-background animate-in slide-in-from-left duration-300">
                   {/* Menu Header with Bubble Animation */}
-                  <div className="relative overflow-hidden bg-primary p-6 text-primary-foreground">
+                  <div className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 p-6 text-white">
                     {/* Animated Bubble Background */}
                     <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-white/10 blur-2xl" />
                     <div className="absolute bottom-0 left-0 -mb-4 -ml-4 h-20 w-20 rounded-full bg-white/10 blur-xl" />
@@ -167,7 +167,7 @@ export function ClientLayout({ children }: ClientLayoutProps) {
             <Link
               to="/klient/profil"
               className={cn(
-                "flex items-center justify-center h-10 w-10 rounded-full transition-all duration-300 border-2",
+                "flex items-center justify-center rounded-full transition-all duration-300 border-2 h-12 w-12",
                 isProfileActive
                   ? "bg-primary text-white border-primary shadow-lg scale-105"
                   : "bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 hover:scale-105"

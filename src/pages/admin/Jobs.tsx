@@ -759,7 +759,7 @@ export default function Jobs() {
               {searchTerm ? 'Zkuste upravit hledaný výraz nebo filtry.' : 'Začněte přidáním první zakázky do systému.'}
             </p>
             {!searchTerm && (
-              <Button onClick={() => setShowAddForm(true)} className="rounded-2xl shadow-xl h-12 px-8 bg-primary hover:bg-primary/90 text-white font-bold transition-all hover:scale-105 active:scale-95">
+              <Button onClick={() => setShowAddForm(true)} className="shadow-xl px-8 font-bold transition-all hover:scale-105 active:scale-95">
                 <Plus className="h-5 w-5 mr-2" />
                 Vytvořit zakázku
               </Button>
@@ -834,11 +834,11 @@ export default function Jobs() {
                 </div>
               </div>
               <div className="flex gap-3 pt-2">
-                <Button onClick={handleApproveJob} className="flex-1 h-12 bg-primary hover:bg-primary/90 text-white font-bold rounded-2xl shadow-lg border-0">
+                <Button onClick={handleApproveJob} className="flex-1 bg-primary hover:bg-primary/90 text-white font-bold rounded-2xl shadow-lg border-0">
                   <Check className="h-5 w-5 mr-2" />
                   Potvrdit
                 </Button>
-                <Button variant="ghost" onClick={() => setApprovingJob(null)} className="flex-1 h-12 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                <Button variant="ghost" onClick={() => setApprovingJob(null)} className="flex-1 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
                   Zrušit
                 </Button>
               </div>

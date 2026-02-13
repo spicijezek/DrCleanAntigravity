@@ -453,7 +453,7 @@ export default function ClientLoyalty() {
 
       {/* Slim Status Bar - Forced single-row for mobile */}
       <div className={cn(
-        "relative overflow-hidden rounded-2xl px-4 py-3.5 bg-[linear-gradient(135deg,hsl(var(--primary)_/_0.9)_0%,hsl(var(--primary))_50%,hsl(var(--primary)_/_0.9)_100%)] text-white shadow-xl border-2 border-primary/20 transition-all duration-700",
+        "relative overflow-hidden rounded-2xl px-4 py-3.5 bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 text-white shadow-xl border-2 border-primary/20 transition-all duration-700",
         showCelebration ? "animate-glow-pulse scale-[1.02]" : ""
       )}>
         {/* Animated decorative bubbles - 12 bubbles for rich animation */}
@@ -661,11 +661,11 @@ export default function ClientLoyalty() {
               {/* Action Buttons */}
               <div className="sm:col-span-2 flex flex-row sm:flex-col gap-2 h-full">
                 <Button
-                  className="flex-1 sm:h-auto h-16 rounded-2xl text-base shadow-md bg-amber-100 hover:bg-amber-200 text-amber-900 border-2 border-amber-200 font-black transition-all active:scale-[0.98]"
+                  className="flex-1 sm:h-auto h-16 rounded-2xl text-base shadow-md bg-amber-600 hover:bg-amber-700 text-white border-2 border-amber-600 font-bold transition-all active:scale-[0.98]"
                   onClick={handleShare}
                   disabled={!referralCode}
                 >
-                  <Share2 className="h-4 w-4 mr-2 text-amber-700" />
+                  <Share2 className="h-4 w-4 mr-2 text-white/90" />
                   Sdílet
                 </Button>
                 <Button
