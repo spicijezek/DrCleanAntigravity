@@ -3,7 +3,7 @@ import { format, isValid, parseISO } from 'date-fns';
 import { cs } from 'date-fns/locale';
 import {
     Calendar as CalendarIcon, MapPin as MapPinIcon, User as UserIcon, Clock, Save, X, CheckCircle2,
-    Trash2, XCircle, Users, Star, FileText, Download, Shield, Sparkles,
+    Trash2, XCircle, Users, Star, FileText, Download, Shield, ShieldCheck, Sparkles,
     Banknote, Baby, Dog, HeartPulse, Flag, Mail, Phone, ChevronRight, Settings, Info, Play, DollarSign
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -567,6 +567,17 @@ export function BookingDetailDialog({ booking, isOpen, onClose, onUpdate, teamMe
                                         <div>
                                             <p className="text-[10px] font-bold text-muted-foreground/70 uppercase">Telefon</p>
                                             <p className="text-sm font-semibold">{booking.clients?.phone || '-'}</p>
+                                        </div>
+                                    </div>
+                                    <div className="p-3 bg-blue-50/50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800 flex items-center gap-3">
+                                        <ShieldCheck className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                        <div>
+                                            <p className="text-[10px] font-bold text-blue-600/70 dark:text-blue-400/70 uppercase">GDPR & VOP SOUHLAS</p>
+                                            <p className="text-sm font-bold text-blue-700 dark:text-blue-300">
+                                                {(booking.clients as any)?.created_at && isValid(new Date((booking.clients as any).created_at))
+                                                    ? format(new Date((booking.clients as any).created_at), 'd. M. yyyy, HH:mm', { locale: cs })
+                                                    : 'Neznámé datum'}
+                                            </p>
                                         </div>
                                     </div>
                                 </div>

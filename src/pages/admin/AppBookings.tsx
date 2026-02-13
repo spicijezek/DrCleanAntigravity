@@ -69,7 +69,7 @@ export default function AppBookings() {
         .select(`
           *,
           clients (
-            name, email, phone, address, city, 
+            name, email, phone, address, city, created_at,
             has_children, has_pets, has_allergies, 
             allergies_notes, special_instructions
           ),

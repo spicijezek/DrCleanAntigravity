@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import drcleanIcon from '@/assets/drclean-icon.png';
+import klinrLogoFavicon from '@/assets/Klinr Logo Favicon.png';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -25,8 +25,8 @@ export default function PendingApproval() {
           <div className="mx-auto h-24 w-24 flex items-center justify-center transform hover:scale-105 transition-transform duration-500 group">
             <div className="absolute inset-0 bg-blue-500/20 rounded-full blur-2xl group-hover:blur-3xl transition-all opacity-50" />
             <img
-              src={drcleanIcon}
-              alt="DrClean"
+              src={klinrLogoFavicon}
+              alt="Klinr"
               className="h-20 w-20 relative z-10 drop-shadow-2xl animate-spin-pulse"
             />
           </div>
@@ -43,7 +43,7 @@ export default function PendingApproval() {
         <CardContent className="px-8 pb-10 space-y-6">
           <div className="text-center space-y-4">
             <p className="text-blue-100/80 text-sm leading-relaxed font-medium">
-              Děkujeme za registraci u <span className="text-white font-bold">DrClean</span>! Váš účet byl úspěšně vytvořen a nyní čeká na schválení administrátorem.
+              Děkujeme za registraci u <span className="text-white font-bold">Klinr</span>! Váš účet byl úspěšně vytvořen a nyní čeká na schválení administrátorem.
             </p>
             <p className="text-blue-100/60 text-xs italic">
               Jakmile bude váš přístup schválen, obdržíte e-mail s potvrzením a budete moci začít využívat systém.
@@ -87,7 +87,7 @@ export default function PendingApproval() {
       {/* Footer Branding */}
       <div className="absolute bottom-8 text-center animate-in fade-in slide-in-from-bottom-2 duration-1000 delay-500">
         <p className="text-white/60 text-[10px] font-bold uppercase tracking-[0.2em] drop-shadow-sm">
-          &copy; 2026 DRCLEAN &bull; All Rights Reserved
+          &copy; 2026 KLINR &bull; All Rights Reserved
         </p>
       </div>
     </div>

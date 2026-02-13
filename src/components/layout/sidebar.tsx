@@ -52,7 +52,7 @@ export function Sidebar() {
   return (
     <div
       className={cn(
-        "hidden md:flex flex-col fixed left-0 top-16 z-[10060] h-[calc(100vh-4rem)] bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-r transition-all duration-300 ease-in-out shadow-lg",
+        "hidden md:flex flex-col fixed left-0 top-[60px] z-[10060] h-[calc(100vh-60px)] bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-r transition-all duration-300 ease-in-out shadow-lg",
         shouldBeExpanded ? "w-64" : "w-16"
       )}
       onMouseEnter={handleMouseEnter}

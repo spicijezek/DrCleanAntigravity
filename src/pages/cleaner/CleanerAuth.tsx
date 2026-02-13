@@ -10,7 +10,9 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Checkbox } from "@/components/ui/checkbox";
 import { LoadingOverlay } from '@/components/LoadingOverlay';
-import drcleanIcon from '@/assets/drclean-icon.png';
+import klinrLogoFull from '@/assets/Klinr Logo Full.png';
+import klinrLogoCropped from '@/assets/Klinr Logo Full.png';
+import klinrLogoFavicon from '@/assets/Klinr Logo Favicon.png';
 
 export default function CleanerAuth() {
   const [email, setEmail] = useState('');
@@ -124,23 +126,24 @@ export default function CleanerAuth() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[url('https://images.unsplash.com/photo-1581578731117-104f2a8d23e9?ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80')] bg-cover bg-center relative p-4">
+    <div className="min-h-screen flex items-start md:items-center justify-center bg-[url('https://images.unsplash.com/photo-1581578731117-104f2a8d23e9?ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80')] bg-cover bg-center relative p-4 pt-8">
       {/* Overlay */}
       <div className="absolute inset-0 bg-gradient-to-br from-purple-900/90 via-slate-900/90 to-black/90 backdrop-blur-sm" />
 
       <Card className="w-full max-w-md relative z-10 border-white/10 bg-white/10 backdrop-blur-xl shadow-2xl text-white">
-        <CardHeader className="text-center space-y-6 pt-10 pb-8">
-          <div className="mx-auto h-24 w-24 flex items-center justify-center transform hover:scale-105 transition-transform duration-500 group">
-            <div className="absolute inset-0 bg-blue-500/20 rounded-full blur-2xl group-hover:blur-3xl transition-all opacity-50" />
-            <img
-              src={drcleanIcon}
-              alt="DrClean"
-              className="h-20 w-20 relative z-10 drop-shadow-2xl animate-spin-pulse"
-            />
+        <CardHeader className="text-center space-y-24 md:space-y-8 pt-24 md:pt-[64px] pb-10">
+          <div className="mx-auto flex items-center justify-center transform hover:scale-105 transition-transform duration-500 group relative">
+            <div className="absolute inset-0 bg-emerald-500/20 rounded-full blur-3xl opacity-30" />
+            <div className="relative z-10 bg-white/95 backdrop-blur-md p-6 rounded-[2.5rem] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] border border-white/40">
+              <img
+                src={klinrLogoCropped}
+                alt="Klinr"
+                className="h-[42px] w-auto"
+              />
+            </div>
           </div>
-          <div>
-            <CardTitle className="text-3xl font-bold tracking-tight text-white">Dr.Clean</CardTitle>
-            <CardDescription className="text-emerald-100/70 mt-2">Portál pro uklízeče</CardDescription>
+          <div className="space-y-1">
+            <p className="text-white/80 text-sm font-semibold tracking-widest uppercase">Portál pro partnery</p>
           </div>
         </CardHeader>
         <CardContent>
@@ -161,7 +164,7 @@ export default function CleanerAuth() {
                     onChange={(e) => setEmail(e.target.value)}
                     required
                     className="bg-white/5 border-white/10 text-white placeholder:text-white/30 focus-visible:ring-emerald-500"
-                    placeholder="cleaner@example.com"
+                    placeholder="cleaner@klinr.cz"
                   />
                 </div>
                 <div className="space-y-2">
@@ -220,7 +223,7 @@ export default function CleanerAuth() {
                     onChange={(e) => setEmail(e.target.value)}
                     required
                     className="bg-white/5 border-white/10 text-white placeholder:text-white/30 focus-visible:ring-emerald-500"
-                    placeholder="josef@example.com"
+                    placeholder="josef@klinr.cz"
                   />
                 </div>
                 <div className="space-y-2">
@@ -256,6 +259,12 @@ export default function CleanerAuth() {
           </Tabs>
         </CardContent>
       </Card>
+      <div className="absolute bottom-8 text-center animate-in fade-in slide-in-from-bottom-2 duration-1000 delay-500">
+        <p className="text-white/60 text-[10px] font-bold uppercase tracking-[0.2em] drop-shadow-sm">
+          &copy; 2026 KLINR &bull; All Rights Reserved
+        </p>
+      </div>
+
       {loading && <LoadingOverlay message={email ? "Pracuji na tom..." : "Načítám..."} />}
     </div>
   );

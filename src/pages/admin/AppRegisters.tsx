@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Eye, Mail, Phone, Users, Search, TrendingUp, Filter, LayoutGrid, User, UserCheck, MapPin, Building2, PawPrint, Sparkles } from 'lucide-react';
+import { Eye, Mail, Phone, Users, Search, TrendingUp, Filter, LayoutGrid, User, UserCheck, MapPin, Building2, PawPrint, Sparkles, ShieldCheck } from 'lucide-react';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { Layout } from '@/components/layout/Layout';
 import { LoadingOverlay } from '@/components/LoadingOverlay';
@@ -19,7 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { format } from 'date-fns';
+import { format, isValid } from 'date-fns';
 import { cs } from 'date-fns/locale';
 
 interface Registration {
@@ -73,7 +73,7 @@ export default function AppRegisters() {
       const { data: clientsData, error: clientsError } = await (supabase as any)
         .from('clients')
         .select('*')
-        .eq('client_source', 'App')
+        .in('client_source', ['App', 'Web'])
         .order('created_at', { ascending: false });
 
       if (clientsError) throw clientsError;
@@ -356,9 +356,13 @@ export default function AppRegisters() {
                       <TableCell>
                         <Badge variant={registration.type === 'client' ? 'default' : 'secondary'} className={cn(
                           "bg-opacity-90 hover:bg-opacity-100 transition-colors cursor-default",
-                          registration.type === 'client' ? "bg-blue-600 hover:bg-blue-700" : "bg-emerald-600 hover:bg-emerald-700"
+                          registration.type === 'client'
+                            ? (registration.client_source === 'Web' ? "bg-amber-600 hover:bg-amber-700" : "bg-blue-600 hover:bg-blue-700")
+                            : "bg-emerald-600 hover:bg-emerald-700"
                         )}>
-                          {registration.type === 'client' ? 'Klient' : 'Tým'}
+                          {registration.type === 'client'
+                            ? (registration.client_source === 'Web' ? 'Non-register' : 'Klient')
+                            : 'Tým'}
                         </Badge>
                       </TableCell>
                       <TableCell className="font-semibold text-foreground/90">{registration.name}</TableCell>
@@ -426,9 +430,13 @@ export default function AppRegisters() {
                       <div className="flex items-center gap-2 mb-2">
                         <Badge variant={selectedRegistration.type === 'client' ? 'default' : 'secondary'} className={cn(
                           "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider",
-                          selectedRegistration.type === 'client' ? "bg-blue-600" : "bg-emerald-600"
+                          selectedRegistration.type === 'client'
+                            ? (selectedRegistration.client_source === 'Web' ? "bg-amber-600" : "bg-blue-600")
+                            : "bg-emerald-600"
                         )}>
-                          {selectedRegistration.type === 'client' ? 'Klient' : 'Úklidový pracovník'}
+                          {selectedRegistration.type === 'client'
+                            ? (selectedRegistration.client_source === 'Web' ? 'Non-register' : 'Klient')
+                            : 'Úklidový pracovník'}
                         </Badge>
                         <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest flex items-center gap-1">
                           <LayoutGrid className="w-3 h-3" />
@@ -473,6 +481,20 @@ export default function AppRegisters() {
                             <p className="font-medium text-slate-600 dark:text-slate-400">
                               {format(new Date(selectedRegistration.created_at), 'dd. MMMM yyyy, HH:mm', { locale: cs })}
                             </p>
+                          </div>
+
+                          <div className="pt-2 border-t border-slate-200 dark:border-slate-800/50">
+                            <div className="p-3 bg-blue-50/50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-800 flex items-center gap-3">
+                              <ShieldCheck className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                              <div>
+                                <p className="text-[10px] font-bold text-blue-600/70 dark:text-blue-400/70 uppercase">GDPR & VOP SOUHLAS</p>
+                                <p className="text-sm font-bold text-blue-700 dark:text-blue-300">
+                                  {selectedRegistration.created_at && isValid(new Date(selectedRegistration.created_at))
+                                    ? format(new Date(selectedRegistration.created_at), 'd. M. yyyy, HH:mm', { locale: cs })
+                                    : 'Neznámé datum'}
+                                </p>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -622,6 +644,6 @@ export default function AppRegisters() {
           </DialogContent>
         </Dialog>
       </div>
-    </Layout>
+    </Layout >
   );
 }

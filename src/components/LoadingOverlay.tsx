@@ -1,4 +1,4 @@
-import drcleanIcon from '@/assets/drclean-icon-transparent.png';
+import klinrLogoFavicon from '@/assets/Klinr Logo Favicon.png';
 
 interface LoadingOverlayProps {
     message?: string;
@@ -10,8 +10,8 @@ export const LoadingOverlay = ({ message = "Načítání..." }: LoadingOverlayPr
             <div className="relative">
                 <div className="absolute inset-0 bg-primary/10 blur-3xl rounded-full scale-150 animate-pulse" />
                 <img
-                    src={drcleanIcon}
-                    alt="DrClean"
+                    src={klinrLogoFavicon}
+                    alt="Klinr"
                     className="h-20 w-20 object-contain animate-spin-pulse relative z-10 brightness-[0.6]"
                 />
             </div>

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { PremiumButton } from '@/components/ui/PremiumButton';
 import { Input } from '@/components/ui/input';
@@ -10,8 +10,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { LoadingOverlay } from '@/components/LoadingOverlay';
-import drcleanIcon from '@/assets/drclean-icon.png';
-import { Mail, Lock, User, Building2, MapPin, Phone, Calendar, FileText, ArrowLeft, ArrowRight, Check, Info } from 'lucide-react';
+import klinrLogoFull from '@/assets/Klinr Logo Full.png';
+import klinrLogoCropped from '@/assets/Klinr Logo Full.png';
+import klinrLogoFavicon from '@/assets/Klinr Logo Favicon.png';
+import { Mail, Lock, User, Building2, MapPin, Phone, Calendar, FileText, ArrowLeft, ArrowRight, Check, Info, Smartphone } from 'lucide-react';
 import { DatePicker } from '@/components/ui/date-time-picker';
 import { useLoadScript, Autocomplete } from '@react-google-maps/api';
 
@@ -50,6 +52,7 @@ export default function ClientAuth() {
     }
   });
   const [clientType, setClientType] = useState<ClientType>('person');
+  const [gdprConsent, setGdprConsent] = useState(false);
   const [verificationCode, setVerificationCode] = useState('');
   const [resendTimer, setResendTimer] = useState(0);
   const [fetchingAres, setFetchingAres] = useState(false);
@@ -183,31 +186,6 @@ export default function ClientAuth() {
     sessionStorage.setItem('registration_formData', JSON.stringify(formData));
   }, [step, formData]);
 
-  useEffect(() => {
-    // Only redirect if fully registered as a client
-    if (user && profile?.roles?.includes('client') && step === 1) {
-      navigate('/klient', { replace: true });
-    }
-  }, [user, profile, navigate, step]);
-
-  // Handle referral code from URL
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const ref = params.get('ref') || params.get('referral');
-    if (ref) {
-      setIsSignIn(false);
-      setFormData(prev => ({ ...prev, referral_code: ref.toUpperCase() }));
-    }
-  }, []);
-
-  // Resend timer countdown
-  useEffect(() => {
-    if (resendTimer > 0) {
-      const timer = setTimeout(() => setResendTimer(resendTimer - 1), 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [resendTimer]);
-
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -225,6 +203,14 @@ export default function ClientAuth() {
         description: "Vítejte zpět.",
         duration: 1500,
       });
+
+      // Check for desktop environment
+      if (window.innerWidth >= 1024) { // lg breakpoint
+        navigate('/klient/aplikace');
+      } else {
+        navigate('/klient');
+      }
+
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -235,6 +221,17 @@ export default function ClientAuth() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    // Only redirect if fully registered as a client
+    if (user && profile?.roles?.includes('client') && step === 1) {
+      if (window.innerWidth >= 1024) {
+        navigate('/klient/aplikace', { replace: true });
+      } else {
+        navigate('/klient', { replace: true });
+      }
+    }
+  }, [user, profile, navigate, step]);
 
   const fetchAresData = async (ico: string) => {
     if (!ico || ico.length < 8) return;
@@ -704,7 +701,7 @@ export default function ClientAuth() {
 
       toast({
         title: "Registrace dokončena!",
-        description: "Vítejte v DrClean",
+        description: "Vítejte v Klinr",
         duration: 1500,
       });
 
@@ -712,8 +709,19 @@ export default function ClientAuth() {
       sessionStorage.removeItem('registration_step');
       sessionStorage.removeItem('registration_formData');
 
-      // Navigate to client dashboard
-      navigate('/klient');
+      // Check if user came from landing page with a pending booking
+      const pendingService = sessionStorage.getItem('pending_booking_service');
+      if (pendingService) {
+        sessionStorage.removeItem('pending_booking_service');
+        navigate(`/klient/sluzby?service=${pendingService}`);
+      } else {
+        // Navigate to client dashboard or app info based on device
+        if (window.innerWidth >= 1024) {
+          navigate('/klient/aplikace');
+        } else {
+          navigate('/klient');
+        }
+      }
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -879,10 +887,30 @@ export default function ClientAuth() {
         <p className="text-[10px] text-white/40 ml-1">Pokud vás doporučil přítel, získáte oba bonusové body!</p>
       </div>
 
+
+      <div className="flex items-start space-x-3 my-4 px-1">
+        <div className="flex items-center h-5">
+          <input
+            id="gdpr-consent-step1"
+            type="checkbox"
+            checked={gdprConsent}
+            onChange={(e) => setGdprConsent(e.target.checked)}
+            className="w-4 h-4 rounded border-white/20 bg-white/5 text-primary focus:ring-primary focus:ring-offset-0 transition-all cursor-pointer shrink-0"
+          />
+        </div>
+        <div className="grid gap-1.5 leading-none">
+          <label
+            htmlFor="gdpr-consent-step1"
+            className="text-sm font-medium leading-tight text-white/80 cursor-pointer select-none"
+          >
+            Souhlasím se <Link to="/vop" state={{ from: 'registration' }} className="text-white hover:text-primary hover:underline transition-colors">Všeobecnými obchodními podmínkami</Link> a <Link to="/zasady-ochrany-osobnich-udaju" state={{ from: 'registration' }} className="text-white hover:text-primary hover:underline transition-colors">Zásadami ochrany osobních údajů</Link>.
+          </label>
+        </div>
+      </div>
       <Button
         type="submit"
         className="w-full h-14 bg-white text-blue-900 hover:bg-blue-50 font-bold rounded-[1.25rem] shadow-xl hover:shadow-2xl transition-all hover:scale-[1.02] active:scale-[0.98]"
-        disabled={loading}
+        disabled={loading || !gdprConsent}
       >
         {loading ? "Odesílám..." : "Zaregistrovat se"}
         <ArrowRight className="ml-2 h-5 w-5" />
@@ -1399,7 +1427,7 @@ export default function ClientAuth() {
         <PremiumButton
           onClick={handleFinalSubmit}
           className="flex-1 h-14 rounded-xl shadow-xl"
-          disabled={loading}
+          disabled={loading || !gdprConsent}
         >
           {loading ? "Dokončuji..." : "Dokončit registraci"}
           <Check className="ml-2 h-5 w-5" />
@@ -1413,7 +1441,7 @@ export default function ClientAuth() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[url('https://images.unsplash.com/photo-1527515673516-9b552e6aeeb4?ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80')] bg-cover bg-center relative p-4 overflow-hidden">
+    <div className="min-h-screen flex items-start md:items-center justify-center bg-[url('https://images.unsplash.com/photo-1527515673516-9b552e6aeeb4?ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80')] bg-cover bg-center relative p-4 pt-8 overflow-hidden">
       {/* Dynamic Overlay */}
       <div className="absolute inset-0 bg-gradient-to-br from-slate-950/90 via-black/95 to-black" />
 
@@ -1421,132 +1449,166 @@ export default function ClientAuth() {
       <div className="absolute top-1/4 -left-20 w-80 h-80 bg-primary/25 rounded-full blur-[120px] animate-pulse" />
       <div className="absolute bottom-1/4 -right-20 w-80 h-80 bg-primary/25 rounded-full blur-[120px] animate-pulse delay-700" />
 
-      <Card className="w-full max-w-md relative z-10 border-0 bg-white/10 backdrop-blur-2xl shadow-[0_32px_64px_-15px_rgba(0,0,0,0.5)] rounded-[2.5rem] text-white overflow-hidden animate-in fade-in zoom-in-95 duration-700">
+      <Card className="w-full max-w-md lg:max-w-5xl relative z-10 border-0 bg-white/10 backdrop-blur-2xl shadow-[0_32px_64px_-15px_rgba(0,0,0,0.5)] rounded-[2.5rem] text-white overflow-hidden animate-in fade-in zoom-in-95 duration-700">
         <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent pointer-events-none" />
 
-        <CardHeader className="text-center space-y-6 pt-10 pb-8">
-          <div className="mx-auto h-24 w-24 flex items-center justify-center transform hover:scale-105 transition-transform duration-500 group">
-            <div className="absolute inset-0 bg-primary/30 rounded-full blur-2xl group-hover:blur-3xl transition-all opacity-70" />
-            <img
-              src={drcleanIcon}
-              alt="DrClean"
-              className="h-20 w-20 relative z-10 drop-shadow-2xl animate-spin-pulse"
-            />
-          </div>
-          <div className="space-y-2">
-            <CardTitle className="text-4xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-b from-white to-white/60">
-              DrClean
-            </CardTitle>
-            <p className="text-white/80 text-sm font-semibold">Klientský portál</p>
-          </div>
-        </CardHeader>
+        <div className="lg:grid lg:grid-cols-2">
+          {/* Desktop Only Side Panel (QR Code) */}
+          <div className="hidden lg:flex flex-col items-center justify-center p-12 bg-slate-950/50 border-r border-white/10 relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent" />
 
-        <CardContent className="px-8 pb-10">
-          {!isSignIn && renderStepIndicator()}
-
-          {isSignIn ? (
-            // Sign In Form
-            <>
-              <form onSubmit={handleSignIn} className="space-y-5">
-                <div className="space-y-2.5">
-                  <Label htmlFor="signin-email" className="text-white/80 text-xs font-bold uppercase tracking-wider ml-1">Email</Label>
-                  <div className="relative group">
-                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40 group-focus-within:text-white transition-colors" />
-                    <Input
-                      id="signin-email"
-                      type="email"
-                      value={signInEmail}
-                      onChange={(e) => setSignInEmail(e.target.value)}
-                      required
-                      placeholder="vas@email.cz"
-                      className="h-12 bg-white/5 border-white/10 text-white placeholder:text-white/20 pl-11 rounded-2xl focus-visible:ring-white/20 focus-visible:border-white/20 transition-all"
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2.5">
-                  <Label htmlFor="signin-password" className="text-white/80 text-xs font-bold uppercase tracking-wider ml-1">Heslo</Label>
-                  <div className="relative group">
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40 group-focus-within:text-white transition-colors" />
-                    <Input
-                      id="signin-password"
-                      type="password"
-                      value={signInPassword}
-                      onChange={(e) => setSignInPassword(e.target.value)}
-                      required
-                      placeholder="••••••••"
-                      className="h-12 bg-white/5 border-white/10 text-white placeholder:text-white/20 pl-11 rounded-2xl focus-visible:ring-white/20 focus-visible:border-white/20 transition-all"
-                    />
-                  </div>
-                </div>
-                <Button
-                  type="submit"
-                  className="w-full h-14 bg-white text-blue-900 hover:bg-blue-50 font-bold rounded-[1.25rem] shadow-xl hover:shadow-2xl transition-all hover:scale-[1.02] active:scale-[0.98]"
-                  disabled={loading}
-                >
-                  {loading ? "Přihlašování..." : "Přihlásit se"}
-                </Button>
-              </form>
-
-              <div className="relative my-6">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t border-white/10" />
-                </div>
-                <div className="relative flex justify-center text-[10px] uppercase font-bold tracking-widest">
-                  <span className="bg-[#111827]/40 px-3 text-white/40 backdrop-blur-md rounded-full border border-white/10">
-                    Nebo
-                  </span>
-                </div>
+            <div className="relative z-10 text-center space-y-8 max-w-sm">
+              <div className="space-y-4">
+                <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-white/70">
+                  Používejte v mobilu
+                </h2>
+                <p className="text-white/60 text-lg">
+                  Pro nejlepší zážitek používejte Klinr ve svém mobilním prohlížeči.
+                </p>
               </div>
 
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setIsSignIn(false);
-                  setStep(1);
-                }}
-                className="w-full h-12 bg-white/5 border-white/10 text-white hover:bg-white/10 hover:text-white rounded-xl transition-all"
-              >
-                Vytvořit nový účet
-              </Button>
-            </>
-          ) : (
-            // Registration Multi-Step Form
-            <>
-              {step === 1 && renderStep1()}
-              {step === 2 && renderStep2()}
-              {step === 3 && renderStep3()}
-              {step === 4 && renderStep4()}
-
-              <div className="relative my-6">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t border-white/10" />
-                </div>
-                <div className="relative flex justify-center text-[10px] uppercase font-bold tracking-widest">
-                  <span className="bg-[#111827]/40 px-3 text-white/40 backdrop-blur-md rounded-full border border-white/10">
-                    Již máte účet?
-                  </span>
-                </div>
+              <div className="bg-white p-4 rounded-3xl shadow-xl inline-block transform hover:scale-105 transition-transform duration-500">
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(window.location.href)}`}
+                  alt="QR Kód"
+                  className="w-48 h-48 mix-blend-multiply"
+                />
               </div>
 
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setIsSignIn(true);
-                  setStep(1);
-                }}
-                className="w-full h-12 bg-white/5 border-white/10 text-white hover:bg-white/10 hover:text-white rounded-xl transition-all"
-              >
-                Přihlásit se
-              </Button>
-            </>
-          )}
-        </CardContent>
+              <div className="flex items-center justify-center gap-3 text-white/40 text-sm font-medium">
+                <Smartphone className="w-5 h-5" />
+                <span>Naskenujte pro otevření v mobilu</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Login/Signup Form Section */}
+          <div>
+            <CardHeader className="text-center space-y-24 md:space-y-8 pt-24 md:pt-[64px] pb-10">
+              <div className="mx-auto flex items-center justify-center transform hover:scale-105 transition-transform duration-500 group relative">
+                <div className="absolute inset-0 bg-primary/20 rounded-full blur-3xl opacity-30" />
+                <div className="relative z-10 bg-white/95 backdrop-blur-md p-6 rounded-[2.5rem] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] border border-white/40">
+                  <img
+                    src={klinrLogoCropped}
+                    alt="Klinr"
+                    className="h-[42px] w-auto"
+                  />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <p className="text-white/80 text-sm font-semibold tracking-widest uppercase">Klientský portál</p>
+              </div>
+            </CardHeader>
+
+            <CardContent className="px-8 pb-10">
+              {!isSignIn && renderStepIndicator()}
+
+              {isSignIn ? (
+                // Sign In Form
+                <>
+                  <form onSubmit={handleSignIn} className="space-y-5">
+                    <div className="space-y-2.5">
+                      <Label htmlFor="signin-email" className="text-white/80 text-xs font-bold uppercase tracking-wider ml-1">Email</Label>
+                      <div className="relative group">
+                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40 group-focus-within:text-white transition-colors" />
+                        <Input
+                          id="signin-email"
+                          type="email"
+                          value={signInEmail}
+                          onChange={(e) => setSignInEmail(e.target.value)}
+                          required
+                          placeholder="josef@klinr.cz"
+                          className="h-12 bg-white/5 border-white/10 text-white placeholder:text-white/20 pl-11 rounded-2xl focus-visible:ring-white/20 focus-visible:border-white/20 transition-all"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2.5">
+                      <Label htmlFor="signin-password" className="text-white/80 text-xs font-bold uppercase tracking-wider ml-1">Heslo</Label>
+                      <div className="relative group">
+                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40 group-focus-within:text-white transition-colors" />
+                        <Input
+                          id="signin-password"
+                          type="password"
+                          value={signInPassword}
+                          onChange={(e) => setSignInPassword(e.target.value)}
+                          required
+                          placeholder="••••••••"
+                          className="h-12 bg-white/5 border-white/10 text-white placeholder:text-white/20 pl-11 rounded-2xl focus-visible:ring-white/20 focus-visible:border-white/20 transition-all"
+                        />
+                      </div>
+                    </div>
+                    <Button
+                      type="submit"
+                      className="w-full h-14 bg-white text-blue-900 hover:bg-blue-50 font-bold rounded-[1.25rem] shadow-xl hover:shadow-2xl transition-all hover:scale-[1.02] active:scale-[0.98]"
+                      disabled={loading}
+                    >
+                      {loading ? "Přihlašování..." : "Přihlásit se"}
+                    </Button>
+                  </form>
+
+                  <div className="relative my-6">
+                    <div className="absolute inset-0 flex items-center">
+                      <span className="w-full border-t border-white/10" />
+                    </div>
+                    <div className="relative flex justify-center text-[10px] uppercase font-bold tracking-widest">
+                      <span className="bg-[#111827]/40 px-3 text-white/40 backdrop-blur-md rounded-full border border-white/10">
+                        Nebo
+                      </span>
+                    </div>
+                  </div>
+
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setIsSignIn(false);
+                      setStep(1);
+                    }}
+                    className="w-full h-12 bg-white/5 border-white/10 text-white hover:bg-white/10 hover:text-white rounded-xl transition-all"
+                  >
+                    Vytvořit nový účet
+                  </Button>
+                </>
+              ) : (
+                // Registration Multi-Step Form
+                <>
+                  {step === 1 && renderStep1()}
+                  {step === 2 && renderStep2()}
+                  {step === 3 && renderStep3()}
+                  {step === 4 && renderStep4()}
+                  {/* Step 5 not needed here as 4 handles finish */}
+
+                  <div className="relative my-6">
+                    <div className="absolute inset-0 flex items-center">
+                      <span className="w-full border-t border-white/10" />
+                    </div>
+                    <div className="relative flex justify-center text-[10px] uppercase font-bold tracking-widest">
+                      <span className="bg-[#111827]/40 px-3 text-white/40 backdrop-blur-md rounded-full border border-white/10">
+                        Již máte účet?
+                      </span>
+                    </div>
+                  </div>
+
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setIsSignIn(true);
+                      setStep(1);
+                    }}
+                    className="w-full h-12 bg-white/5 border-white/10 text-white hover:bg-white/10 hover:text-white rounded-xl transition-all"
+                  >
+                    Přihlásit se
+                  </Button>
+                </>
+              )}
+            </CardContent>
+          </div>
+        </div>
       </Card>
 
       {/* Footer Branding */}
       <div className="absolute bottom-8 text-center animate-in fade-in slide-in-from-bottom-2 duration-1000 delay-500">
         <p className="text-white/60 text-[10px] font-bold uppercase tracking-[0.2em] drop-shadow-sm">
-          &copy; 2026 DRCLEAN &bull; All Rights Reserved
+          &copy; 2026 KLINR &bull; All Rights Reserved
         </p>
       </div>
 

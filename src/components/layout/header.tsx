@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button"
-import drcleanIcon from '@/assets/drclean-icon-blue.png'
+import klinrLogoCropped from '@/assets/Klinr Logo Full.png'
 import {
   Settings,
   User,
@@ -89,7 +89,7 @@ export function Header() {
 
     <>
       <header className="sticky top-0 z-[10100] w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-sm transition-all duration-300">
-        <div className="relative h-16 w-full max-w-7xl mx-auto flex items-center justify-center md:justify-between md:px-4">
+        <div className="relative h-[60px] w-full flex items-center justify-between px-6">
           {/* Left: Hamburger Menu - Absolutely Positioned on Mobile */}
           <div className="absolute left-4 top-1/2 -translate-y-1/2 z-20 md:relative md:left-auto md:top-auto md:translate-y-0">
             {/* Hamburger Trigger - Mobile ONLY */}
@@ -230,18 +230,14 @@ export function Header() {
               </Sheet>
             </div>
 
-            {/* Company logo - Desktop only */}
-            <div className="hidden md:flex items-center gap-3 cursor-pointer group" onClick={() => navigate('/')}>
+            {/* Company logo */}
+            <div className="flex items-center cursor-pointer group" onClick={() => navigate('/')}>
               <div className="relative">
                 <img
-                  src={drcleanIcon}
-                  alt="DrClean"
-                  className="h-10 w-10 object-contain transition-transform duration-300 group-hover:scale-110"
+                  src={klinrLogoCropped}
+                  alt="Klinr"
+                  className="h-[32px] w-auto object-contain transition-transform duration-300 group-hover:scale-105"
                 />
-              </div>
-              <div className="flex flex-col">
-                <h1 className="text-xl font-bold text-foreground leading-none tracking-tight">DrClean</h1>
-                <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-[0.2em] mt-0.5">Admin Portal</p>
               </div>
             </div>
           </div>

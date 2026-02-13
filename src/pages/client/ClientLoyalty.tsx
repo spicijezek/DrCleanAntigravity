@@ -368,7 +368,7 @@ export default function ClientLoyalty() {
       return;
     }
 
-    const shareText = `Získejte profesionální úklid DrClean s bonusem! Při registraci použijte můj kód: ${code}`;
+    const shareText = `Získejte profesionální úklid Klinr s bonusem! Při registraci použijte můj kód: ${code}`;
     const shareUrl = `${window.location.origin}/klient-prihlaseni?ref=${code}`;
 
     // Native sharing only works on HTTPS or Localhost
@@ -378,7 +378,7 @@ export default function ClientLoyalty() {
       try {
         // Native share call
         await navigator.share({
-          title: 'DrClean - Pozvánka',
+          title: 'Klinr - Pozvánka',
           text: shareText,
           url: shareUrl
         });

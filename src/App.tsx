@@ -21,6 +21,7 @@ import InvoiceGenerator from "./pages/admin/InvoiceGenerator";
 import InvoiceStorage from "./pages/admin/InvoiceStorage";
 import InvoiceDefaultInfo from "./pages/admin/InvoiceDefaultInfo";
 import ClientAuth from "./pages/client/ClientAuth";
+import MobileAppInfo from "./pages/client/MobileAppInfo";
 import ClientDashboard from "./pages/client/ClientDashboard";
 import ClientServices from "./pages/client/ClientServices";
 import ClientProfile from "./pages/client/ClientProfile";
@@ -28,6 +29,7 @@ import ClientBilling from "./pages/client/ClientBilling";
 import ClientLoyalty from "./pages/client/ClientLoyalty";
 import ClientChecklistManager from "./pages/client/ClientChecklistManager";
 import ClientFAQ from "./pages/client/ClientFAQ";
+import BookingConfirmation from "./pages/client/BookingConfirmation";
 import { ClientLayout } from "./components/client/ClientLayout";
 import CleanerAuth from "./pages/cleaner/CleanerAuth";
 import CleanerDashboard from "./pages/cleaner/CleanerDashboard";
@@ -43,6 +45,13 @@ import AdminLoyalty from "./pages/admin/Loyalty";
 import { Layout } from "./components/layout/Layout";
 import NotFound from "./pages/admin/NotFound";
 import { ScrollToTop } from "@/components/ScrollToTop";
+import LandingPage from "./pages/LandingPage";
+import PublicBooking from "./pages/PublicBooking";
+import VOP from "./pages/VOP";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import CookiesPage from "./pages/Cookies";
+
+import CookieConsent from "./components/CookieConsent";
 
 const queryClient = new QueryClient();
 
@@ -58,8 +67,20 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/pending-approval" element={<PendingApproval />} />
 
+            {/* Public Landing Page & Booking Routes */}
+            <Route path="/landing" element={<LandingPage />} />
+            <Route path="/rezervace" element={<PublicBooking />} />
+            <Route path="/rezervace-uklid" element={<PublicBooking soloService="cleaning" />} />
+            <Route path="/rezervace-mytioken" element={<PublicBooking soloService="window_cleaning" />} />
+            <Route path="/rezervace-cistenicalouneni" element={<PublicBooking soloService="upholstery_cleaning" />} />
+            <Route path="/rezervace-potvrzeni" element={<BookingConfirmation />} />
+            <Route path="/vop" element={<VOP />} />
+            <Route path="/zasady-ochrany-osobnich-udaju" element={<PrivacyPolicy />} />
+            <Route path="/cookies" element={<CookiesPage />} />
+
             {/* Client Portal Routes */}
             <Route path="/klient-prihlaseni" element={<ClientAuth />} />
+            <Route path="/klient/aplikace" element={<MobileAppInfo />} />
             <Route path="/klient" element={
               <ClientProtectedRoute>
                 <ClientLayout>
@@ -213,6 +234,7 @@ const App = () => (
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
+          <CookieConsent />
         </BrowserRouter>
       </TooltipProvider>
     </AuthProvider>

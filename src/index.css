@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100;400;700;900&family=Lexend:wght@100;400;700;900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -235,6 +237,13 @@ All colors MUST be HSL.
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
   }
+
+  .text-klinr-brand {
+    font-family: 'Outfit', 'Lexend', sans-serif;
+    font-weight: 900 !important;
+    letter-spacing: -0.07em;
+    @apply transition-all duration-300;
+  }
 }
 
 @layer utilities {
@@ -328,12 +337,7 @@ All colors MUST be HSL.
     }
 
     /* Header adjustments */
-    .flex.items-center.justify-between {
-      flex-direction: column !important;
-      align-items: flex-start !important;
-      gap: 1rem !important;
-    }
-
+    
     /* Form field adjustments */
     .w-44,
     .w-40,

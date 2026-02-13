@@ -58,11 +58,11 @@ export default function Clients() {
 
   const fetchClients = async () => {
     try {
-      // Fetch clients (excluding App-registered clients)
+      // Fetch clients (excluding App and Web registered clients)
       const { data: clientsData, error: clientsError } = await supabase
         .from('clients')
         .select('*')
-        .neq('client_source', 'App')
+        .not('client_source', 'in', '("App","Web")')
         .order('created_at', { ascending: false });
 
       if (clientsError) throw clientsError;
@@ -102,7 +102,7 @@ export default function Clients() {
       if (allJobsError) throw allJobsError;
 
       // Calculate total spent and period spent for each client (PAID jobs by payment_received_date)
-      const clientsWithSpending = clientsData?.map(client => {
+      const clientsWithSpending = (clientsData as any[])?.map((client: any) => {
         const clientJobs = (allJobsData || []).filter(job => job.client_id === client.id);
 
         // Total spent = sum of PAID jobs revenue
@@ -203,7 +203,7 @@ export default function Clients() {
 
       // Delete all related records in the correct order
       if (jobs && jobs.length > 0) {
-        const jobIds = jobs.map(j => j.id);
+        const jobIds = (jobs as any[]).map(j => j.id);
         console.log('Deleting job-related records for jobs:', jobIds);
 
         // Delete job-related records first

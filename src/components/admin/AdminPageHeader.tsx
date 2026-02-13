@@ -1,16 +1,17 @@
 import React from 'react';
 import { cn } from "@/lib/utils";
-import drcleanIcon from '@/assets/drclean-icon-blue.png';
+import klinrLogoFavicon from '@/assets/Klinr Logo Favicon.png';
 
 interface AdminPageHeaderProps {
     title: string;
     description?: string;
     action?: React.ReactNode;
     className?: string;
+    titleClassName?: string;
     variant?: 'default' | 'luxurious';
 }
 
-export function AdminPageHeader({ title, description, action, className, variant = 'default' }: AdminPageHeaderProps) {
+export function AdminPageHeader({ title, description, action, className, titleClassName, variant = 'default' }: AdminPageHeaderProps) {
     const isLuxurious = variant === 'luxurious';
 
     return (
@@ -28,8 +29,8 @@ export function AdminPageHeader({ title, description, action, className, variant
                         isLuxurious ? "bg-white/20" : "bg-primary/10"
                     )} />
                     <img
-                        src={drcleanIcon}
-                        alt="DrClean"
+                        src={klinrLogoFavicon}
+                        alt="Klinr"
                         className={cn(
                             "h-full w-full object-contain relative z-10 animate-in zoom-in duration-500",
                             isLuxurious && "brightness-0 invert opacity-90"
@@ -38,10 +39,11 @@ export function AdminPageHeader({ title, description, action, className, variant
                 </div>
                 <div className="space-y-1">
                     <h1 className={cn(
-                        "text-2xl sm:text-3xl font-bold tracking-tight animate-in slide-in-from-left duration-500",
+                        "text-3xl sm:text-4xl font-black animate-in slide-in-from-left duration-500",
                         isLuxurious
-                            ? "text-white"
-                            : "bg-gradient-to-r from-primary to-indigo-600 bg-clip-text text-transparent"
+                            ? "text-white tracking-tight"
+                            : "text-klinr-brand text-[#242424] text-[3rem]",
+                        titleClassName
                     )}>
                         {title}
                     </h1>

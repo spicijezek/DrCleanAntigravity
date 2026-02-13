@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import drcleanIcon from '@/assets/drclean-icon-blue.png';
+import klinrLogoFull from '@/assets/Klinr Logo Full.png';
+import klinrLogoCropped from '@/assets/Klinr Logo Full.png';
+import klinrLogoFavicon from '@/assets/Klinr Logo Favicon.png';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -129,7 +131,7 @@ export default function Auth() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[url('https://images.unsplash.com/photo-1527515673516-9b552e6aeeb4?ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80')] bg-cover bg-center relative p-4 overflow-hidden">
+    <div className="min-h-screen flex items-start md:items-center justify-center bg-[url('https://images.unsplash.com/photo-1527515673516-9b552e6aeeb4?ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80')] bg-cover bg-center relative p-4 pt-8 overflow-hidden">
       {/* Dynamic Overlay */}
       <div className="absolute inset-0 bg-gradient-to-br from-blue-900/80 via-slate-900/90 to-black/95 backdrop-blur-sm" />
 
@@ -140,19 +142,19 @@ export default function Auth() {
       <Card className="w-full max-w-md relative z-10 border-0 bg-white/10 backdrop-blur-2xl shadow-[0_32px_64px_-15px_rgba(0,0,0,0.5)] rounded-[2.5rem] text-white overflow-hidden animate-in fade-in zoom-in-95 duration-700">
         <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent pointer-events-none" />
 
-        <CardHeader className="text-center space-y-6 pt-10 pb-8">
-          <div className="mx-auto h-24 w-24 flex items-center justify-center transform hover:scale-105 transition-transform duration-500 group">
-            <div className="absolute inset-0 bg-blue-500/20 rounded-full blur-2xl group-hover:blur-3xl transition-all opacity-50" />
-            <img
-              src={drcleanIcon}
-              alt="DrClean"
-              className="h-20 w-20 relative z-10 drop-shadow-2xl animate-spin-pulse"
-            />
+        <CardHeader className="text-center space-y-24 md:space-y-8 pt-24 md:pt-[64px] pb-10">
+          <div className="mx-auto flex items-center justify-center transform hover:scale-105 transition-transform duration-500 group relative">
+            <div className="absolute inset-0 bg-blue-500/20 rounded-full blur-3xl opacity-30" />
+            <div className="relative z-10 bg-white/95 backdrop-blur-md p-6 rounded-[2.5rem] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] border border-white/40">
+              <img
+                src={klinrLogoCropped}
+                alt="Klinr"
+                className="h-[42px] w-auto"
+              />
+            </div>
           </div>
-          <div className="space-y-2">
-            <CardTitle className="text-4xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-b from-white to-white/60">
-              DrClean
-            </CardTitle>
+          <div className="space-y-1">
+            <p className="text-white/80 text-sm font-semibold tracking-widest uppercase">Admin Portál</p>
           </div>
         </CardHeader>
 
@@ -172,7 +174,7 @@ export default function Auth() {
                     <Input
                       id="email_signin"
                       type="email"
-                      placeholder="stepan@drclean.cz"
+                      placeholder="stepan@klinr.cz"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
@@ -225,7 +227,7 @@ export default function Auth() {
                     <Input
                       id="email_signup"
                       type="email"
-                      placeholder="stepan@drclean.cz"
+                      placeholder="stepan@klinr.cz"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
@@ -271,7 +273,7 @@ export default function Auth() {
             disabled={googleLoading}
           >
             {googleLoading ? (
-              <img src={drcleanIcon} alt="Loading" className="h-4 w-4 animate-spin-pulse" />
+              <img src={klinrLogoFavicon} alt="Loading" className="h-4 w-4 animate-spin-pulse" />
             ) : (
               <>
                 <div className="bg-white p-1 rounded-md group-hover:scale-110 transition-transform">
@@ -304,7 +306,7 @@ export default function Auth() {
       {/* Footer Branding */}
       <div className="absolute bottom-8 text-center animate-in fade-in slide-in-from-bottom-2 duration-1000 delay-500">
         <p className="text-white/60 text-[10px] font-bold uppercase tracking-[0.2em] drop-shadow-sm">
-          &copy; 2026 DRCLEAN &bull; All Rights Reserved
+          &copy; 2026 KLINR &bull; All Rights Reserved
         </p>
       </div>
     </div>

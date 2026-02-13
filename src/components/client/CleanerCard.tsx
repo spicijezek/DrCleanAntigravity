@@ -84,7 +84,7 @@ export function CleanerCard({ name, userId, avatarPath, fullName, bio }: Cleaner
           </div>
         ) : (
           <div className="text-xs text-muted-foreground mt-1">
-            Profesionální člen Dr.Clean týmu
+            Profesionální člen Klinr týmu
           </div>
         )}
       </div>

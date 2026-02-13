@@ -84,7 +84,7 @@ const generateMockupBooking = (): Booking => {
     team_members: [
       {
         name: 'Anička',
-        bio: 'Pravidelně se starám o čistotu v Dr.Clean. Ráda dělám radost svou precizností.',
+        bio: 'Pravidelně se starám o čistotu v Klinr. Ráda dělám radost svou precizností.',
         user_id: 'mockup-user',
         profile: {
           avatar_url: maidImage,

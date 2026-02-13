@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { PremiumButton } from '@/components/ui/PremiumButton';
 import { Sparkles } from 'lucide-react';
 import maidImage from '@/assets/maid.png';
-import drcleanIcon from '@/assets/drclean-icon.png';
+import klinrLogoFavicon from '@/assets/Klinr Logo Favicon.png';
 import { useMemo } from 'react';
 
 interface EmptyStateWelcomeProps {
@@ -53,8 +53,8 @@ export function EmptyStateWelcome({ firstName, hasBookedBefore = false }: EmptyS
       <div className="relative z-10 flex items-start justify-between gap-2">
         <div className="space-y-4 flex-1">
           <div className="flex items-center gap-2">
-            <img src={drcleanIcon} alt="DrClean" className="h-5 w-5 animate-spin-slow" />
-            <span className="text-sm font-medium text-white/80">DrClean</span>
+            <img src={klinrLogoFavicon} alt="Klinr" className="h-5 w-5 animate-spin-slow" />
+            <span className="text-sm font-medium text-white/80">Klinr</span>
           </div>
 
           <div className="space-y-1.5">
